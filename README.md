@@ -44,6 +44,8 @@
 - ✨ **Beautiful Boards** - Create stunning, customizable boards with flexible layouts
 - 🎨 **Theme System** - Pre-built themes and full customization options
 - 🔗 **Multiple Block Types** - Links, text, images, videos, buttons, and more
+- ✍️ **Rich Text Editor** - World-class WYSIWYG editor powered by Tiptap
+- 🎯 **Drag & Drop** - Intuitive block reordering with smooth animations
 - 📱 **Mobile-First** - Responsive design that looks great on all devices
 - 🚀 **Lightning Fast** - Built with Next.js 16 for optimal performance
 
@@ -80,6 +82,7 @@
 - **UI Components**: [Shadcn UI](https://ui.shadcn.com/) + [Radix UI](https://www.radix-ui.com/)
 - **Icons**: [Lucide React](https://lucide.dev/)
 - **Drag & Drop**: [@dnd-kit](https://dndkit.com/)
+- **Rich Text Editor**: [Tiptap](https://tiptap.dev/) with ProseMirror
 
 ### Backend & Services
 
@@ -101,6 +104,14 @@
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
+    "@tiptap/react": "^2.10.3",
+    "@tiptap/starter-kit": "^2.10.3",
+    "@tiptap/extension-placeholder": "^2.10.3",
+    "@tiptap/extension-link": "^2.10.3",
+    "@tiptap/extension-text-align": "^2.10.3",
+    "@tiptap/extension-underline": "^2.10.3",
+    "@tiptap/extension-text-style": "^2.10.3",
+    "@tiptap/extension-color": "^2.10.3",
     "firebase": "^12.4.0",
     "firebase-admin": "^13.5.0",
     "js-cookie": "3.0.5",
@@ -315,9 +326,16 @@ Visit [http://localhost:3000](http://localhost:3000)
 #### 5.3 Add Content Blocks
 
 1. In board editor, click "Add Block"
-2. Add a link with title and URL
-3. Click "Add Link"
-4. Click "Save" in the toolbar
+2. Choose from organized categories:
+   - **Content**: Rich Text (with formatting), Simple Text
+   - **Interactive**: Links, Buttons
+   - **Media**: Images
+   - **Layout**: Dividers, Spacers
+3. For Rich Text: Use the formatting toolbar (Bold, Italic, Headings, Lists, etc.)
+4. Fill in block details and click "Add"
+5. Hover over blocks to see Edit, Visibility, and Delete controls
+6. Drag blocks by the handle (⋮⋮) to reorder
+7. Click "Save" in the toolbar to persist changes
 
 #### 5.4 Customize Theme
 
@@ -356,8 +374,11 @@ openboard/
 │   ├── components/            # React components
 │   │   ├── blocks/           # Block type components
 │   │   │   ├── block-renderer.tsx
+│   │   │   ├── add-block-sheet.tsx
 │   │   │   ├── link-block.tsx
 │   │   │   ├── text-block.tsx
+│   │   │   ├── richtext-block.tsx
+│   │   │   ├── rich-text-editor.tsx
 │   │   │   ├── image-block.tsx
 │   │   │   ├── button-block.tsx
 │   │   │   ├── divider-block.tsx
@@ -405,19 +426,34 @@ openboard/
 
 OpenBoard supports the following block types:
 
-| Block Type       | Description                                      | Settings                                   |
-| ---------------- | ------------------------------------------------ | ------------------------------------------ |
-| **Link**         | Clickable link with title, description, and icon | URL, title, description, icon, thumbnail   |
-| **Text**         | Formatted text content                           | Content, alignment, font size              |
-| **Image**        | Image with optional caption and link             | URL, alt text, caption, link, aspect ratio |
-| **Button**       | Call-to-action button                            | Text, URL, style, size                     |
-| **Video**        | Embedded video (YouTube, Vimeo)                  | URL, platform, title                       |
-| **Embed**        | Embedded content (Spotify, Twitter, etc.)        | URL, embed code, platform                  |
-| **Social Links** | Grid of social media icons                       | Links array, layout                        |
-| **Divider**      | Visual separator                                 | Style, width                               |
-| **Spacer**       | Vertical spacing                                 | Height                                     |
-| **Calendar**     | Booking calendar (Cal.com, Calendly)             | Provider, URL, title                       |
-| **Form**         | Custom form                                      | Fields, submit URL                         |
+| Block Type       | Description                                             | Settings                                      |
+| ---------------- | ------------------------------------------------------- | --------------------------------------------- |
+| **Rich Text** ✨ | Full WYSIWYG editor with formatting (Tiptap)            | HTML content, alignment, inline editing       |
+| **Link**         | Clickable link with title, description, and icon        | URL, title, description, icon, thumbnail      |
+| **Text**         | Simple text content                                     | Content, alignment, font size                 |
+| **Button**       | Call-to-action button with custom styles                | Text, URL, style (4 variants), size (3 sizes) |
+| **Image**        | Image with optional caption and link                    | URL, alt text, caption, link, aspect ratio    |
+| **Divider**      | Visual separator                                        | Style (solid/dashed/dotted), width            |
+| **Spacer**       | Vertical spacing                                        | Height (sm/md/lg/xl)                          |
+| **Video**        | Embedded video (YouTube, Vimeo) - Coming soon           | URL, platform, title                          |
+| **Embed**        | Embedded content (Spotify, Twitter, etc.) - Coming soon | URL, embed code, platform                     |
+| **Social Links** | Grid of social media icons - Coming soon                | Links array, layout                           |
+| **Calendar**     | Booking calendar (Cal.com, Calendly) - Coming soon      | Provider, URL, title                          |
+| **Form**         | Custom form builder - Coming soon                       | Fields, submit URL                            |
+
+### Rich Text Block Features ✨
+
+The Rich Text block powered by **Tiptap** includes:
+
+- **Text Formatting**: Bold, Italic, Underline, Strikethrough, Inline Code
+- **Headings**: H1, H2, H3 with proper hierarchy
+- **Lists**: Bullet and numbered lists with nesting support
+- **Alignment**: Left, Center, Right text alignment
+- **Links**: Insert and edit hyperlinks
+- **Blockquotes**: For emphasis and citations
+- **Undo/Redo**: Full history support
+- **Inline Editing**: Click to edit with live preview
+- **Dark Mode**: Fully styled for light and dark themes
 
 ### Adding New Block Types
 
@@ -425,6 +461,118 @@ OpenBoard supports the following block types:
 2. Create the component in `src/components/blocks/`
 3. Add to `BlockRenderer` in `block-renderer.tsx`
 4. Update constants in `src/lib/constants.ts`
+
+---
+
+## ✍️ Rich Text Editor
+
+OpenBoard features a powerful rich text editor built with **Tiptap**, a headless, framework-agnostic text editor built on top of ProseMirror.
+
+### Why Tiptap?
+
+- 🎯 **Production-Ready** - Used by thousands of applications worldwide
+- 🧩 **Modular** - Extension-based architecture for maximum flexibility
+- ⚡ **Performant** - Optimized for large documents and real-time collaboration
+- 🎨 **Customizable** - Full control over styling and behavior
+- ♿ **Accessible** - Built with accessibility in mind
+- 🔧 **Developer-Friendly** - Intuitive API with TypeScript support
+
+### Editor Features
+
+#### Text Formatting Toolbar
+
+The editor includes a comprehensive toolbar with:
+
+| Feature       | Description             | Icon  | Shortcut             |
+| ------------- | ----------------------- | ----- | -------------------- |
+| Bold          | Make text bold          | **B** | Cmd/Ctrl + B         |
+| Italic        | Italicize text          | _I_   | Cmd/Ctrl + I         |
+| Underline     | Underline text          | U̲     | Cmd/Ctrl + U         |
+| Strikethrough | Strike through text     | S̶     | -                    |
+| Code          | Inline code formatting  | `<>`  | Cmd/Ctrl + E         |
+| Heading 1     | Large heading           | H₁    | -                    |
+| Heading 2     | Medium heading          | H₂    | -                    |
+| Heading 3     | Small heading           | H₃    | -                    |
+| Bullet List   | Unordered list          | •     | -                    |
+| Numbered List | Ordered list            | 1.    | -                    |
+| Blockquote    | Quote block             | "     | -                    |
+| Left Align    | Align text left         | ⫴     | -                    |
+| Center Align  | Center text             | ☰     | -                    |
+| Right Align   | Align text right        | ⫵     | -                    |
+| Link          | Insert/edit hyperlink   | 🔗    | Cmd/Ctrl + K         |
+| Undo          | Undo last change        | ↶     | Cmd/Ctrl + Z         |
+| Redo          | Redo last undone change | ↷     | Cmd/Ctrl + Shift + Z |
+
+#### Editing Experience
+
+- **Live Preview** - See changes as you type
+- **Placeholder Text** - Helpful prompts when editor is empty
+- **Inline Editing** - Click any rich text block to edit
+- **Focus Management** - Intuitive keyboard navigation
+- **History** - Complete undo/redo support
+- **SSR Compatible** - Works with Next.js server-side rendering
+
+### Technical Details
+
+#### Extensions Used
+
+```typescript
+import StarterKit from "@tiptap/starter-kit";
+import Placeholder from "@tiptap/extension-placeholder";
+import Link from "@tiptap/extension-link";
+import TextAlign from "@tiptap/extension-text-align";
+import Underline from "@tiptap/extension-underline";
+import { TextStyle } from "@tiptap/extension-text-style";
+import { Color } from "@tiptap/extension-color";
+```
+
+#### Configuration
+
+The editor is configured with:
+
+- **immediatelyRender: false** - Prevents SSR hydration mismatches
+- **editorProps** - Custom prose styling with dark mode support
+- **onUpdate callback** - Real-time content synchronization
+- **Content storage** - HTML format for maximum compatibility
+
+#### Styling
+
+Custom CSS for the ProseMirror editor ensures:
+
+- Consistent typography across themes
+- Proper spacing and alignment
+- Dark mode compatibility
+- Responsive design
+- Accessible color contrasts
+
+### Usage Example
+
+```typescript
+import { RichTextEditor } from "@/components/blocks/rich-text-editor";
+
+function MyComponent() {
+  const [content, setContent] = useState("<p>Hello world!</p>");
+
+  return (
+    <RichTextEditor
+      content={content}
+      onChange={setContent}
+      placeholder="Start writing..."
+      editable={true}
+    />
+  );
+}
+```
+
+### Block Integration
+
+Rich text blocks include:
+
+- **Inline editing** - Click to edit with full toolbar
+- **Visibility toggle** - Show/hide blocks
+- **Delete confirmation** - Prevent accidental deletions
+- **Drag and drop** - Reorder with other blocks
+- **Auto-save** - Changes persist automatically
 
 ---
 
@@ -753,13 +901,17 @@ docs: update Firebase setup instructions
 
 We're especially looking for contributions in:
 
-- [ ] Drag-and-drop block reordering
-- [ ] Additional block types (polls, countdown, etc.)
+- [x] ~~Drag-and-drop block reordering~~ ✅ Completed!
+- [x] ~~Rich text editing~~ ✅ Completed!
+- [ ] Additional block types (video, embed, polls, countdown, etc.)
+- [ ] Image upload functionality
 - [ ] Advanced analytics charts
 - [ ] Mobile app
 - [ ] Internationalization (i18n)
 - [ ] Performance optimizations
 - [ ] Accessibility improvements
+- [ ] Table support in rich text
+- [ ] Color picker UI
 
 ---
 
@@ -925,9 +1077,11 @@ Built with amazing open-source tools:
 - [React](https://react.dev/) - UI Library
 - [TypeScript](https://www.typescriptlang.org/) - Type Safety
 - [Tailwind CSS](https://tailwindcss.com/) - Styling Framework
+- [Tiptap](https://tiptap.dev/) - Rich Text Editor
 - [Shadcn UI](https://ui.shadcn.com/) - Beautiful UI Components
 - [Firebase](https://firebase.google.com/) - Authentication & Backend
 - [Zustand](https://zustand-demo.pmnd.rs/) - State Management
+- [DndKit](https://dndkit.com/) - Drag and Drop
 - [Lucide](https://lucide.dev/) - Icon Library
 - [OpenAI](https://openai.com/) - AI Features
 - [Vercel](https://vercel.com/) - Deployment Platform
@@ -959,16 +1113,20 @@ Planned features and improvements:
 - [x] Analytics tracking
 - [x] AI suggestions
 - [x] Template gallery
+- [x] **Rich Text Editor (Tiptap)** ✨
+- [x] **Drag-and-drop block reordering** ✨
+- [x] **Inline block editing** ✨
 
 ### Medium Term
 
-- [ ] Drag-and-drop block reordering
+- [ ] Image upload from device
 - [ ] Video and embed blocks
 - [ ] Calendar integration (Cal.com, Calendly)
 - [ ] Form builder block
 - [ ] Advanced analytics dashboard
 - [ ] Team collaboration
 - [ ] Custom domain support
+- [ ] Code blocks with syntax highlighting
 
 ### Long Term
 
