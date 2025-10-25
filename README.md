@@ -4,9 +4,10 @@
 
 **The open-source platform to create beautiful, shareable boards for your links, content, and projects.**
 
-[![Next.js](https://img.shields.io/badge/Next.js-15.5-black?logo=next.js)](https://nextjs.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-16.0-black?logo=next.js)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React-19.0-61dafb?logo=react)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?logo=typescript)](https://www.typescriptlang.org/)
-[![Firebase](https://img.shields.io/badge/Firebase-10.0-orange?logo=firebase)](https://firebase.google.com/)
+[![Firebase](https://img.shields.io/badge/Firebase-12.4-orange?logo=firebase)](https://firebase.google.com/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 [Demo](https://openboard.vercel.app) • [Documentation](#documentation) • [Contributing](#contributing)
@@ -23,7 +24,7 @@
 - 🎨 **Theme System** - Pre-built themes and full customization options
 - 🔗 **Multiple Block Types** - Links, text, images, videos, buttons, and more
 - 📱 **Mobile-First** - Responsive design that looks great on all devices
-- 🚀 **Lightning Fast** - Built with Next.js 15 for optimal performance
+- 🚀 **Lightning Fast** - Built with Next.js 16 for optimal performance
 
 ### Advanced Features
 
@@ -50,8 +51,7 @@
 
 - Node.js 18.x or higher
 - npm or yarn
-- Firebase account
-- Clerk account (for authentication)
+- Firebase account (for authentication and database)
 
 ### 1. Clone the Repository
 
@@ -77,21 +77,17 @@ cp env.example .env.local
 Edit `.env.local` with your credentials:
 
 ```env
-# Clerk Authentication
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
-CLERK_SECRET_KEY=sk_test_...
-NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
-NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
-NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/boards
-NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/boards
-
-# Firebase Configuration
+# Firebase Authentication & Database
 NEXT_PUBLIC_FIREBASE_API_KEY=AIza...
 NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
 NEXT_PUBLIC_FIREBASE_PROJECT_ID=your-project-id
 NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
 NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=123456789
 NEXT_PUBLIC_FIREBASE_APP_ID=1:123456789:web:abc123
+
+# Firebase Admin SDK (for API routes)
+FIREBASE_CLIENT_EMAIL=firebase-adminsdk-xxxxx@your-project.iam.gserviceaccount.com
+FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nYourPrivateKeyHere\n-----END PRIVATE KEY-----\n"
 
 # Optional: AI Features
 OPENAI_API_KEY=sk-...
@@ -100,9 +96,17 @@ OPENAI_API_KEY=sk-...
 ### 4. Set Up Firebase
 
 1. Create a new Firebase project at [console.firebase.google.com](https://console.firebase.google.com)
-2. Enable Firestore Database
-3. Enable Firebase Storage
-4. Set up Firestore Security Rules:
+2. **Enable Authentication**:
+   - Go to Authentication → Sign-in method
+   - Enable Email/Password
+   - Enable Google sign-in
+3. **Enable Firestore Database**
+4. **Enable Firebase Storage**
+5. **Generate Admin SDK credentials**:
+   - Go to Project Settings → Service Accounts
+   - Click "Generate new private key"
+   - Copy the values to your `.env.local`
+6. Set up Firestore Security Rules:
 
 ```javascript
 rules_version = '2';
@@ -136,14 +140,7 @@ service cloud.firestore {
 }
 ```
 
-### 5. Set Up Clerk Authentication
-
-1. Create a Clerk account at [clerk.com](https://clerk.com)
-2. Create a new application
-3. Copy your API keys to `.env.local`
-4. Configure sign-in/sign-up options in Clerk dashboard
-
-### 6. Run Development Server
+### 5. Run Development Server
 
 ```bash
 npm run dev
@@ -161,10 +158,16 @@ Visit [http://localhost:3000](http://localhost:3000) to see your app!
 openboard/
 ├── src/
 │   ├── app/                    # Next.js App Router pages
-│   │   ├── (app)/             # App layout pages
+│   │   ├── (app)/             # App layout pages with sidebar
+│   │   │   ├── board/[id]/    # Board editor
+│   │   │   ├── boards/        # Board listing
+│   │   │   ├── dashboard/     # Analytics dashboard
+│   │   │   ├── templates/     # Board templates
+│   │   │   └── page.tsx       # Landing page
 │   │   ├── api/               # API routes
-│   │   ├── board/[id]/        # Board editor
-│   │   ├── boards/            # Board listing
+│   │   ├── login/             # Login page
+│   │   ├── signup/            # Signup page
+│   │   ├── reset-password/    # Password reset
 │   │   ├── u/[username]/[slug]/ # Public board view
 │   │   └── layout.tsx         # Root layout
 │   ├── components/            # React components
@@ -176,8 +179,11 @@ openboard/
 │   │   ├── use-boards.ts     # Board management hook
 │   │   └── use-analytics.ts  # Analytics hook
 │   ├── lib/                  # Utility functions
+│   │   ├── auth-context.tsx  # Firebase auth context
+│   │   ├── auth-cookie.ts    # Cookie management
 │   │   ├── firebase.ts       # Firebase configuration
 │   │   ├── constants.ts      # App constants
+│   │   ├── templates.ts      # Board templates
 │   │   └── utils.ts          # Helper functions
 │   ├── stores/               # Zustand state stores
 │   │   ├── user-store.ts     # User state
@@ -191,16 +197,37 @@ openboard/
 
 ### Key Technologies
 
-- **Framework**: [Next.js 15](https://nextjs.org/) with App Router
-- **Language**: [TypeScript](https://www.typescriptlang.org/)
-- **Styling**: [Tailwind CSS](https://tailwindcss.com/)
+- **Framework**: [Next.js 16](https://nextjs.org/) with App Router & Turbopack
+- **Frontend**: [React 19](https://react.dev/)
+- **Language**: [TypeScript 5](https://www.typescriptlang.org/)
+- **Styling**: [Tailwind CSS 4](https://tailwindcss.com/)
 - **UI Components**: [Shadcn UI](https://ui.shadcn.com/) + [Radix UI](https://www.radix-ui.com/)
-- **Authentication**: [Clerk](https://clerk.com/)
+- **Authentication**: [Firebase Authentication](https://firebase.google.com/docs/auth)
 - **Database**: [Firebase Firestore](https://firebase.google.com/docs/firestore)
 - **Storage**: [Firebase Storage](https://firebase.google.com/docs/storage)
 - **State Management**: [Zustand](https://zustand-demo.pmnd.rs/)
-- **AI**: [Vercel AI SDK](https://sdk.vercel.ai/) + [OpenAI](https://openai.com/)
+- **AI**: [OpenAI](https://openai.com/) with streaming support
 - **Drag & Drop**: [@dnd-kit](https://dndkit.com/)
+- **Icons**: [Lucide React](https://lucide.dev/)
+
+### Key Dependencies
+
+```json
+{
+  "dependencies": {
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "firebase": "^12.4.0",
+    "firebase-admin": "^13.5.0",
+    "js-cookie": "3.0.5",
+    "lucide-react": "^0.548.0",
+    "next": "^16.0.0",
+    "openai": "^6.7.0",
+    "react": "^19.0.0",
+    "zustand": "^5.0.8"
+  }
+}
+```
 
 ### Block Types
 
@@ -234,9 +261,21 @@ OpenBoard uses Zustand for lightweight, performant state management:
 
 ### Custom Hooks
 
-- **useAuth()** - Authentication and user sync with Clerk + Firebase
+- **useAuth()** - Firebase authentication and user sync with Firestore
+- **useAuthContext()** - Access Firebase auth user state
 - **useBoards()** - Board CRUD operations and real-time subscriptions
 - **useAnalytics()** - Analytics tracking and data fetching
+
+### Authentication Flow
+
+OpenBoard uses Firebase Authentication with the following features:
+
+- **Email/Password** authentication with email verification
+- **Google Sign-In** with OAuth
+- **Remember Me** functionality with persistent sessions
+- **Password Reset** via email
+- **Cookie-based session** management for API routes
+- **Firebase Admin SDK** for server-side authentication verification
 
 ---
 
@@ -361,9 +400,10 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 🙏 Acknowledgments
 
 - [Next.js](https://nextjs.org/) - The React Framework
+- [React](https://react.dev/) - UI Library
 - [Shadcn UI](https://ui.shadcn.com/) - Beautiful UI components
-- [Clerk](https://clerk.com/) - Authentication made easy
-- [Firebase](https://firebase.google.com/) - Backend infrastructure
+- [Firebase](https://firebase.google.com/) - Authentication & Backend
+- [Tailwind CSS](https://tailwindcss.com/) - Styling framework
 - [Vercel](https://vercel.com/) - Deployment platform
 
 ---
