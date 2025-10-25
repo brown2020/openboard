@@ -3,6 +3,7 @@
 import { Block } from "@/types";
 import { LinkBlock } from "./link-block";
 import { TextBlock } from "./text-block";
+import { RichTextBlock } from "./richtext-block";
 import { ImageBlock } from "./image-block";
 import { ButtonBlock } from "./button-block";
 import { DividerBlock } from "./divider-block";
@@ -41,6 +42,8 @@ export function BlockRenderer({
       );
     case "text":
       return <TextBlock block={block} />;
+    case "richtext":
+      return <RichTextBlock block={block} isEditing={isEditing} />;
     case "image":
       return (
         <ImageBlock block={block} onClick={handleClick} isEditing={isEditing} />

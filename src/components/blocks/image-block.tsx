@@ -3,6 +3,19 @@
 import { ImageBlock as ImageBlockType } from "@/types";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
+import { useState } from "react";
+import { useBoardStore } from "@/stores/board-store";
+import { Button } from "@/components/ui/button";
+import { Edit2, Trash2, Eye, EyeOff } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface ImageBlockProps {
   block: ImageBlockType;
@@ -15,7 +28,15 @@ export function ImageBlock({
   onClick,
   isEditing = false,
 }: ImageBlockProps) {
+  const { updateBlock, deleteBlock } = useBoardStore();
+  const [isEditMode, setIsEditMode] = useState(false);
   const { url, alt, caption, link, aspectRatio = "auto" } = block.settings;
+
+  const [editUrl, setEditUrl] = useState(url);
+  const [editAlt, setEditAlt] = useState(alt);
+  const [editCaption, setEditCaption] = useState(caption || "");
+  const [editLink, setEditLink] = useState(link || "");
+  const [editAspectRatio, setEditAspectRatio] = useState(aspectRatio);
 
   const aspectRatioClasses = {
     square: "aspect-square",
@@ -24,8 +45,100 @@ export function ImageBlock({
     auto: "",
   };
 
+  const toggleVisibility = () => {
+    updateBlock(block.id, { visible: !block.visible });
+  };
+
+  const handleDelete = () => {
+    if (confirm("Are you sure you want to delete this block?")) {
+      deleteBlock(block.id);
+    }
+  };
+
+  const handleSave = () => {
+    updateBlock(block.id, {
+      settings: {
+        url: editUrl,
+        alt: editAlt,
+        caption: editCaption || undefined,
+        link: editLink || undefined,
+        aspectRatio: editAspectRatio,
+      },
+    });
+    setIsEditMode(false);
+  };
+
+  if (isEditMode && isEditing) {
+    return (
+      <div className="p-4 border rounded-lg bg-card space-y-4">
+        <div className="space-y-2">
+          <Label>Image URL</Label>
+          <Input
+            value={editUrl}
+            onChange={(e) => setEditUrl(e.target.value)}
+            placeholder="https://example.com/image.jpg"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>Alt Text</Label>
+          <Input
+            value={editAlt}
+            onChange={(e) => setEditAlt(e.target.value)}
+            placeholder="Description of image"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>Caption (optional)</Label>
+          <Input
+            value={editCaption}
+            onChange={(e) => setEditCaption(e.target.value)}
+            placeholder="Add a caption"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>Link (optional)</Label>
+          <Input
+            value={editLink}
+            onChange={(e) => setEditLink(e.target.value)}
+            placeholder="https://example.com"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>Aspect Ratio</Label>
+          <Select
+            value={editAspectRatio}
+            onValueChange={(v: any) => setEditAspectRatio(v)}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="auto">Auto</SelectItem>
+              <SelectItem value="square">Square</SelectItem>
+              <SelectItem value="portrait">Portrait</SelectItem>
+              <SelectItem value="landscape">Landscape</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex gap-2">
+          <Button onClick={handleSave} disabled={!editUrl || !editAlt}>
+            Save
+          </Button>
+          <Button variant="outline" onClick={() => setIsEditMode(false)}>
+            Cancel
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   const content = (
-    <div className="overflow-hidden rounded-lg">
+    <div
+      className={cn(
+        "overflow-hidden rounded-lg",
+        !block.visible && isEditing && "opacity-50"
+      )}
+    >
       <div className={cn("relative w-full", aspectRatioClasses[aspectRatio])}>
         <Image
           src={url}
@@ -49,18 +162,55 @@ export function ImageBlock({
     </div>
   );
 
-  if (link && !isEditing) {
-    return (
-      <a
-        href={link}
-        onClick={onClick}
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        {content}
-      </a>
-    );
-  }
+  return (
+    <div className="group relative">
+      {/* Editor Controls */}
+      {isEditing && (
+        <div className="absolute -top-2 -right-2 z-10 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => setIsEditMode(true)}
+            className="h-7 w-7 p-0 shadow-md"
+          >
+            <Edit2 className="h-3 w-3" />
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={toggleVisibility}
+            className="h-7 w-7 p-0 shadow-md"
+          >
+            {block.visible ? (
+              <Eye className="h-3 w-3" />
+            ) : (
+              <EyeOff className="h-3 w-3" />
+            )}
+          </Button>
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={handleDelete}
+            className="h-7 w-7 p-0 shadow-md"
+          >
+            <Trash2 className="h-3 w-3" />
+          </Button>
+        </div>
+      )}
 
-  return content;
+      {/* Image Content */}
+      {link && !isEditing ? (
+        <a
+          href={link}
+          onClick={onClick}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {content}
+        </a>
+      ) : (
+        content
+      )}
+    </div>
+  );
 }

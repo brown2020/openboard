@@ -18,6 +18,7 @@ export interface UserProfile {
 export type BlockType =
   | "link"
   | "text"
+  | "richtext"
   | "image"
   | "video"
   | "embed"
@@ -53,6 +54,14 @@ export interface TextBlock extends BaseBlock {
     content: string;
     alignment?: "left" | "center" | "right";
     fontSize?: "sm" | "md" | "lg" | "xl";
+  };
+}
+
+export interface RichTextBlock extends BaseBlock {
+  type: "richtext";
+  settings: {
+    content: string; // HTML content from Tiptap
+    alignment?: "left" | "center" | "right";
   };
 }
 
@@ -149,6 +158,7 @@ export interface SpacerBlock extends BaseBlock {
 export type Block =
   | LinkBlock
   | TextBlock
+  | RichTextBlock
   | ImageBlock
   | VideoBlock
   | EmbedBlock

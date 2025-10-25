@@ -7,19 +7,7 @@ import { useBoardStore } from "@/stores/board-store";
 import { useUIStore } from "@/stores/ui-store";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-
-// Mark this route as dynamic for Next.js 16
-export const dynamic = "force-dynamic";
-export const dynamicParams = true;
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
 import {
   Save,
   Eye,
@@ -28,33 +16,102 @@ import {
   BarChart3,
   Share2,
   ArrowLeft,
+  GripVertical,
 } from "lucide-react";
 import { BlockRenderer } from "@/components/blocks/block-renderer";
-import { LinkBlock } from "@/types";
+import { AddBlockSheet } from "@/components/blocks/add-block-sheet";
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ThemeModal } from "@/components/modals/theme-modal";
 import { AnalyticsModal } from "@/components/modals/analytics-modal";
 import { ShareModal } from "@/components/modals/share-modal";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { Block } from "@/types";
+import { cn } from "@/lib/utils";
+
+// Mark this route as dynamic for Next.js 16
+export const dynamic = "force-dynamic";
+export const dynamicParams = true;
 
 interface PageProps {
   params: Promise<{ id: string }>;
+}
+
+interface SortableBlockProps {
+  block: Block;
+}
+
+function SortableBlock({ block }: SortableBlockProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: block.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={cn("relative group", isDragging && "opacity-50 z-50")}
+    >
+      {/* Drag Handle */}
+      <div
+        {...attributes}
+        {...listeners}
+        className="absolute -left-8 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing"
+      >
+        <GripVertical className="w-5 h-5 text-muted-foreground" />
+      </div>
+
+      <BlockRenderer block={block} isEditing={true} />
+    </div>
+  );
 }
 
 export default function BoardEditorPage({ params }: PageProps) {
   const resolvedParams = use(params);
   const { user, isLoaded } = useAuth();
   const { getBoard, updateBoard } = useBoards();
-  const { currentBoard, setCurrentBoard, addBlock } = useBoardStore();
+  const { currentBoard, setCurrentBoard, reorderBlocks } = useBoardStore();
   const { setEditorMode, openModal } = useUIStore();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [showAddBlock, setShowAddBlock] = useState(false);
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [boardTitle, setBoardTitle] = useState("");
+  const [boardDescription, setBoardDescription] = useState("");
 
-  // Block creation state
-  const [newLinkTitle, setNewLinkTitle] = useState("");
-  const [newLinkUrl, setNewLinkUrl] = useState("");
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   useEffect(() => {
     setEditorMode(true);
@@ -76,6 +133,8 @@ export default function BoardEditorPage({ params }: PageProps) {
           return;
         }
         setCurrentBoard(board);
+        setBoardTitle(board.title);
+        setBoardDescription(board.description || "");
       } else {
         router.push("/boards");
       }
@@ -91,30 +150,33 @@ export default function BoardEditorPage({ params }: PageProps) {
     setIsSaving(true);
     await updateBoard(currentBoard.id, {
       blocks: currentBoard.blocks,
-      title: currentBoard.title,
-      description: currentBoard.description,
+      title: boardTitle,
+      description: boardDescription,
     });
     setIsSaving(false);
   };
 
-  const handleAddLinkBlock = () => {
-    if (!newLinkTitle || !newLinkUrl) return;
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
 
-    const newBlock: LinkBlock = {
-      id: `block_${Date.now()}`,
-      type: "link",
-      order: currentBoard?.blocks.length || 0,
-      visible: true,
-      settings: {
-        url: newLinkUrl,
-        title: newLinkTitle,
-      },
-    };
+    if (!currentBoard || !over || active.id === over.id) return;
 
-    addBlock(newBlock);
-    setNewLinkTitle("");
-    setNewLinkUrl("");
-    setShowAddBlock(false);
+    const oldIndex = currentBoard.blocks.findIndex((b) => b.id === active.id);
+    const newIndex = currentBoard.blocks.findIndex((b) => b.id === over.id);
+
+    if (oldIndex !== -1 && newIndex !== -1) {
+      const reorderedBlocks = arrayMove(
+        currentBoard.blocks,
+        oldIndex,
+        newIndex
+      );
+      // Update order property on each block
+      const blocksWithUpdatedOrder = reorderedBlocks.map((block, index) => ({
+        ...block,
+        order: index,
+      }));
+      reorderBlocks(blocksWithUpdatedOrder);
+    }
   };
 
   if (isLoading || !currentBoard) {
@@ -131,6 +193,7 @@ export default function BoardEditorPage({ params }: PageProps) {
       <ThemeModal />
       <AnalyticsModal />
       <ShareModal />
+      <AddBlockSheet open={showAddBlock} onOpenChange={setShowAddBlock} />
 
       <div className="min-h-screen bg-background">
         {/* Editor Toolbar */}
@@ -144,7 +207,7 @@ export default function BoardEditorPage({ params }: PageProps) {
                 </Link>
               </Button>
               <div>
-                <h2 className="font-semibold">{currentBoard.title}</h2>
+                <h2 className="font-semibold">{boardTitle}</h2>
                 <p className="text-xs text-muted-foreground">
                   /{user?.username}/{currentBoard.slug}
                 </p>
@@ -206,34 +269,73 @@ export default function BoardEditorPage({ params }: PageProps) {
                     : currentBoard.theme.background.value,
               }}
             >
-              {/* Header */}
-              <div className="text-center mb-8">
-                <h1
-                  className="text-3xl font-bold mb-2"
-                  style={{ color: currentBoard.theme.textColor }}
-                >
-                  {currentBoard.title}
-                </h1>
-                {currentBoard.description && (
-                  <p
-                    className="text-lg"
-                    style={{
-                      color: currentBoard.theme.textColor,
-                      opacity: 0.8,
-                    }}
+              {/* Header - Editable */}
+              <div className="text-center mb-8 space-y-4">
+                {editingTitle ? (
+                  <div className="space-y-2">
+                    <Input
+                      value={boardTitle}
+                      onChange={(e) => setBoardTitle(e.target.value)}
+                      className="text-3xl font-bold text-center"
+                      style={{ color: currentBoard.theme.textColor }}
+                      placeholder="Board Title"
+                      onBlur={() => setEditingTitle(false)}
+                      autoFocus
+                    />
+                    <Input
+                      value={boardDescription}
+                      onChange={(e) => setBoardDescription(e.target.value)}
+                      className="text-lg text-center"
+                      style={{
+                        color: currentBoard.theme.textColor,
+                        opacity: 0.8,
+                      }}
+                      placeholder="Board Description (optional)"
+                      onBlur={() => setEditingTitle(false)}
+                    />
+                  </div>
+                ) : (
+                  <div
+                    onClick={() => setEditingTitle(true)}
+                    className="cursor-pointer hover:opacity-80 transition-opacity"
                   >
-                    {currentBoard.description}
-                  </p>
+                    <h1
+                      className="text-3xl font-bold mb-2"
+                      style={{ color: currentBoard.theme.textColor }}
+                    >
+                      {boardTitle}
+                    </h1>
+                    {boardDescription && (
+                      <p
+                        className="text-lg"
+                        style={{
+                          color: currentBoard.theme.textColor,
+                          opacity: 0.8,
+                        }}
+                      >
+                        {boardDescription}
+                      </p>
+                    )}
+                  </div>
                 )}
               </div>
 
-              {/* Blocks */}
-              <div className="space-y-4">
-                {currentBoard.blocks.map((block) => (
-                  <div key={block.id} className="relative group">
-                    <BlockRenderer block={block} isEditing={true} />
-                  </div>
-                ))}
+              {/* Blocks with Drag and Drop */}
+              <div className="space-y-4 pl-8">
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleDragEnd}
+                >
+                  <SortableContext
+                    items={currentBoard.blocks.map((b) => b.id)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    {currentBoard.blocks.map((block) => (
+                      <SortableBlock key={block.id} block={block} />
+                    ))}
+                  </SortableContext>
+                </DndContext>
 
                 {/* Add Block Button */}
                 <Button
@@ -249,43 +351,6 @@ export default function BoardEditorPage({ params }: PageProps) {
             </div>
           </div>
         </div>
-
-        {/* Add Block Sheet */}
-        <Sheet open={showAddBlock} onOpenChange={setShowAddBlock}>
-          <SheetContent>
-            <SheetHeader>
-              <SheetTitle>Add Link Block</SheetTitle>
-              <SheetDescription>Create a new clickable link</SheetDescription>
-            </SheetHeader>
-            <div className="space-y-6 mt-6">
-              <div className="space-y-2">
-                <Label htmlFor="link-title">Title</Label>
-                <Input
-                  id="link-title"
-                  placeholder="My Website"
-                  value={newLinkTitle}
-                  onChange={(e) => setNewLinkTitle(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="link-url">URL</Label>
-                <Input
-                  id="link-url"
-                  placeholder="https://example.com"
-                  value={newLinkUrl}
-                  onChange={(e) => setNewLinkUrl(e.target.value)}
-                />
-              </div>
-              <Button
-                className="w-full"
-                onClick={handleAddLinkBlock}
-                disabled={!newLinkTitle || !newLinkUrl}
-              >
-                Add Link
-              </Button>
-            </div>
-          </SheetContent>
-        </Sheet>
       </div>
     </>
   );
