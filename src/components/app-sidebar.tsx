@@ -24,31 +24,38 @@ import {
 import Link from "next/link";
 import Image from "next/image";
 
-// This is sample data.
+// Navigation data
 const data = {
   navMain: [
     {
-      title: "Getting Started",
+      title: "Quick Links",
       url: "#",
       items: [
         {
-          title: "Installation",
-          url: "#",
+          title: "My Boards",
+          url: "/boards",
         },
         {
-          title: "Project Structure",
-          url: "#",
+          title: "Templates",
+          url: "/templates",
+        },
+        {
+          title: "Dashboard",
+          url: "/dashboard",
         },
       ],
     },
-
     {
-      title: "Community",
+      title: "Resources",
       url: "#",
       items: [
         {
-          title: "Contribution Guide",
-          url: "#",
+          title: "Documentation",
+          url: "https://github.com/yourusername/openboard",
+        },
+        {
+          title: "GitHub",
+          url: "https://github.com/yourusername/openboard",
         },
       ],
     },

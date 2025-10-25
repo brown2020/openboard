@@ -1,6 +1,6 @@
-import { type Metadata } from "next";
-import { ClerkProvider } from "@clerk/nextjs";
+import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { AuthProvider } from "@/lib/auth-context";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -14,8 +14,23 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "OpenBoard",
-  description: "Open source message board",
+  title: "OpenBoard - Create Beautiful Shareable Boards",
+  description:
+    "The open-source platform to create beautiful, shareable boards for your links, content, and projects.",
+  keywords: [
+    "linktree",
+    "bio link",
+    "link in bio",
+    "personal page",
+    "portfolio",
+  ],
+  authors: [{ name: "OpenBoard" }],
+  openGraph: {
+    title: "OpenBoard - Create Beautiful Shareable Boards",
+    description:
+      "The open-source platform to create beautiful, shareable boards for your links, content, and projects.",
+    type: "website",
+  },
 };
 
 export default function RootLayout({
@@ -24,14 +39,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ClerkProvider>
-      <html lang="en">
-        <body
-          className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-        >
-          {children}
-        </body>
-      </html>
-    </ClerkProvider>
+    <html lang="en">
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+      >
+        <AuthProvider>{children}</AuthProvider>
+      </body>
+    </html>
   );
 }
