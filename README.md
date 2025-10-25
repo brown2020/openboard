@@ -10,7 +10,7 @@
 [![Firebase](https://img.shields.io/badge/Firebase-12.4-orange?logo=firebase)](https://firebase.google.com/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-[Demo](https://openboard.vercel.app) • [GitHub](https://github.com/yourusername/openboard)
+[Demo](https://openboard.vercel.app) • [GitHub](https://github.com/brown2020/openboard)
 
 </div>
 
@@ -127,7 +127,7 @@
 
 ```bash
 # Clone repository
-git clone https://github.com/yourusername/openboard.git
+git clone https://github.com/brown2020/openboard.git
 cd openboard
 
 # Install dependencies
@@ -150,7 +150,7 @@ Visit [http://localhost:3000](http://localhost:3000) to see your app!
 ### Step 1: Clone and Install
 
 ```bash
-git clone https://github.com/yourusername/openboard.git
+git clone https://github.com/brown2020/openboard.git
 cd openboard
 npm install
 ```
@@ -632,7 +632,7 @@ We welcome contributions! Here's how to get involved:
 
 ### Reporting Bugs
 
-1. Check [existing issues](https://github.com/yourusername/openboard/issues)
+1. Check [existing issues](https://github.com/brown2020/openboard/issues)
 2. Create new issue with:
    - Clear title and description
    - Steps to reproduce
@@ -642,7 +642,7 @@ We welcome contributions! Here's how to get involved:
 
 ### Suggesting Features
 
-1. Check [feature requests](https://github.com/yourusername/openboard/issues?q=is%3Aissue+is%3Aopen+label%3Aenhancement)
+1. Check [feature requests](https://github.com/brown2020/openboard/issues?q=is%3Aissue+is%3Aopen+label%3Aenhancement)
 2. Create new issue with:
    - Clear description
    - Use cases and benefits
@@ -869,7 +869,7 @@ The easiest way to deploy OpenBoard:
    - Wait for build to complete
    - Visit your live site
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/yourusername/openboard)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/brown2020/openboard)
 
 ### Environment Variables in Production
 
@@ -939,8 +939,8 @@ Built with amazing open-source tools:
 Need help?
 
 - 📖 **Documentation**: This README
-- 🐛 **Issues**: [GitHub Issues](https://github.com/yourusername/openboard/issues)
-- 💬 **Discussions**: [GitHub Discussions](https://github.com/yourusername/openboard/discussions)
+- 🐛 **Issues**: [GitHub Issues](https://github.com/brown2020/openboard/issues)
+- 💬 **Discussions**: [GitHub Discussions](https://github.com/brown2020/openboard/discussions)
 - 📧 **Email**: support@openboard.com
 - 💬 **Discord**: Coming soon!
 
@@ -1016,11 +1016,11 @@ Security best practices implemented:
 
 ## 🌟 Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=yourusername/openboard&type=Date)](https://star-history.com/#yourusername/openboard&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=brown2020/openboard&type=Date)](https://star-history.com/#brown2020/openboard&Date)
 
 **Built with ❤️ by the OpenBoard community**
 
-[⭐ Star on GitHub](https://github.com/yourusername/openboard) • [🐦 Follow Updates](https://twitter.com/openboard) • [💬 Join Discord](https://discord.gg/openboard)
+[⭐ Star on GitHub](https://github.com/brown2020/openboard) • [🐦 Follow Updates](https://twitter.com/openboard) • [💬 Join Discord](https://discord.gg/openboard)
 
 **Let's make link-in-bio open source! 🚀**
 

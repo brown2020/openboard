@@ -51,11 +51,11 @@ const data = {
       items: [
         {
           title: "Documentation",
-          url: "https://github.com/yourusername/openboard",
+          url: "https://github.com/brown2020/openboard",
         },
         {
           title: "GitHub",
-          url: "https://github.com/yourusername/openboard",
+          url: "https://github.com/brown2020/openboard",
         },
       ],
     },
