@@ -3,6 +3,7 @@
 import { ImageBlock as ImageBlockType } from "@/types";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
+import { useStorage } from "@/hooks/use-storage";
 import { useState } from "react";
 import { useBoardStore } from "@/stores/board-store";
 import { Button } from "@/components/ui/button";
@@ -29,10 +30,12 @@ export function ImageBlock({
   isEditing = false,
 }: ImageBlockProps) {
   const { updateBlock, deleteBlock } = useBoardStore();
+  const { uploadFile, uploading } = useStorage();
   const [isEditMode, setIsEditMode] = useState(false);
   const { url, alt, caption, link, aspectRatio = "auto" } = block.settings;
 
   const [editUrl, setEditUrl] = useState(url);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [editAlt, setEditAlt] = useState(alt);
   const [editCaption, setEditCaption] = useState(caption || "");
   const [editLink, setEditLink] = useState(link || "");
@@ -55,10 +58,19 @@ export function ImageBlock({
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    let finalUrl = editUrl;
+
+    if (selectedFile) {
+      const uploadedUrl = await uploadFile(selectedFile);
+      if (uploadedUrl) {
+        finalUrl = uploadedUrl;
+      }
+    }
+
     updateBlock(block.id, {
       settings: {
-        url: editUrl,
+        url: finalUrl,
         alt: editAlt,
         caption: editCaption || undefined,
         link: editLink || undefined,
@@ -72,10 +84,36 @@ export function ImageBlock({
     return (
       <div className="p-4 border rounded-lg bg-card space-y-4">
         <div className="space-y-2">
+          <Label>Image Source</Label>
+          <div className="grid w-full max-w-sm items-center gap-1.5">
+            <Label htmlFor="edit-picture">Upload New Image</Label>
+            <Input
+              id="edit-picture"
+              type="file"
+              accept="image/*"
+              onChange={(e) => {
+                if (e.target.files?.[0]) {
+                  setSelectedFile(e.target.files[0]);
+                  setEditUrl(""); // Clear URL to indicate file selection
+                }
+              }}
+            />
+          </div>
+          <div className="relative my-2">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">Or</span>
+            </div>
+          </div>
           <Label>Image URL</Label>
           <Input
             value={editUrl}
-            onChange={(e) => setEditUrl(e.target.value)}
+            onChange={(e) => {
+              setEditUrl(e.target.value);
+              setSelectedFile(null);
+            }}
             placeholder="https://example.com/image.jpg"
           />
         </div>
@@ -121,8 +159,11 @@ export function ImageBlock({
           </Select>
         </div>
         <div className="flex gap-2">
-          <Button onClick={handleSave} disabled={!editUrl || !editAlt}>
-            Save
+          <Button
+            onClick={handleSave}
+            disabled={(!editUrl && !selectedFile) || !editAlt || uploading}
+          >
+            {uploading ? "Uploading..." : "Save"}
           </Button>
           <Button variant="outline" onClick={() => setIsEditMode(false)}>
             Cancel

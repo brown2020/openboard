@@ -1,5 +1,6 @@
 "use client";
 
+import { useStorage } from "@/hooks/use-storage";
 import { useState } from "react";
 import {
   Sheet,
@@ -50,6 +51,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { RichTextEditor } from "./rich-text-editor";
+import { useAI } from "@/hooks/use-ai";
+import { Sparkles } from "lucide-react";
 
 interface AddBlockSheetProps {
   open: boolean;
@@ -160,6 +163,8 @@ const blockTypes: BlockTypeOption[] = [
 
 export function AddBlockSheet({ open, onOpenChange }: AddBlockSheetProps) {
   const { addBlock, currentBoard } = useBoardStore();
+  const { uploadFile, uploading } = useStorage();
+  const { generate, isLoading: isAILoading } = useAI();
   const [selectedType, setSelectedType] = useState<BlockType | null>(null);
 
   // Form states for different block types
@@ -171,6 +176,7 @@ export function AddBlockSheet({ open, onOpenChange }: AddBlockSheetProps) {
   const [buttonUrl, setButtonUrl] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [imageAlt, setImageAlt] = useState("");
+  const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
   const [videoUrl, setVideoUrl] = useState("");
   const [videoTitle, setVideoTitle] = useState("");
   const [embedUrl, setEmbedUrl] = useState("");
@@ -197,6 +203,43 @@ export function AddBlockSheet({ open, onOpenChange }: AddBlockSheetProps) {
     useState<FormBlock["settings"]["submitText"]>("Send");
   const [formSubmitUrl, setFormSubmitUrl] = useState("");
 
+  const handleAISuggestion = async () => {
+    if (!selectedType) return;
+
+    let prompt = "";
+    let type: "content-suggestions" | "link-title" = "content-suggestions";
+
+    switch (selectedType) {
+      case "richtext":
+      case "text":
+        prompt = "Write a short, engaging paragraph for a personal board about: ";
+        const topic = window.prompt("What should this text be about?");
+        if (!topic) return;
+        prompt += topic;
+        break;
+      case "link":
+        prompt = "Generate a catchy title for a link to: ";
+        const url = linkUrl || window.prompt("What is the link URL?");
+        if (!url) return;
+        setLinkUrl(url);
+        prompt += url;
+        type = "link-title";
+        break;
+      default:
+        return;
+    }
+
+    await generate(prompt, type, (data) => {
+      if (selectedType === "link") {
+        setLinkTitle(data.replace(/^"|"$/g, ""));
+      } else if (selectedType === "text") {
+        setTextContent(data);
+      } else if (selectedType === "richtext") {
+        setRichTextContent(`<p>${data}</p>`);
+      }
+    });
+  };
+
   const resetForm = () => {
     setSelectedType(null);
     setLinkTitle("");
@@ -207,6 +250,7 @@ export function AddBlockSheet({ open, onOpenChange }: AddBlockSheetProps) {
     setButtonUrl("");
     setImageUrl("");
     setImageAlt("");
+    setSelectedImageFile(null);
     setVideoUrl("");
     setVideoTitle("");
     setEmbedUrl("");
@@ -294,7 +338,7 @@ export function AddBlockSheet({ open, onOpenChange }: AddBlockSheetProps) {
     setFormFields((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const handleAddBlock = () => {
+  const handleAddBlock = async () => {
     if (!selectedType || !currentBoard) return;
 
     const order = currentBoard.blocks.length;
@@ -349,11 +393,19 @@ export function AddBlockSheet({ open, onOpenChange }: AddBlockSheetProps) {
         break;
 
       case "image":
-        if (!imageUrl || !imageAlt) return;
+        let finalImageUrl = imageUrl;
+        if (selectedImageFile) {
+          const uploadedUrl = await uploadFile(selectedImageFile);
+          if (uploadedUrl) {
+            finalImageUrl = uploadedUrl;
+          }
+        }
+
+        if (!finalImageUrl || !imageAlt) return;
         newBlock = {
           ...newBlock,
           type: "image",
-          settings: { url: imageUrl, alt: imageAlt, aspectRatio: "auto" },
+          settings: { url: finalImageUrl, alt: imageAlt, aspectRatio: "auto" },
         } as ImageBlock;
         break;
 
@@ -473,7 +525,19 @@ export function AddBlockSheet({ open, onOpenChange }: AddBlockSheetProps) {
         return (
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Content</Label>
+              <div className="flex items-center justify-between">
+                <Label>Content</Label>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 text-xs text-muted-foreground"
+                  onClick={handleAISuggestion}
+                  disabled={isAILoading}
+                >
+                  <Sparkles className="w-3 h-3 mr-1" />
+                  {isAILoading ? "Generating..." : "AI Suggestion"}
+                </Button>
+              </div>
               <RichTextEditor
                 content={richTextContent}
                 onChange={setRichTextContent}
@@ -494,7 +558,19 @@ export function AddBlockSheet({ open, onOpenChange }: AddBlockSheetProps) {
         return (
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="text-content">Content</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="text-content">Content</Label>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 text-xs text-muted-foreground"
+                  onClick={handleAISuggestion}
+                  disabled={isAILoading}
+                >
+                  <Sparkles className="w-3 h-3 mr-1" />
+                  {isAILoading ? "Generating..." : "AI Suggestion"}
+                </Button>
+              </div>
               <Input
                 id="text-content"
                 placeholder="Enter your text..."
@@ -516,7 +592,19 @@ export function AddBlockSheet({ open, onOpenChange }: AddBlockSheetProps) {
         return (
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="link-title">Title</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="link-title">Title</Label>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 text-xs text-muted-foreground"
+                  onClick={handleAISuggestion}
+                  disabled={isAILoading}
+                >
+                  <Sparkles className="w-3 h-3 mr-1" />
+                  {isAILoading ? "Generating..." : "AI Suggestion"}
+                </Button>
+              </div>
               <Input
                 id="link-title"
                 placeholder="My Website"
@@ -578,12 +666,41 @@ export function AddBlockSheet({ open, onOpenChange }: AddBlockSheetProps) {
         return (
           <div className="space-y-4">
             <div className="space-y-2">
+              <Label>Image Source</Label>
+              <div className="grid w-full max-w-sm items-center gap-1.5">
+                <Label htmlFor="picture">Upload Image</Label>
+                <Input
+                  id="picture"
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    if (e.target.files?.[0]) {
+                      setSelectedImageFile(e.target.files[0]);
+                      // Clear URL input when file is selected to avoid confusion
+                      setImageUrl("");
+                    }
+                  }}
+                />
+              </div>
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-background px-2 text-muted-foreground">
+                    Or
+                  </span>
+                </div>
+              </div>
               <Label htmlFor="image-url">Image URL</Label>
               <Input
                 id="image-url"
                 placeholder="https://example.com/image.jpg"
                 value={imageUrl}
-                onChange={(e) => setImageUrl(e.target.value)}
+                onChange={(e) => {
+                  setImageUrl(e.target.value);
+                  setSelectedImageFile(null);
+                }}
               />
             </div>
             <div className="space-y-2">
@@ -598,9 +715,9 @@ export function AddBlockSheet({ open, onOpenChange }: AddBlockSheetProps) {
             <Button
               className="w-full"
               onClick={handleAddBlock}
-              disabled={!imageUrl || !imageAlt}
+              disabled={(!imageUrl && !selectedImageFile) || !imageAlt || uploading}
             >
-              Add Image
+              {uploading ? "Uploading..." : "Add Image"}
             </Button>
           </div>
         );
