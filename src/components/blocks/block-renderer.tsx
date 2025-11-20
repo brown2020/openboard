@@ -8,6 +8,10 @@ import { ImageBlock } from "./image-block";
 import { ButtonBlock } from "./button-block";
 import { DividerBlock } from "./divider-block";
 import { SpacerBlock } from "./spacer-block";
+import { VideoBlock } from "./video-block";
+import { EmbedBlock } from "./embed-block";
+import { SocialLinksBlock } from "./social-links-block";
+import { CalendarBlock } from "./calendar-block";
 
 interface BlockRendererProps {
   block: Block;
@@ -61,9 +65,37 @@ export function BlockRenderer({
     case "spacer":
       return <SpacerBlock block={block} />;
     case "video":
+      return (
+        <VideoBlock
+          block={block}
+          isEditing={isEditing}
+          onClick={handleClick}
+        />
+      );
     case "embed":
+      return (
+        <EmbedBlock
+          block={block}
+          isEditing={isEditing}
+          onClick={handleClick}
+        />
+      );
     case "social-links":
+      return (
+        <SocialLinksBlock
+          block={block}
+          isEditing={isEditing}
+          onClick={handleClick}
+        />
+      );
     case "calendar":
+      return (
+        <CalendarBlock
+          block={block}
+          isEditing={isEditing}
+          onClick={handleClick}
+        />
+      );
     case "form":
       return (
         <div className="p-4 bg-muted rounded-lg text-center text-muted-foreground">
