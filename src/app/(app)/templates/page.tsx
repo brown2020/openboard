@@ -14,13 +14,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { BOARD_TEMPLATES } from "@/lib/templates";
-import { BoardTemplate } from "@/types";
+import { BoardTemplate, Block } from "@/types";
 import { Search, Star, TrendingUp } from "lucide-react";
 import Link from "next/link";
 
 export default function TemplatesPage() {
   const { user } = useAuth();
-  const { createBoard } = useBoards();
+  const { createBoard, updateBoard } = useBoards();
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
@@ -50,8 +50,16 @@ export default function TemplatesPage() {
     const board = await createBoard(template.name, slug);
 
     if (board) {
-      // Update board with template data
-      // This would be done through the updateBoard function
+      const blocksWithIds = template.blocks.map((block, index) => ({
+        ...block,
+        id: `tmpl_${Date.now()}_${index}`,
+      })) as Block[];
+
+      await updateBoard(board.id, {
+        blocks: blocksWithIds,
+        theme: template.theme,
+      });
+
       router.push(`/board/${board.id}`);
     }
 

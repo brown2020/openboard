@@ -32,6 +32,7 @@ import {
   EmbedBlock,
   SocialLinksBlock,
   CalendarBlock,
+  FormBlock,
 } from "@/types";
 import {
   Link as LinkIcon,
@@ -45,6 +46,7 @@ import {
   Globe,
   Share2,
   Calendar,
+  ClipboardList,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { RichTextEditor } from "./rich-text-editor";
@@ -61,6 +63,13 @@ interface BlockTypeOption {
   icon: React.ReactNode;
   category: "content" | "media" | "interaction" | "layout";
 }
+
+const FORM_FIELD_TYPES: Array<{ value: FormBlock["settings"]["fields"][number]["type"]; label: string }> =
+  [
+    { value: "text", label: "Text" },
+    { value: "email", label: "Email" },
+    { value: "textarea", label: "Textarea" },
+  ];
 
 const blockTypes: BlockTypeOption[] = [
   {
@@ -127,6 +136,13 @@ const blockTypes: BlockTypeOption[] = [
     category: "interaction",
   },
   {
+    type: "form",
+    label: "Form",
+    description: "Collect leads with custom fields",
+    icon: <ClipboardList className="w-5 h-5" />,
+    category: "interaction",
+  },
+  {
     type: "divider",
     label: "Divider",
     description: "Horizontal line separator",
@@ -173,6 +189,13 @@ export function AddBlockSheet({ open, onOpenChange }: AddBlockSheetProps) {
     useState<CalendarBlock["settings"]["provider"]>("cal");
   const [calendarUrl, setCalendarUrl] = useState("");
   const [calendarTitle, setCalendarTitle] = useState("");
+  const [formFields, setFormFields] = useState<FormBlock["settings"]["fields"]>([
+    { id: "field_name", type: "text", label: "Name", required: true },
+    { id: "field_email", type: "email", label: "Email", required: true },
+  ]);
+  const [formSubmitText, setFormSubmitText] =
+    useState<FormBlock["settings"]["submitText"]>("Send");
+  const [formSubmitUrl, setFormSubmitUrl] = useState("");
 
   const resetForm = () => {
     setSelectedType(null);
@@ -197,6 +220,12 @@ export function AddBlockSheet({ open, onOpenChange }: AddBlockSheetProps) {
     setCalendarProvider("cal");
     setCalendarUrl("");
     setCalendarTitle("");
+    setFormFields([
+      { id: "field_name", type: "text", label: "Name", required: true },
+      { id: "field_email", type: "email", label: "Email", required: true },
+    ]);
+    setFormSubmitText("Send");
+    setFormSubmitUrl("");
   };
 
   const detectVideoPlatform = (
@@ -236,6 +265,33 @@ export function AddBlockSheet({ open, onOpenChange }: AddBlockSheetProps) {
 
   const handleRemoveSocialLink = (index: number) => {
     setSocialLinks((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleFormFieldChange = (
+    index: number,
+    field: keyof FormBlock["settings"]["fields"][number],
+    value: string | boolean
+  ) => {
+    setFormFields((prev) =>
+      prev.map((item, i) => (i === index ? { ...item, [field]: value } : item))
+    );
+  };
+
+  const handleAddFormField = () => {
+    setFormFields((prev) => [
+      ...prev,
+      {
+        id: `field_${Date.now()}`,
+        type: "text",
+        label: "Untitled field",
+        required: false,
+      },
+    ]);
+  };
+
+  const handleRemoveFormField = (index: number) => {
+    if (formFields.length === 1) return;
+    setFormFields((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleAddBlock = () => {
@@ -362,6 +418,26 @@ export function AddBlockSheet({ open, onOpenChange }: AddBlockSheetProps) {
             title: calendarTitle || undefined,
           },
         } as CalendarBlock;
+        break;
+
+      case "form":
+        const preparedFields = formFields.map((field, index) => ({
+          ...field,
+          id: field.id || `field_${index}`,
+          label: field.label || `Field ${index + 1}`,
+        }));
+
+        if (preparedFields.length === 0) return;
+
+        newBlock = {
+          ...newBlock,
+          type: "form",
+          settings: {
+            fields: preparedFields,
+            submitText: formSubmitText || "Submit",
+            submitUrl: formSubmitUrl || undefined,
+          },
+        } as FormBlock;
         break;
 
       case "divider":
@@ -760,6 +836,121 @@ export function AddBlockSheet({ open, onOpenChange }: AddBlockSheetProps) {
               disabled={!calendarUrl}
             >
               Add Calendar
+            </Button>
+          </div>
+        );
+
+      case "form":
+        return (
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Submit Button Text</Label>
+              <Input
+                value={formSubmitText}
+                onChange={(e) => setFormSubmitText(e.target.value)}
+                placeholder="Send"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Submit URL (optional)</Label>
+              <Input
+                value={formSubmitUrl}
+                onChange={(e) => setFormSubmitUrl(e.target.value)}
+                placeholder="https://example.com/forms"
+              />
+              <p className="text-xs text-muted-foreground">
+                When provided, submissions will POST JSON to this endpoint.
+              </p>
+            </div>
+            <div className="space-y-3 max-h-[360px] overflow-y-auto pr-2">
+              {formFields.map((field, index) => (
+                <div key={field.id} className="border rounded-lg p-3 space-y-3">
+                  <div className="flex items-center justify-between text-sm font-medium">
+                    <span>Field {index + 1}</span>
+                    {formFields.length > 1 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleRemoveFormField(index)}
+                        className="h-6 px-2 text-muted-foreground"
+                      >
+                        Remove
+                      </Button>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Type</Label>
+                    <select
+                      className="w-full rounded-md border px-2 py-1 text-sm"
+                      value={field.type}
+                      onChange={(e) =>
+                        handleFormFieldChange(index, "type", e.target.value)
+                      }
+                    >
+                      {FORM_FIELD_TYPES.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Label</Label>
+                    <Input
+                      value={field.label}
+                      onChange={(e) =>
+                        handleFormFieldChange(index, "label", e.target.value)
+                      }
+                      placeholder="Your name"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Placeholder (optional)</Label>
+                    <Input
+                      value={field.placeholder || ""}
+                      onChange={(e) =>
+                        handleFormFieldChange(
+                          index,
+                          "placeholder",
+                          e.target.value
+                        )
+                      }
+                      placeholder="Enter name..."
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id={`form-required-${field.id}`}
+                      checked={field.required}
+                      onChange={(e) =>
+                        handleFormFieldChange(
+                          index,
+                          "required",
+                          e.target.checked
+                        )
+                      }
+                    />
+                    <Label
+                      htmlFor={`form-required-${field.id}`}
+                      className="text-sm"
+                    >
+                      Required
+                    </Label>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleAddFormField}
+              className="w-full"
+            >
+              Add Field
+            </Button>
+            <Button className="w-full" onClick={handleAddBlock}>
+              Add Form
             </Button>
           </div>
         );

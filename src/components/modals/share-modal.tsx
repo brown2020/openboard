@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useBoardStore } from "@/stores/board-store";
 import { useUIStore } from "@/stores/ui-store";
 import { useBoards } from "@/hooks/use-boards";
@@ -21,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Copy, Check, Globe, Lock, Eye, Key } from "lucide-react";
+import { Copy, Check, Globe, Lock, Eye, Key, UserPlus, X } from "lucide-react";
 import { BoardPrivacy } from "@/types";
 
 export function ShareModal() {
@@ -32,6 +32,19 @@ export function ShareModal() {
     currentBoard?.privacy || "public"
   );
   const [copied, setCopied] = useState(false);
+  const [password, setPassword] = useState(currentBoard?.password || "");
+  const [collaborators, setCollaborators] = useState<string[]>(
+    currentBoard?.collaborators || []
+  );
+  const [newCollaborator, setNewCollaborator] = useState("");
+
+  useEffect(() => {
+    if (currentBoard) {
+      setPrivacy(currentBoard.privacy);
+      setPassword(currentBoard.password || "");
+      setCollaborators(currentBoard.collaborators || []);
+    }
+  }, [currentBoard]);
 
   if (!currentBoard) return null;
 
@@ -48,7 +61,36 @@ export function ShareModal() {
 
   const handlePrivacyChange = async (newPrivacy: BoardPrivacy) => {
     setPrivacy(newPrivacy);
-    await updateBoard(currentBoard.id, { privacy: newPrivacy });
+    await updateBoard(currentBoard.id, {
+      privacy: newPrivacy,
+      password: newPrivacy === "password" ? password || undefined : undefined,
+    });
+  };
+
+  const handlePasswordBlur = async () => {
+    if (privacy !== "password") return;
+    await updateBoard(currentBoard.id, {
+      password: password || undefined,
+    });
+  };
+
+  const handleAddCollaborator = async () => {
+    const value = newCollaborator.trim();
+    if (!value) return;
+    if (collaborators.includes(value)) {
+      setNewCollaborator("");
+      return;
+    }
+    const next = [...collaborators, value];
+    setCollaborators(next);
+    setNewCollaborator("");
+    await updateBoard(currentBoard.id, { collaborators: next });
+  };
+
+  const handleRemoveCollaborator = async (value: string) => {
+    const next = collaborators.filter((collab) => collab !== value);
+    setCollaborators(next);
+    await updateBoard(currentBoard.id, { collaborators: next });
   };
 
   return (
@@ -170,6 +212,66 @@ export function ShareModal() {
               Embed this board on your website
             </p>
           </div>
+
+          {/* Collaborators */}
+          <div className="space-y-3">
+            <Label>Collaborators</Label>
+            <div className="flex gap-2">
+              <Input
+                placeholder="teammate@email.com"
+                value={newCollaborator}
+                onChange={(e) => setNewCollaborator(e.target.value)}
+              />
+              <Button
+                variant="outline"
+                className="gap-2"
+                onClick={handleAddCollaborator}
+              >
+                <UserPlus className="w-4 h-4" />
+                Invite
+              </Button>
+            </div>
+            {collaborators.length === 0 ? (
+              <p className="text-xs text-muted-foreground">
+                No collaborators yet. Add teammates by email.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {collaborators.map((collaborator) => (
+                  <div
+                    key={collaborator}
+                    className="flex items-center justify-between rounded-md border px-3 py-2 text-sm"
+                  >
+                    <span>{collaborator}</span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleRemoveCollaborator(collaborator)}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Password */}
+          {privacy === "password" && (
+            <div className="space-y-2">
+              <Label>Board Password</Label>
+              <Input
+                type="text"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                onBlur={handlePasswordBlur}
+                placeholder="Enter a password"
+              />
+              <p className="text-xs text-muted-foreground">
+                Viewers must enter this password before accessing your board.
+              </p>
+            </div>
+          )}
 
           {/* QR Code placeholder */}
           <div className="space-y-2">

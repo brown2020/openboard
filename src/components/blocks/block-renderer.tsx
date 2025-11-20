@@ -12,6 +12,7 @@ import { VideoBlock } from "./video-block";
 import { EmbedBlock } from "./embed-block";
 import { SocialLinksBlock } from "./social-links-block";
 import { CalendarBlock } from "./calendar-block";
+import { FormBlock } from "./form-block";
 
 interface BlockRendererProps {
   block: Block;
@@ -98,9 +99,7 @@ export function BlockRenderer({
       );
     case "form":
       return (
-        <div className="p-4 bg-muted rounded-lg text-center text-muted-foreground">
-          {block.type} block (coming soon)
-        </div>
+        <FormBlock block={block} isEditing={isEditing} onClick={handleClick} />
       );
     default:
       return null;
