@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useRef, useState } from "react";
 import {
   collection,
   query,
@@ -9,6 +9,7 @@ import {
   onSnapshot,
   doc,
   getDoc,
+  getDocs,
   setDoc,
   updateDoc,
   deleteDoc,
@@ -18,7 +19,8 @@ import {
 import { db } from "@/lib/firebase";
 import { useBoardStore } from "@/stores/board-store";
 import { Board, BoardTheme } from "@/types";
-import { useAuth } from "./use-auth";
+import { useAuthContext } from "@/lib/auth-context";
+import { useUserStore } from "@/stores/user-store";
 
 const DEFAULT_THEME: BoardTheme = {
   name: "Default",
@@ -37,25 +39,76 @@ const DEFAULT_THEME: BoardTheme = {
 };
 
 export function useBoards() {
-  const { user } = useAuth();
-  const { boards, setBoards, setLoading, setError } = useBoardStore();
+  // Get Firebase user directly from auth context
+  const { user: firebaseUser, loading: authLoading } = useAuthContext();
+  // Get user profile from store
+  const { user: userProfile, isHydrated } = useUserStore();
+  
+  const { boards, setBoards, setStatus, setError } = useBoardStore();
+  const unsubscribeRef = useRef<(() => void) | null>(null);
+  const [isReady, setIsReady] = useState(false);
 
-  // Subscribe to user's boards
+  // Ensure auth token is fresh before subscribing
   useEffect(() => {
-    if (!user) {
-      setBoards([]);
+    const prepareAuth = async () => {
+      if (authLoading || !firebaseUser || !isHydrated || !userProfile?.id) {
+        setIsReady(false);
+        return;
+      }
+
+      if (userProfile.id !== firebaseUser.uid) {
+        setIsReady(false);
+        return;
+      }
+
+      try {
+        // Force refresh the ID token to ensure Firestore has the latest auth state
+        await firebaseUser.getIdToken(true);
+        setIsReady(true);
+      } catch (error) {
+        console.error("Error refreshing token:", error);
+        setIsReady(false);
+      }
+    };
+
+    prepareAuth();
+  }, [authLoading, firebaseUser, isHydrated, userProfile?.id]);
+
+  // Subscribe to user's boards - ONLY when fully ready
+  useEffect(() => {
+    // Clean up any existing subscription
+    if (unsubscribeRef.current) {
+      unsubscribeRef.current();
+      unsubscribeRef.current = null;
+    }
+
+    // Don't do anything if auth is still loading
+    if (authLoading) {
       return;
     }
 
-    setLoading(true);
+    // Don't subscribe if no Firebase auth
+    if (!firebaseUser) {
+      setBoards([]);
+      setStatus("idle");
+      return;
+    }
+
+    // Don't subscribe until we're fully ready
+    if (!isReady) {
+      return;
+    }
+
+    setStatus("loading");
+    
     const boardsRef = collection(db, "boards");
     const q = query(
       boardsRef,
-      where("ownerId", "==", user.id),
+      where("ownerId", "==", firebaseUser.uid),
       orderBy("updatedAt", "desc")
     );
 
-    const unsubscribe = onSnapshot(
+    unsubscribeRef.current = onSnapshot(
       q,
       (snapshot) => {
         const boardsData = snapshot.docs.map((doc) => ({
@@ -63,25 +116,37 @@ export function useBoards() {
           ...doc.data(),
         })) as Board[];
         setBoards(boardsData);
-        setLoading(false);
+        setStatus("success");
       },
       (error) => {
         console.error("Error fetching boards:", error);
-        setError(error.message);
-        setLoading(false);
+        // Check if it's an index error
+        if (error.message.includes("index")) {
+          setError("Database index required. Please check Firebase console.");
+        } else {
+          setError(error.message);
+        }
       }
     );
 
-    return () => unsubscribe();
-  }, [user, setBoards, setLoading, setError]);
+    return () => {
+      if (unsubscribeRef.current) {
+        unsubscribeRef.current();
+        unsubscribeRef.current = null;
+      }
+    };
+  }, [firebaseUser, authLoading, isReady, setBoards, setStatus, setError]);
 
   // Create a new board
   const createBoard = useCallback(
     async (title: string, slug: string): Promise<Board | null> => {
-      if (!user) return null;
+      if (!userProfile || !firebaseUser) return null;
 
       try {
-        const boardId = `${user.id}_${slug}`;
+        // Ensure fresh token
+        await firebaseUser.getIdToken(true);
+        
+        const boardId = `${firebaseUser.uid}_${slug}`;
         const boardRef = doc(db, "boards", boardId);
 
         const newBoard: Board = {
@@ -89,8 +154,8 @@ export function useBoards() {
           slug,
           title,
           description: "",
-          ownerId: user.id,
-          ownerUsername: user.username,
+          ownerId: firebaseUser.uid,
+          ownerUsername: userProfile.username,
           collaborators: [],
           blocks: [],
           layout: "single-column",
@@ -116,7 +181,7 @@ export function useBoards() {
         return null;
       }
     },
-    [user, setError]
+    [userProfile, firebaseUser, setError]
   );
 
   // Get a specific board by ID
@@ -149,21 +214,11 @@ export function useBoards() {
           where("slug", "==", slug)
         );
 
-        const snapshot = await new Promise<{
-          docs: Array<{ id: string; data: () => Record<string, unknown> }>;
-        }>((resolve, reject) => {
-          const unsubscribe = onSnapshot(q, resolve, reject);
-          setTimeout(() => {
-            unsubscribe();
-            reject(new Error("Timeout"));
-          }, 5000);
-        });
+        const snapshot = await getDocs(q);
 
-        if (snapshot.docs.length > 0) {
-          return {
-            id: snapshot.docs[0].id,
-            ...snapshot.docs[0].data(),
-          } as Board;
+        if (!snapshot.empty) {
+          const doc = snapshot.docs[0];
+          return { id: doc.id, ...doc.data() } as Board;
         }
         return null;
       } catch (error) {

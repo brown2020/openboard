@@ -1,29 +1,53 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAuthContext } from "@/lib/auth-context";
-import { useUserStore } from "@/stores/user-store";
+import { useUserStore, clearAllAuthState } from "@/stores/user-store";
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { UserProfile } from "@/types";
 
 export function useAuth() {
-  const { user: firebaseUser } = useAuthContext();
-  const { user, setUser, clearUser, setLoading } = useUserStore();
+  const { user: firebaseUser, loading: authLoading } = useAuthContext();
+  const { user, setUser, clearUser, setLoading, isLoading, isHydrated, setHydrated } = useUserStore();
+  const [syncError, setSyncError] = useState<string | null>(null);
+
+  // Clear any stale localStorage on mount
+  useEffect(() => {
+    clearAllAuthState();
+  }, []);
 
   useEffect(() => {
     const syncUser = async () => {
-      if (!firebaseUser) {
-        clearUser();
+      // If auth is still loading, wait
+      if (authLoading) {
         return;
       }
 
+      // If no Firebase user, clear everything and mark as hydrated
+      if (!firebaseUser) {
+        clearUser();
+        setHydrated(true);
+        return;
+      }
+
+      // If we already have the correct user loaded, skip
+      if (user && user.id === firebaseUser.uid && isHydrated) {
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+      setSyncError(null);
+
       try {
+        // Force refresh the ID token to ensure Firestore has the latest auth state
+        await firebaseUser.getIdToken(true);
+        
         const userRef = doc(db, "users", firebaseUser.uid);
         const userSnap = await getDoc(userRef);
 
         if (userSnap.exists()) {
-          // User exists, load their profile
           const userData = userSnap.data() as UserProfile;
           setUser(userData);
         } else {
@@ -35,7 +59,7 @@ export function useAuth() {
             updatedAt: ReturnType<typeof serverTimestamp>;
           } = {
             id: firebaseUser.uid,
-            clerkId: firebaseUser.uid, // Keep for compatibility
+            clerkId: firebaseUser.uid,
             username,
             email: firebaseUser.email || "",
             displayName: firebaseUser.displayName || username,
@@ -47,7 +71,7 @@ export function useAuth() {
 
           await setDoc(userRef, newUser);
 
-          // Fetch the created user to get the actual timestamp values
+          // Fetch to get actual timestamps
           const createdUserSnap = await getDoc(userRef);
           if (createdUserSnap.exists()) {
             setUser(createdUserSnap.data() as UserProfile);
@@ -55,17 +79,22 @@ export function useAuth() {
         }
       } catch (error) {
         console.error("Error syncing user:", error);
-        setLoading(false);
+        setSyncError(error instanceof Error ? error.message : "Unknown error");
+        // On error, clear stale data but still mark as hydrated
+        clearUser();
+        setHydrated(true);
       }
     };
 
     syncUser();
-  }, [firebaseUser, setUser, clearUser, setLoading]);
+  }, [firebaseUser, authLoading, user, setUser, clearUser, setLoading, isHydrated, setHydrated]);
 
   return {
     user,
     firebaseUser,
-    isLoaded: true,
-    isAuthenticated: !!user,
+    isLoading: authLoading || isLoading,
+    isLoaded: !authLoading && isHydrated,
+    isAuthenticated: !!user && !!firebaseUser && isHydrated,
+    syncError,
   };
 }
