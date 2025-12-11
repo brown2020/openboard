@@ -1,5 +1,9 @@
 # OpenBoard Features
 
+> 📖 **See also**: [README.md](README.md) for quick start and installation guide.
+
+This document provides detailed information about OpenBoard's features and technical implementation.
+
 ## Rich Text Editing
 
 OpenBoard now includes a powerful rich text editor built with **Tiptap**, a world-class open-source editor based on ProseMirror.

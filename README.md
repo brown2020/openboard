@@ -2,200 +2,161 @@
 
 <div align="center">
 
-**The open-source platform to create beautiful, shareable boards for your links, content, and projects.**
+**The open-source Linktree alternative. Create beautiful, shareable boards for your links, content, and projects.**
 
-[![Next.js](https://img.shields.io/badge/Next.js-16.0.3-black?logo=next.js)](https://nextjs.org/)
-[![React](https://img.shields.io/badge/React-19.2.0-61dafb?logo=react)](https://react.dev/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.9.3-blue?logo=typescript)](https://www.typescriptlang.org/)
-[![Firebase](https://img.shields.io/badge/Firebase-12.6.0-orange?logo=firebase)](https://firebase.google.com/)
+[![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React-19-61dafb?logo=react)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?logo=typescript)](https://www.typescriptlang.org/)
+[![Firebase](https://img.shields.io/badge/Firebase-12-orange?logo=firebase)](https://firebase.google.com/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind-4-38bdf8?logo=tailwindcss)](https://tailwindcss.com/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-[Demo](https://openboard.vercel.app) • [GitHub](https://github.com/brown2020/openboard)
+[Live Demo](https://openboard.vercel.app) • [Report Bug](https://github.com/brown2020/openboard/issues) • [Request Feature](https://github.com/brown2020/openboard/issues)
 
 </div>
 
 ---
 
-## 📖 Table of Contents
+## ✨ What is OpenBoard?
 
-- [Features](#-features)
-- [Tech Stack](#-tech-stack)
-- [Getting Started & Installation](#-getting-started--installation)
-  - [Firebase Setup](#firebase-setup)
-  - [Environment Variables](#environment-variables)
-- [Usage Guide](#-usage-guide)
-  - [Rich Text Editing](#rich-text-editing)
-  - [Block Management](#block-management)
-- [Project Structure](#-project-structure)
-- [Architecture & Concepts](#-architecture--concepts)
-  - [Block Types](#block-types)
-  - [State Management](#state-management)
-  - [Authentication](#authentication-flow)
-  - [AI Features](#ai-features)
-- [Contributing](#-contributing)
-- [Troubleshooting](#-troubleshooting)
-- [Deployment](#-deployment)
-- [Changelog](#-changelog)
-- [License](#-license)
+OpenBoard is a **free, open-source alternative to Linktree** that lets you create stunning, customizable link pages. Unlike proprietary solutions, you own your data, can self-host, and customize everything.
+
+**Perfect for:**
+
+- 🎭 **Creators** - Instagram, TikTok, YouTube link-in-bio
+- 💻 **Developers** - Portfolio and project showcases
+- 🏢 **Businesses** - Product catalogs and contact pages
+- 📚 **Educators** - Course materials and resource collections
+- 👥 **Teams** - Shared resource boards and documentation
 
 ---
 
-## 🌟 Features
+## 🖼️ Screenshots
+
+<details>
+<summary>Click to view screenshots</summary>
+
+|               Board Editor               |               Public View                |          Theme Customization           |
+| :--------------------------------------: | :--------------------------------------: | :------------------------------------: |
+| ![Editor](public/screenshots/editor.png) | ![Public](public/screenshots/public.png) | ![Theme](public/screenshots/theme.png) |
+
+</details>
+
+---
+
+## 🚀 Features
 
 ### Core Features
 
-- ✨ **Beautiful Boards** - Create stunning, customizable boards with flexible layouts
-- 🎨 **Theme System** - Pre-built themes and full customization options
-- 🔗 **Multiple Block Types** - Links, text, images, videos, buttons, and more
-- ✍️ **Rich Text Editor** - World-class WYSIWYG editor powered by Tiptap
+- ✨ **Beautiful Boards** - Create stunning, customizable link pages
+- 🎨 **Theme System** - Pre-built themes + full color/gradient customization
+- 🔗 **12 Block Types** - Links, text, images, videos, buttons, forms, and more
+- ✍️ **Rich Text Editor** - Full WYSIWYG editing powered by Tiptap
 - 🎯 **Drag & Drop** - Intuitive block reordering with smooth animations
-- 📱 **Mobile-First** - Responsive design that looks great on all devices
-- 🚀 **Lightning Fast** - Built with Next.js 16 for optimal performance
+- 📱 **Mobile-First** - Responsive design that looks great everywhere
+- ⚡ **Lightning Fast** - Built with Next.js 16 + Turbopack
 
 ### Advanced Features
 
-- 🤖 **AI-Powered** - Get intelligent suggestions for content and SEO optimization
+- 🤖 **AI-Powered** - Get intelligent content suggestions via OpenAI
 - 📊 **Built-in Analytics** - Track views, clicks, and engagement
-- 🔒 **Privacy Controls** - Public, unlisted, password-protected, or private boards
-- 👥 **Collaboration** - Invite team members to edit boards together
-- 🌐 **Custom Domains** - Use your own domain for branded experiences
+- 🔒 **Privacy Controls** - Public, unlisted, password-protected, or private
+- 👥 **Collaboration** - Invite team members to edit boards
 - 📋 **Embed Support** - Embed boards anywhere with iframe code
-
-### Use Cases
-
-- 🎭 **Creators** - Perfect for Instagram, TikTok, YouTube link-in-bio
-- 💻 **Developers** - Portfolio and project showcases
-- 🏢 **Teams** - Shared resource boards and documentation
-- 📚 **Educators** - Course materials and resource collections
-- 🛍️ **Businesses** - Product catalogs and contact pages
+- ↩️ **Undo/Redo** - Full history support with keyboard shortcuts
 
 ---
 
 ## 💻 Tech Stack
 
-OpenBoard is built with the latest web technologies.
-
-### Core Dependencies (Installed Versions)
-
-| Package | Version | Description |
-|---------|---------|-------------|
-| **Next.js** | `16.0.3` | React Framework with App Router & Turbopack |
-| **React** | `19.2.0` | UI Library |
-| **TypeScript** | `5.9.3` | Static Type Checking |
-| **Tailwind CSS** | `4.1.17` | Utility-first CSS Framework |
-| **Firebase** | `12.6.0` | Authentication, Firestore, Storage |
-| **Firebase Admin** | `13.6.0` | Server-side Firebase operations |
-| **Zustand** | `5.0.8` | State Management |
-| **@tiptap/react** | `3.11.0` | Headless Rich Text Editor |
-| **@dnd-kit/core** | `6.3.1` | Drag and Drop Toolkit |
-| **OpenAI** | `6.9.1` | AI Features |
-| **AI SDK** | `5.0.98` | Vercel AI SDK |
-| **Lucide React** | `0.554.0` | Icon Library |
+| Category          | Technology                                                              | Version |
+| ----------------- | ----------------------------------------------------------------------- | ------- |
+| **Framework**     | [Next.js](https://nextjs.org/)                                          | 16.x    |
+| **UI Library**    | [React](https://react.dev/)                                             | 19.x    |
+| **Language**      | [TypeScript](https://www.typescriptlang.org/)                           | 5.x     |
+| **Styling**       | [Tailwind CSS](https://tailwindcss.com/)                                | 4.x     |
+| **Backend**       | [Firebase](https://firebase.google.com/) (Auth, Firestore, Storage)     | 12.x    |
+| **State**         | [Zustand](https://zustand-demo.pmnd.rs/)                                | 5.x     |
+| **Rich Text**     | [Tiptap](https://tiptap.dev/)                                           | 3.x     |
+| **Drag & Drop**   | [dnd-kit](https://dndkit.com/)                                          | 6.x     |
+| **AI**            | [OpenAI](https://openai.com/) + [Vercel AI SDK](https://sdk.vercel.ai/) | Latest  |
+| **Icons**         | [Lucide React](https://lucide.dev/)                                     | Latest  |
+| **Validation**    | [Zod](https://zod.dev/)                                                 | 4.x     |
+| **UI Components** | [Radix UI](https://www.radix-ui.com/)                                   | Latest  |
 
 ---
 
-## 🚀 Getting Started & Installation
+## 📦 Quick Start
 
 ### Prerequisites
 
-- Node.js 18.x or higher
-- npm or yarn
-- Firebase account (for authentication and database)
+- **Node.js** 18.x or higher
+- **npm**, **yarn**, or **pnpm**
+- **Firebase** account (free tier works)
+- **OpenAI API key** (optional, for AI features)
 
 ### Installation
 
 ```bash
-# Clone repository
+# Clone the repository
 git clone https://github.com/brown2020/openboard.git
 cd openboard
 
 # Install dependencies
 npm install
-```
 
-### Firebase Setup
+# Copy environment variables
+cp env.example .env.local
 
-To make OpenBoard fully functional, you need to configure a Firebase project.
-
-1.  **Create Project**: Go to the [Firebase Console](https://console.firebase.google.com/) and create a new project.
-2.  **Authentication**:
-    *   Go to **Build > Authentication**.
-    *   Click "Get Started".
-    *   Enable **Google** provider (and/or Email/Password).
-3.  **Firestore Database**:
-    *   Go to **Build > Firestore Database**.
-    *   Click "Create Database".
-    *   Start in **Production mode**.
-    *   Select a location close to your users.
-4.  **Storage**:
-    *   Go to **Build > Storage**.
-    *   Click "Get Started".
-    *   Start in **Production mode**.
-
-#### Security Rules
-
-Copy the contents of `firestore.rules` and `storage.rules` from this repository into the **Rules** tab of your Firestore Database and Storage bucket respectively in the Firebase Console.
-
-### Environment Variables
-
-1.  Copy the example file:
-    ```bash
-    cp env.example .env.local
-    ```
-
-2.  **Client-side Config**:
-    *   In Firebase Console, go to **Project Settings** (gear icon).
-    *   Scroll to **Your apps** -> Click the web icon (`</>`) to register a web app.
-    *   Copy the config values (`apiKey`, `authDomain`, `projectId`, etc.) into `.env.local`.
-
-3.  **Server-side Config (for AI features)**:
-    *   In Firebase Console, go to **Project Settings > Service accounts**.
-    *   Click **Generate new private key**.
-    *   Open the downloaded JSON file.
-    *   Copy `client_email` to `FIREBASE_CLIENT_EMAIL` in `.env.local`.
-    *   Copy `private_key` to `FIREBASE_PRIVATE_KEY` in `.env.local`. (Make sure to keep the newlines or use `\n`).
-
-4.  **OpenAI (Optional)**:
-    *   If you want AI features, add your `OPENAI_API_KEY` to `.env.local`.
-
-### Running the App
-
-```bash
+# Start development server
 npm run dev
 ```
 
-Visit [http://localhost:3000](http://localhost:3000) to see your app!
+Open [http://localhost:3000](http://localhost:3000) to see your app!
 
 ---
 
-## 📖 Usage Guide
+## 🔧 Configuration
 
-### Creating & Editing Blocks
+### Firebase Setup
 
-1.  **Add Block**: Click the **"Add Block"** button at the bottom of the editor.
-2.  **Select Type**: Choose from **Rich Text**, **Link**, **Button**, **Image**, **Video**, etc.
-3.  **Edit**: Hover over any block to see controls:
-    *   **Edit (✏️)**: Modify content inline.
-    *   **Visibility (👁️)**: Toggle public visibility.
-    *   **Delete (🗑️)**: Remove the block.
+1. **Create Project**: Go to [Firebase Console](https://console.firebase.google.com/) → Create new project
 
-### Rich Text Editing
+2. **Enable Services**:
 
-OpenBoard uses **Tiptap** for a powerful writing experience.
+   - **Authentication**: Enable Google and/or Email/Password providers
+   - **Firestore Database**: Create in production mode
+   - **Storage**: Enable for image uploads
 
-*   **Formatting**: Highlight text for the floating menu or use the toolbar for Bold (**B**), Italic (*I*), Underline (<u>U</u>), Strikethrough (~~S~~), and Code (`<>`).
-*   **Headings**: Use H1, H2, H3 for structure.
-*   **Lists**: Create bullet (•) or numbered (1.) lists.
-*   **Links**: Select text and click 🔗 to add URLs.
-*   **Keyboard Shortcuts**:
-    *   Bold: `Cmd/Ctrl + B`
-    *   Italic: `Cmd/Ctrl + I`
-    *   Undo/Redo: `Cmd/Ctrl + Z` / `Cmd/Ctrl + Shift + Z`
+3. **Get Credentials**:
 
-### Block Management
+   - Go to Project Settings → Your apps → Add web app
+   - Copy the config values to `.env.local`
 
-*   **Reordering**: Hover over a block and drag the **⋮⋮** handle on the left to move it.
-*   **Board Info**: Click the board title or description to edit them inline. Changes save automatically.
+4. **Security Rules**:
+   - Copy `firestore.rules` to Firestore Rules tab
+   - Copy `storage.rules` to Storage Rules tab
+
+### Environment Variables
+
+```bash
+# .env.local
+
+# Firebase (Required)
+NEXT_PUBLIC_FIREBASE_API_KEY=your_api_key
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=123456789
+NEXT_PUBLIC_FIREBASE_APP_ID=1:123:web:abc123
+
+# Firebase Admin (Required for API routes)
+FIREBASE_CLIENT_EMAIL=firebase-adminsdk@your_project.iam.gserviceaccount.com
+FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+
+# OpenAI (Optional - for AI features)
+OPENAI_API_KEY=sk-your_key_here
+```
 
 ---
 
@@ -204,141 +165,189 @@ OpenBoard uses **Tiptap** for a powerful writing experience.
 ```
 openboard/
 ├── src/
-│   ├── app/                    # Next.js App Router pages
-│   │   ├── (app)/             # App layout pages with sidebar
-│   │   │   ├── board/[id]/    # Board editor
-│   │   │   ├── boards/        # Board listing
-│   │   │   ├── dashboard/     # Analytics dashboard
-│   │   ├── api/               # API routes (AI, etc.)
-│   │   ├── login/             # Auth pages
-│   │   ├── u/[username]/      # Public board view
-│   ├── components/            # React components
-│   │   ├── blocks/           # Block implementations (Text, Image, etc.)
-│   │   ├── modals/           # Dialogs (Theme, Share, Analytics)
-│   │   ├── ui/               # Shadcn UI primitives
-│   ├── hooks/                # Custom hooks (useAuth, useBoards)
-│   ├── lib/                  # Utilities & Firebase config
-│   ├── stores/               # Zustand state stores
-│   └── types/                # TypeScript definitions
-├── public/                   # Static assets
+│   ├── app/                    # Next.js App Router
+│   │   ├── (app)/              # Authenticated pages (sidebar layout)
+│   │   │   ├── board/[id]/     # Board editor
+│   │   │   ├── boards/         # Board listing
+│   │   │   ├── dashboard/      # Analytics dashboard
+│   │   │   └── templates/      # Template gallery
+│   │   ├── api/ai/             # AI API routes
+│   │   ├── login/              # Authentication pages
+│   │   ├── signup/
+│   │   └── u/[username]/[slug] # Public board view
+│   ├── components/
+│   │   ├── auth/               # Auth components (login, signup)
+│   │   ├── blocks/             # Block implementations
+│   │   ├── modals/             # Theme, Share, Analytics modals
+│   │   └── ui/                 # Shadcn/Radix UI primitives
+│   ├── hooks/                  # Custom React hooks
+│   ├── lib/                    # Utilities, Firebase config
+│   ├── stores/                 # Zustand state stores
+│   └── types/                  # TypeScript definitions
+├── public/                     # Static assets
+├── firestore.rules             # Firestore security rules
+├── storage.rules               # Storage security rules
 └── ...config files
 ```
 
 ---
 
-## 🏗 Architecture & Concepts
+## 🧱 Block Types
 
-### Block Types
-
-OpenBoard supports a modular block system defined in `src/types/index.ts`.
-
-| Block Type | Description | Settings |
-|------------|-------------|----------|
-| **Rich Text** | WYSIWYG editor | HTML content, alignment |
-| **Link** | Clickable card | URL, title, description, icon |
-| **Button** | CTA button | Text, URL, style, size |
-| **Image** | Media display | URL, alt, caption, aspect ratio |
-| **Video** | Embeds | YouTube, Vimeo, Custom |
-| **Embed** | Social/Content | Spotify, Twitter, etc. |
-| **Form** | Data collection | Fields, submit URL |
-| **Calendar** | Booking | Cal.com, Calendly |
-| **Socials** | Icon grid | Social profiles |
-
-### State Management
-
-We use **Zustand** for managing global client state:
-- `useBoardStore`: Manages the current board, block operations (CRUD), and ordering.
-- `useUserStore`: Manages user profile and preferences.
-- `useUIStore`: Manages modal visibility and UI states.
-
-### Authentication Flow
-
-- **Firebase Auth**: Handles Google/Email sign-ins.
-- **Session**: Uses secure HTTP-only cookies for API route protection.
-- **Context**: `AuthContext` provides user state throughout the React tree.
-
-### AI Features
-
-Powered by OpenAI and Vercel AI SDK:
-- **Generative Content**: Suggests board descriptions and link titles.
-- **Streaming**: Responses stream in real-time for a snappy UX.
-- **Endpoints**: `/api/ai/suggest` handles prompt processing.
+| Block            | Description      | Features                               |
+| ---------------- | ---------------- | -------------------------------------- |
+| **Rich Text**    | WYSIWYG editor   | Bold, italic, headings, lists, links   |
+| **Simple Text**  | Plain text       | Alignment, font sizes                  |
+| **Link**         | Clickable card   | URL, title, description, icon          |
+| **Button**       | CTA button       | 4 styles, 3 sizes                      |
+| **Image**        | Media display    | Upload or URL, captions, aspect ratios |
+| **Video**        | Video embed      | YouTube, Vimeo, custom                 |
+| **Embed**        | Content embed    | Spotify, Twitter, Instagram            |
+| **Social Links** | Icon grid        | Multiple platforms, layouts            |
+| **Calendar**     | Booking widget   | Cal.com, Calendly                      |
+| **Form**         | Data collection  | Custom fields, webhook support         |
+| **Divider**      | Visual separator | Solid, dashed, dotted styles           |
+| **Spacer**       | Vertical space   | 4 height options                       |
 
 ---
 
-## 🤝 Contributing
+## ⌨️ Keyboard Shortcuts
 
-We welcome contributions!
-
-1.  Fork the repository.
-2.  Create a feature branch: `git checkout -b feature/amazing-feature`
-3.  Commit changes: `git commit -m 'feat: add amazing feature'`
-4.  Push to branch: `git push origin feature/amazing-feature`
-5.  Open a Pull Request.
-
-**Priority Areas:**
-- [ ] Image upload from device
-- [ ] Advanced analytics charts
-- [ ] Internationalization (i18n)
-- [ ] Accessibility improvements
-
----
-
-## 🔧 Troubleshooting
-
-**Firebase Errors?**
-- Ensure `.env.local` has correct `NEXT_PUBLIC_FIREBASE_*` keys.
-- Check Firestore/Storage rules in Firebase Console.
-
-**Auth Not Persisting?**
-- Check `auth-cookie.ts` settings.
-- Verify Firebase Auth is enabled in the console.
-
-**Build Fails?**
-- Ensure Node.js version is >= 18.
-- Run `npm install` to refresh dependencies.
+| Shortcut               | Action                |
+| ---------------------- | --------------------- |
+| `Cmd/Ctrl + S`         | Save board            |
+| `Cmd/Ctrl + Z`         | Undo                  |
+| `Cmd/Ctrl + Shift + Z` | Redo                  |
+| `Cmd/Ctrl + B`         | Bold (in rich text)   |
+| `Cmd/Ctrl + I`         | Italic (in rich text) |
 
 ---
 
 ## 🚢 Deployment
 
-The easiest way to deploy is via **Vercel**:
+### Vercel (Recommended)
 
-1.  Push your code to GitHub.
-2.  Import the repo on Vercel.
-3.  Add all environment variables from `.env.local` to Vercel Project Settings.
-4.  Deploy!
+1. Push your code to GitHub
+2. Import repo on [Vercel](https://vercel.com)
+3. Add environment variables in Project Settings
+4. Deploy!
 
----
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/brown2020/openboard)
 
-## 📜 Changelog
+### Self-Hosting
 
-### [Unreleased] - Rich Text Editor & Enhanced Block Editing
+```bash
+# Build for production
+npm run build
 
-#### 🎉 Major Features
-- **Rich Text Editor**: Integrated Tiptap for full WYSIWYG editing (Bold, Italic, Headings, Lists, Code, Links).
-- **Enhanced Block System**: Unified editing controls (Edit, Visibility, Delete) for all block types.
-- **Drag & Drop**: Smooth reordering using `@dnd-kit` with keyboard support.
-- **New Block Types**: Added Video, Embed, Calendar, Social Links, and Form blocks.
-
-#### ✨ Enhancements
-- **Image Block**: Added aspect ratio selection, captions, and improved loading.
-- **UI Polish**: Better hover states, consistent spacing, and dark mode support.
-- **AI Integration**: Content suggestions directly in the block editor.
-
-#### 🛠️ Technical
-- Updated dependencies to Next.js 16 and React 19.
-- Optimized bundle size with dynamic imports.
-- Improved type safety across all block components.
+# Start production server
+npm start
+```
 
 ---
 
-## 📝 License
+## 🤝 Contributing
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+We welcome contributions! Here's how to get started:
+
+1. **Fork** the repository
+2. **Clone** your fork: `git clone https://github.com/YOUR_USERNAME/openboard.git`
+3. **Create** a feature branch: `git checkout -b feature/amazing-feature`
+4. **Commit** your changes: `git commit -m 'feat: add amazing feature'`
+5. **Push** to branch: `git push origin feature/amazing-feature`
+6. **Open** a Pull Request
+
+### Development Commands
+
+```bash
+npm run dev      # Start dev server with Turbopack
+npm run build    # Build for production
+npm run start    # Start production server
+npm run lint     # Run ESLint
+```
+
+### Code Style
+
+- Use **TypeScript** for all new code
+- Follow existing patterns and conventions
+- Use **functional components** with hooks
+- Keep components small and focused
+
+### Priority Areas
+
+We're looking for help with:
+
+- [ ] QR code generation for boards
+- [ ] Advanced analytics charts
+- [ ] Internationalization (i18n)
+- [ ] Accessibility improvements (WCAG 2.1)
+- [ ] More embed providers
+- [ ] Custom domain support
+
+---
+
+## 🔧 Troubleshooting
+
+<details>
+<summary><strong>Firebase connection errors</strong></summary>
+
+- Verify all `NEXT_PUBLIC_FIREBASE_*` values in `.env.local`
+- Check Firebase Console → Authentication is enabled
+- Ensure Firestore and Storage rules allow access
+
+</details>
+
+<details>
+<summary><strong>Authentication not persisting</strong></summary>
+
+- Check that cookies are enabled in browser
+- Verify Firebase Auth domain is correctly set
+- Clear browser cookies and try again
+
+</details>
+
+<details>
+<summary><strong>Build fails</strong></summary>
+
+- Ensure Node.js >= 18: `node --version`
+- Delete `node_modules` and reinstall: `rm -rf node_modules && npm install`
+- Check for TypeScript errors: `npx tsc --noEmit`
+
+</details>
+
+<details>
+<summary><strong>AI features not working</strong></summary>
+
+- Verify `OPENAI_API_KEY` is set in `.env.local`
+- Check API key has sufficient credits
+- Ensure Firebase Admin credentials are correct (for auth verification)
+
+</details>
+
+---
+
+## 📜 License
+
+This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
+
+---
+
+## 🙏 Acknowledgments
+
+- [Next.js](https://nextjs.org/) - The React framework
+- [Tailwind CSS](https://tailwindcss.com/) - Utility-first CSS
+- [Firebase](https://firebase.google.com/) - Backend services
+- [Tiptap](https://tiptap.dev/) - Rich text editor
+- [dnd-kit](https://dndkit.com/) - Drag and drop
+- [Radix UI](https://radix-ui.com/) - Accessible components
+- [Lucide](https://lucide.dev/) - Beautiful icons
 
 ---
 
 <div align="center">
-  <strong>Built with ❤️ by the OpenBoard community</strong>
+
+**Built with ❤️ by the OpenBoard community**
+
+[⭐ Star us on GitHub](https://github.com/brown2020/openboard) — it helps!
+
 </div>
