@@ -1,15 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import {
-  Eye,
-  EyeOff,
-  Edit2,
-  Trash2,
-  Globe,
-  Music2,
-  MessageSquare,
-} from "lucide-react";
+import { Globe, Music2, MessageSquare } from "lucide-react";
 import { EmbedBlock as EmbedBlockType } from "@/types";
 import { useBoardStore } from "@/stores/board-store";
 import { Button } from "@/components/ui/button";
@@ -22,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { BlockControls } from "./block-controls";
 
 type EmbedPlatform = NonNullable<EmbedBlockType["settings"]["platform"]>;
 
@@ -38,36 +31,30 @@ interface EmbedBlockProps {
   onClick?: () => void;
 }
 
-const getDefaultEmbedCode = (
-  url: string,
-  platform?: EmbedPlatform
-): string => {
+function getDefaultEmbedCode(url: string, platform?: EmbedPlatform): string {
   if (!url) return "";
 
   switch (platform) {
-    case "spotify": {
+    case "spotify":
       if (url.includes("embed")) return url;
       return url.replace("open.spotify.com/", "open.spotify.com/embed/");
-    }
-    case "twitter": {
+    case "twitter":
       return `https://platform.twitter.com/widgets/tweet.html?url=${encodeURIComponent(
         url
       )}`;
-    }
-    case "instagram": {
+    case "instagram":
       return `${url}embed/`;
-    }
     default:
       return url;
   }
-};
+}
 
 export function EmbedBlock({
   block,
   isEditing = false,
   onClick,
 }: EmbedBlockProps) {
-  const { updateBlock, deleteBlock } = useBoardStore();
+  const { updateBlock } = useBoardStore();
   const [isEditMode, setIsEditMode] = useState(false);
   const { url, embedCode, platform = "custom" } = block.settings;
 
@@ -79,16 +66,6 @@ export function EmbedBlock({
     if (editEmbed) return editEmbed;
     return getDefaultEmbedCode(editUrl, editPlatform);
   }, [editEmbed, editUrl, editPlatform]);
-
-  const toggleVisibility = () => {
-    updateBlock(block.id, { visible: !block.visible });
-  };
-
-  const handleDelete = () => {
-    if (confirm("Delete this block?")) {
-      deleteBlock(block.id);
-    }
-  };
 
   const handleSave = () => {
     updateBlock(block.id, {
@@ -166,36 +143,11 @@ export function EmbedBlock({
   return (
     <div className="group relative" onClick={onClick}>
       {isEditing && (
-        <div className="absolute -top-2 -right-2 z-10 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => setIsEditMode(true)}
-            className="h-7 w-7 p-0 shadow-md"
-          >
-            <Edit2 className="h-3 w-3" />
-          </Button>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={toggleVisibility}
-            className="h-7 w-7 p-0 shadow-md"
-          >
-            {block.visible ? (
-              <Eye className="h-3 w-3" />
-            ) : (
-              <EyeOff className="h-3 w-3" />
-            )}
-          </Button>
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={handleDelete}
-            className="h-7 w-7 p-0 shadow-md"
-          >
-            <Trash2 className="h-3 w-3" />
-          </Button>
-        </div>
+        <BlockControls
+          blockId={block.id}
+          isVisible={block.visible}
+          onEdit={() => setIsEditMode(true)}
+        />
       )}
 
       <div className="border rounded-lg overflow-hidden bg-card">
@@ -222,4 +174,3 @@ export function EmbedBlock({
     </div>
   );
 }
-

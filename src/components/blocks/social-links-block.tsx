@@ -6,15 +6,7 @@ import { useBoardStore } from "@/stores/board-store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Eye,
-  EyeOff,
-  Trash2,
-  Edit2,
-  Plus,
-  LayoutGrid,
-  Rows,
-} from "lucide-react";
+import { Plus, LayoutGrid, Rows, Trash2 } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -23,6 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { BlockControls } from "./block-controls";
 
 type Layout = SocialLinksBlockType["settings"]["layout"];
 
@@ -43,20 +36,10 @@ export function SocialLinksBlock({
   isEditing = false,
   onClick,
 }: SocialLinksBlockProps) {
-  const { updateBlock, deleteBlock } = useBoardStore();
+  const { updateBlock } = useBoardStore();
   const [isEditMode, setIsEditMode] = useState(false);
   const [links, setLinks] = useState(block.settings.links);
   const [layout, setLayout] = useState<Layout>(block.settings.layout);
-
-  const toggleVisibility = () => {
-    updateBlock(block.id, { visible: !block.visible });
-  };
-
-  const handleDelete = () => {
-    if (confirm("Delete this block?")) {
-      deleteBlock(block.id);
-    }
-  };
 
   const handleSave = () => {
     const sanitized = links
@@ -125,9 +108,7 @@ export function SocialLinksBlock({
               className="rounded-lg border p-3 space-y-3"
             >
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">
-                  Link {index + 1}
-                </span>
+                <span className="text-sm font-medium">Link {index + 1}</span>
                 {links.length > 1 && (
                   <Button
                     variant="ghost"
@@ -154,7 +135,9 @@ export function SocialLinksBlock({
                 <Label>URL</Label>
                 <Input
                   value={link.url}
-                  onChange={(e) => handleLinkChange(index, "url", e.target.value)}
+                  onChange={(e) =>
+                    handleLinkChange(index, "url", e.target.value)
+                  }
                   placeholder="https://instagram.com/username"
                 />
               </div>
@@ -196,36 +179,11 @@ export function SocialLinksBlock({
   return (
     <div className="group relative" onClick={onClick}>
       {isEditing && (
-        <div className="absolute -top-2 -right-2 z-10 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => setIsEditMode(true)}
-            className="h-7 w-7 p-0 shadow-md"
-          >
-            <Edit2 className="h-3 w-3" />
-          </Button>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={toggleVisibility}
-            className="h-7 w-7 p-0 shadow-md"
-          >
-            {block.visible ? (
-              <Eye className="h-3 w-3" />
-            ) : (
-              <EyeOff className="h-3 w-3" />
-            )}
-          </Button>
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={handleDelete}
-            className="h-7 w-7 p-0 shadow-md"
-          >
-            <Trash2 className="h-3 w-3" />
-          </Button>
-        </div>
+        <BlockControls
+          blockId={block.id}
+          isVisible={block.visible}
+          onEdit={() => setIsEditMode(true)}
+        />
       )}
 
       <div
@@ -277,4 +235,3 @@ export function SocialLinksBlock({
     </div>
   );
 }
-

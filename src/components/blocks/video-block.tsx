@@ -1,13 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import {
-  Eye,
-  EyeOff,
-  Edit2,
-  Trash2,
-  Video as VideoIcon,
-} from "lucide-react";
+import { Video as VideoIcon } from "lucide-react";
 import { useBoardStore } from "@/stores/board-store";
 import { VideoBlock as VideoBlockType } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -20,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { BlockControls } from "./block-controls";
 
 type VideoPlatform = VideoBlockType["settings"]["platform"];
 
@@ -31,7 +26,7 @@ interface VideoBlockProps {
 
 const SUPPORTED_PLATFORMS: VideoPlatform[] = ["youtube", "vimeo", "custom"];
 
-const getEmbedUrl = (url: string, platform: VideoPlatform) => {
+function getEmbedUrl(url: string, platform: VideoPlatform): string {
   if (!url) return "";
 
   if (platform === "youtube") {
@@ -49,14 +44,14 @@ const getEmbedUrl = (url: string, platform: VideoPlatform) => {
   }
 
   return url;
-};
+}
 
 export function VideoBlock({
   block,
   isEditing = false,
   onClick,
 }: VideoBlockProps) {
-  const { updateBlock, deleteBlock } = useBoardStore();
+  const { updateBlock } = useBoardStore();
   const [isEditMode, setIsEditMode] = useState(false);
   const { url, platform, title } = block.settings;
 
@@ -64,20 +59,7 @@ export function VideoBlock({
   const [editPlatform, setEditPlatform] = useState<VideoPlatform>(platform);
   const [editTitle, setEditTitle] = useState(title || "");
 
-  const embedUrl = useMemo(
-    () => getEmbedUrl(url, platform),
-    [url, platform]
-  );
-
-  const toggleVisibility = () => {
-    updateBlock(block.id, { visible: !block.visible });
-  };
-
-  const handleDelete = () => {
-    if (confirm("Are you sure you want to delete this block?")) {
-      deleteBlock(block.id);
-    }
-  };
+  const embedUrl = useMemo(() => getEmbedUrl(url, platform), [url, platform]);
 
   const handleSave = () => {
     updateBlock(block.id, {
@@ -149,36 +131,11 @@ export function VideoBlock({
   return (
     <div className="group relative" onClick={onClick}>
       {isEditing && (
-        <div className="absolute -top-2 -right-2 z-10 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => setIsEditMode(true)}
-            className="h-7 w-7 p-0 shadow-md"
-          >
-            <Edit2 className="h-3 w-3" />
-          </Button>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={toggleVisibility}
-            className="h-7 w-7 p-0 shadow-md"
-          >
-            {block.visible ? (
-              <Eye className="h-3 w-3" />
-            ) : (
-              <EyeOff className="h-3 w-3" />
-            )}
-          </Button>
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={handleDelete}
-            className="h-7 w-7 p-0 shadow-md"
-          >
-            <Trash2 className="h-3 w-3" />
-          </Button>
-        </div>
+        <BlockControls
+          blockId={block.id}
+          isVisible={block.visible}
+          onEdit={() => setIsEditMode(true)}
+        />
       )}
 
       <div
@@ -211,4 +168,3 @@ export function VideoBlock({
     </div>
   );
 }
-

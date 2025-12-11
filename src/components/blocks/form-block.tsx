@@ -6,16 +6,9 @@ import { useBoardStore } from "@/stores/board-store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Edit2,
-  Eye,
-  EyeOff,
-  Trash2,
-  List,
-  Type,
-  Mail,
-} from "lucide-react";
+import { List, Type, Mail, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { BlockControls } from "./block-controls";
 
 type Field = FormBlockType["settings"]["fields"][number];
 
@@ -36,23 +29,13 @@ export function FormBlock({
   isEditing = false,
   onClick,
 }: FormBlockProps) {
-  const { updateBlock, deleteBlock } = useBoardStore();
+  const { updateBlock } = useBoardStore();
   const [isEditMode, setIsEditMode] = useState(false);
   const { fields, submitText, submitUrl } = block.settings;
 
   const [editFields, setEditFields] = useState<Field[]>(fields);
   const [editSubmitText, setEditSubmitText] = useState(submitText);
   const [editSubmitUrl, setEditSubmitUrl] = useState(submitUrl || "");
-
-  const toggleVisibility = () => {
-    updateBlock(block.id, { visible: !block.visible });
-  };
-
-  const handleDelete = () => {
-    if (confirm("Delete this form block?")) {
-      deleteBlock(block.id);
-    }
-  };
 
   const handleSave = () => {
     const sanitizedFields = editFields
@@ -84,9 +67,7 @@ export function FormBlock({
     value: string | boolean
   ) => {
     setEditFields((prev) =>
-      prev.map((item, i) =>
-        i === index ? { ...item, [field]: value } : item
-      )
+      prev.map((item, i) => (i === index ? { ...item, [field]: value } : item))
     );
   };
 
@@ -242,36 +223,11 @@ export function FormBlock({
   return (
     <div className="group relative" onClick={onClick}>
       {isEditing && (
-        <div className="absolute -top-2 -right-2 z-10 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => setIsEditMode(true)}
-            className="h-7 w-7 p-0 shadow-md"
-          >
-            <Edit2 className="h-3 w-3" />
-          </Button>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={toggleVisibility}
-            className="h-7 w-7 p-0 shadow-md"
-          >
-            {block.visible ? (
-              <Eye className="h-3 w-3" />
-            ) : (
-              <EyeOff className="h-3 w-3" />
-            )}
-          </Button>
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={handleDelete}
-            className="h-7 w-7 p-0 shadow-md"
-          >
-            <Trash2 className="h-3 w-3" />
-          </Button>
-        </div>
+        <BlockControls
+          blockId={block.id}
+          isVisible={block.visible}
+          onEdit={() => setIsEditMode(true)}
+        />
       )}
 
       <div

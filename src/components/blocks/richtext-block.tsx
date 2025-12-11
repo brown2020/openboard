@@ -5,19 +5,25 @@ import { useBoardStore } from "@/stores/board-store";
 import { RichTextEditor } from "./rich-text-editor";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Edit2, Trash2, Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
+import { BlockControls } from "./block-controls";
 
 interface RichTextBlockProps {
   block: RichTextBlockType;
   isEditing?: boolean;
 }
 
+const ALIGNMENT_CLASSES = {
+  left: "text-left",
+  center: "text-center",
+  right: "text-right",
+} as const;
+
 export function RichTextBlock({
   block,
   isEditing = false,
 }: RichTextBlockProps) {
-  const { updateBlock, deleteBlock } = useBoardStore();
+  const { updateBlock } = useBoardStore();
   const [isEditMode, setIsEditMode] = useState(false);
   const { content, alignment = "left" } = block.settings;
 
@@ -27,26 +33,10 @@ export function RichTextBlock({
     });
   };
 
-  const toggleVisibility = () => {
-    updateBlock(block.id, { visible: !block.visible });
-  };
-
-  const handleDelete = () => {
-    if (confirm("Are you sure you want to delete this block?")) {
-      deleteBlock(block.id);
-    }
-  };
-
-  const alignmentClasses = {
-    left: "text-left",
-    center: "text-center",
-    right: "text-right",
-  };
-
   if (!isEditing) {
     // View mode for public pages
     return (
-      <div className={cn("w-full", alignmentClasses[alignment])}>
+      <div className={cn("w-full", ALIGNMENT_CLASSES[alignment])}>
         <div
           className="prose prose-neutral dark:prose-invert max-w-none"
           dangerouslySetInnerHTML={{ __html: content }}
@@ -59,36 +49,11 @@ export function RichTextBlock({
     <div className="group relative w-full">
       {/* Editor Controls */}
       {isEditing && (
-        <div className="absolute -top-2 -right-2 z-10 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => setIsEditMode(!isEditMode)}
-            className="h-7 w-7 p-0 shadow-md"
-          >
-            <Edit2 className="h-3 w-3" />
-          </Button>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={toggleVisibility}
-            className="h-7 w-7 p-0 shadow-md"
-          >
-            {block.visible ? (
-              <Eye className="h-3 w-3" />
-            ) : (
-              <EyeOff className="h-3 w-3" />
-            )}
-          </Button>
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={handleDelete}
-            className="h-7 w-7 p-0 shadow-md"
-          >
-            <Trash2 className="h-3 w-3" />
-          </Button>
-        </div>
+        <BlockControls
+          blockId={block.id}
+          isVisible={block.visible}
+          onEdit={() => setIsEditMode(!isEditMode)}
+        />
       )}
 
       {/* Content */}
@@ -96,7 +61,7 @@ export function RichTextBlock({
         className={cn(
           "w-full",
           !block.visible && isEditing && "opacity-50",
-          alignmentClasses[alignment]
+          ALIGNMENT_CLASSES[alignment]
         )}
       >
         {isEditMode ? (

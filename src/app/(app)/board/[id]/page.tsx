@@ -47,7 +47,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { Block } from "@/types";
 import { cn } from "@/lib/utils";
-import { useToastNotification } from "@/components/ui/toast";
+import { useToast } from "@/stores/ui-store";
 
 // Mark this route as dynamic for Next.js 16
 export const dynamic = "force-dynamic";
@@ -114,8 +114,8 @@ export default function BoardEditorPage({ params }: PageProps) {
   const { openModal } = useModal();
   const { canUndo, canRedo, undo, redo } = useHistory();
   const router = useRouter();
-  const toast = useToastNotification();
-  
+  const toast = useToast();
+
   const [isLoading, setIsLoading] = useState(true);
   const [showAddBlock, setShowAddBlock] = useState(false);
   const [editingHeader, setEditingHeader] = useState(false);
@@ -152,7 +152,10 @@ export default function BoardEditorPage({ params }: PageProps) {
       const board = await getBoard(resolvedParams.id);
       if (board) {
         if (board.ownerId !== user.id) {
-          toast.error("Access denied", "You don't have permission to edit this board");
+          toast.error(
+            "Access denied",
+            "You don't have permission to edit this board"
+          );
           router.push("/boards");
           return;
         }
@@ -160,23 +163,34 @@ export default function BoardEditorPage({ params }: PageProps) {
         setBoardTitle(board.title);
         setBoardDescription(board.description || "");
       } else {
-        toast.error("Board not found", "This board doesn't exist or has been deleted");
+        toast.error(
+          "Board not found",
+          "This board doesn't exist or has been deleted"
+        );
         router.push("/boards");
       }
       setIsLoading(false);
     };
 
     loadBoard();
-  }, [resolvedParams.id, user, isLoaded, getBoard, setCurrentBoard, router, toast]);
+  }, [
+    resolvedParams.id,
+    user,
+    isLoaded,
+    getBoard,
+    setCurrentBoard,
+    router,
+    toast,
+  ]);
 
   // Track unsaved changes
   useEffect(() => {
     if (!currentBoard) return;
-    
+
     const hasChanges =
       boardTitle !== currentBoard.title ||
       boardDescription !== (currentBoard.description || "");
-    
+
     setHasUnsavedChanges(hasChanges);
   }, [boardTitle, boardDescription, currentBoard]);
 
@@ -203,7 +217,10 @@ export default function BoardEditorPage({ params }: PageProps) {
         } else if (e.key === "z" && !e.shiftKey && canUndo) {
           e.preventDefault();
           undo();
-        } else if ((e.key === "z" && e.shiftKey) || (e.key === "y" && canRedo)) {
+        } else if (
+          (e.key === "z" && e.shiftKey) ||
+          (e.key === "y" && canRedo)
+        ) {
           e.preventDefault();
           redo();
         }
@@ -231,7 +248,14 @@ export default function BoardEditorPage({ params }: PageProps) {
     } else {
       toast.error("Save failed", "Failed to save changes. Please try again.");
     }
-  }, [currentBoard, boardTitle, boardDescription, updateBoardDB, setSaving, toast]);
+  }, [
+    currentBoard,
+    boardTitle,
+    boardDescription,
+    updateBoardDB,
+    setSaving,
+    toast,
+  ]);
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -242,7 +266,11 @@ export default function BoardEditorPage({ params }: PageProps) {
     const newIndex = currentBoard.blocks.findIndex((b) => b.id === over.id);
 
     if (oldIndex !== -1 && newIndex !== -1) {
-      const reorderedBlocks = arrayMove(currentBoard.blocks, oldIndex, newIndex);
+      const reorderedBlocks = arrayMove(
+        currentBoard.blocks,
+        oldIndex,
+        newIndex
+      );
       const blocksWithUpdatedOrder = reorderedBlocks.map((block, index) => ({
         ...block,
         order: index,
@@ -292,9 +320,9 @@ export default function BoardEditorPage({ params }: PageProps) {
                   Back
                 </Link>
               </Button>
-              
+
               <div className="h-6 w-px bg-border" />
-              
+
               <div>
                 <h2 className="font-semibold text-sm">{boardTitle}</h2>
                 <p className="text-xs text-muted-foreground">
@@ -367,9 +395,9 @@ export default function BoardEditorPage({ params }: PageProps) {
                 <Share2 className="w-4 h-4 mr-2" />
                 Share
               </Button>
-              <Button 
-                size="sm" 
-                onClick={handleSave} 
+              <Button
+                size="sm"
+                onClick={handleSave}
                 disabled={isSaving}
                 className={cn(
                   hasUnsavedChanges && "bg-emerald-600 hover:bg-emerald-700"
@@ -410,7 +438,9 @@ export default function BoardEditorPage({ params }: PageProps) {
                       style={{ color: currentBoard.theme.textColor }}
                       placeholder="Board Title"
                       onBlur={() => setEditingHeader(false)}
-                      onKeyDown={(e) => e.key === "Enter" && setEditingHeader(false)}
+                      onKeyDown={(e) =>
+                        e.key === "Enter" && setEditingHeader(false)
+                      }
                       autoFocus
                     />
                     <Input
@@ -482,7 +512,13 @@ export default function BoardEditorPage({ params }: PageProps) {
                 </Button>
 
                 {currentBoard.blocks.length === 0 && (
-                  <p className="text-center text-sm mt-4" style={{ color: currentBoard.theme.textColor, opacity: 0.6 }}>
+                  <p
+                    className="text-center text-sm mt-4"
+                    style={{
+                      color: currentBoard.theme.textColor,
+                      opacity: 0.6,
+                    }}
+                  >
                     Your board is empty. Add your first block to get started!
                   </p>
                 )}
@@ -492,10 +528,14 @@ export default function BoardEditorPage({ params }: PageProps) {
             {/* Tips */}
             <div className="mt-6 text-center text-sm text-muted-foreground">
               <p>
-                <kbd className="px-1.5 py-0.5 bg-muted rounded text-xs">⌘S</kbd> Save •{" "}
-                <kbd className="px-1.5 py-0.5 bg-muted rounded text-xs">⌘Z</kbd> Undo •{" "}
-                <kbd className="px-1.5 py-0.5 bg-muted rounded text-xs">⌘⇧Z</kbd> Redo •{" "}
-                Drag blocks to reorder
+                <kbd className="px-1.5 py-0.5 bg-muted rounded text-xs">⌘S</kbd>{" "}
+                Save •{" "}
+                <kbd className="px-1.5 py-0.5 bg-muted rounded text-xs">⌘Z</kbd>{" "}
+                Undo •{" "}
+                <kbd className="px-1.5 py-0.5 bg-muted rounded text-xs">
+                  ⌘⇧Z
+                </kbd>{" "}
+                Redo • Drag blocks to reorder
               </p>
             </div>
           </div>

@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { devtools, subscribeWithSelector } from "zustand/middleware";
 import { Board, Block, BlockType, BoardTheme } from "@/types";
+import { DEFAULT_THEME } from "@/lib/constants";
 
 /**
  * Board operation status for tracking async operations
@@ -23,11 +24,11 @@ interface BoardState {
   // Board data
   boards: Board[];
   currentBoard: Board | null;
-  
+
   // Operation status
   status: OperationStatus;
   error: string | null;
-  
+
   // History for undo/redo
   history: HistoryEntry[];
   historyIndex: number;
@@ -55,7 +56,9 @@ interface BoardActions {
 
   // Batch operations
   deleteMultipleBlocks: (blockIds: string[]) => void;
-  updateMultipleBlocks: (updates: Array<{ id: string; updates: Partial<Block> }>) => void;
+  updateMultipleBlocks: (
+    updates: Array<{ id: string; updates: Partial<Block> }>
+  ) => void;
 
   // Theme operations
   updateTheme: (theme: Partial<BoardTheme>) => void;
@@ -75,22 +78,12 @@ interface BoardActions {
   // Computed / helpers
   getBlockById: (blockId: string) => Block | undefined;
   getBlocksByType: (type: BlockType) => Block[];
-  
+
   // Reset
   reset: () => void;
 }
 
 type BoardStore = BoardState & BoardActions;
-
-const DEFAULT_THEME: BoardTheme = {
-  name: "Default",
-  background: { type: "color", value: "#ffffff" },
-  primaryColor: "#000000",
-  textColor: "#000000",
-  cardBackground: "#f5f5f5",
-  borderRadius: "md",
-  font: { heading: "system-ui", body: "system-ui" },
-};
 
 const initialState: BoardState = {
   boards: [],
@@ -104,7 +97,7 @@ const initialState: BoardState = {
 
 /**
  * Board Store - Manages all board and block-related state
- * 
+ *
  * Features:
  * - Full CRUD for boards and blocks
  * - Undo/redo support
@@ -117,7 +110,8 @@ export const useBoardStore = create<BoardStore>()(
       ...initialState,
 
       // Board CRUD
-      setBoards: (boards) => set({ boards, status: "success" }, false, "setBoards"),
+      setBoards: (boards) =>
+        set({ boards, status: "success" }, false, "setBoards"),
 
       setCurrentBoard: (board) => {
         set({ currentBoard: board }, false, "setCurrentBoard");
@@ -316,7 +310,9 @@ export const useBoardStore = create<BoardStore>()(
               ...state.currentBoard,
               blocks: state.currentBoard.blocks.map((block) => {
                 const update = updates.find((u) => u.id === block.id);
-                return update ? ({ ...block, ...update.updates } as Block) : block;
+                return update
+                  ? ({ ...block, ...update.updates } as Block)
+                  : block;
               }),
             },
           },
@@ -438,7 +434,8 @@ export const useBoardStore = create<BoardStore>()(
       // Status operations
       setStatus: (status) => set({ status }, false, "setStatus"),
       setError: (error) => set({ error, status: "error" }, false, "setError"),
-      clearError: () => set({ error: null, status: "idle" }, false, "clearError"),
+      clearError: () =>
+        set({ error: null, status: "idle" }, false, "clearError"),
 
       // Computed / helpers
       getBlockById: (blockId) => {
@@ -448,9 +445,7 @@ export const useBoardStore = create<BoardStore>()(
 
       getBlocksByType: (type) => {
         const state = get();
-        return (
-          state.currentBoard?.blocks.filter((b) => b.type === type) ?? []
-        );
+        return state.currentBoard?.blocks.filter((b) => b.type === type) ?? [];
       },
 
       // Reset

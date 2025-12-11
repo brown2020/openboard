@@ -7,7 +7,6 @@ import { useStorage } from "@/hooks/use-storage";
 import { useState } from "react";
 import { useBoardStore } from "@/stores/board-store";
 import { Button } from "@/components/ui/button";
-import { Edit2, Trash2, Eye, EyeOff } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -17,6 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { BlockControls } from "./block-controls";
 
 interface ImageBlockProps {
   block: ImageBlockType;
@@ -24,12 +24,19 @@ interface ImageBlockProps {
   isEditing?: boolean;
 }
 
+const ASPECT_RATIO_CLASSES = {
+  square: "aspect-square",
+  portrait: "aspect-[3/4]",
+  landscape: "aspect-video",
+  auto: "",
+} as const;
+
 export function ImageBlock({
   block,
   onClick,
   isEditing = false,
 }: ImageBlockProps) {
-  const { updateBlock, deleteBlock } = useBoardStore();
+  const { updateBlock } = useBoardStore();
   const { uploadFile, uploading } = useStorage();
   const [isEditMode, setIsEditMode] = useState(false);
   const { url, alt, caption, link, aspectRatio = "auto" } = block.settings;
@@ -40,23 +47,6 @@ export function ImageBlock({
   const [editCaption, setEditCaption] = useState(caption || "");
   const [editLink, setEditLink] = useState(link || "");
   const [editAspectRatio, setEditAspectRatio] = useState(aspectRatio);
-
-  const aspectRatioClasses = {
-    square: "aspect-square",
-    portrait: "aspect-[3/4]",
-    landscape: "aspect-video",
-    auto: "",
-  };
-
-  const toggleVisibility = () => {
-    updateBlock(block.id, { visible: !block.visible });
-  };
-
-  const handleDelete = () => {
-    if (confirm("Are you sure you want to delete this block?")) {
-      deleteBlock(block.id);
-    }
-  };
 
   const handleSave = async () => {
     let finalUrl = editUrl;
@@ -104,7 +94,9 @@ export function ImageBlock({
               <span className="w-full border-t" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">Or</span>
+              <span className="bg-background px-2 text-muted-foreground">
+                Or
+              </span>
             </div>
           </div>
           <Label>Image URL</Label>
@@ -180,7 +172,7 @@ export function ImageBlock({
         !block.visible && isEditing && "opacity-50"
       )}
     >
-      <div className={cn("relative w-full", aspectRatioClasses[aspectRatio])}>
+      <div className={cn("relative w-full", ASPECT_RATIO_CLASSES[aspectRatio])}>
         <Image
           src={url}
           alt={alt}
@@ -207,36 +199,11 @@ export function ImageBlock({
     <div className="group relative">
       {/* Editor Controls */}
       {isEditing && (
-        <div className="absolute -top-2 -right-2 z-10 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => setIsEditMode(true)}
-            className="h-7 w-7 p-0 shadow-md"
-          >
-            <Edit2 className="h-3 w-3" />
-          </Button>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={toggleVisibility}
-            className="h-7 w-7 p-0 shadow-md"
-          >
-            {block.visible ? (
-              <Eye className="h-3 w-3" />
-            ) : (
-              <EyeOff className="h-3 w-3" />
-            )}
-          </Button>
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={handleDelete}
-            className="h-7 w-7 p-0 shadow-md"
-          >
-            <Trash2 className="h-3 w-3" />
-          </Button>
-        </div>
+        <BlockControls
+          blockId={block.id}
+          isVisible={block.visible}
+          onEdit={() => setIsEditMode(true)}
+        />
       )}
 
       {/* Image Content */}

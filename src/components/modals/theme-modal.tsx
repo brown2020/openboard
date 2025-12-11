@@ -24,13 +24,14 @@ import { BoardTheme } from "@/types";
 import { THEME_PRESETS } from "@/lib/constants";
 import { Check, RotateCcw, Palette } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useToastNotification } from "@/components/ui/toast";
+import { useToast } from "@/stores/ui-store";
+import { ColorPicker } from "@/components/ui/color-picker";
 
 export function ThemeModal() {
   const { currentBoard, updateTheme, resetTheme } = useBoardStore();
   const { activeModal, closeModal } = useModal();
-  const toast = useToastNotification();
-  
+  const toast = useToast();
+
   const [selectedTheme, setSelectedTheme] = useState<BoardTheme | null>(null);
   const [customizing, setCustomizing] = useState(false);
 
@@ -48,7 +49,10 @@ export function ThemeModal() {
   const handleApplyTheme = (theme: BoardTheme) => {
     setSelectedTheme(theme);
     updateTheme(theme);
-    toast.success("Theme applied!", `Applied "${theme.name}" theme to your board`);
+    toast.success(
+      "Theme applied!",
+      `Applied "${theme.name}" theme to your board`
+    );
   };
 
   const handleCustomColorChange = (key: keyof BoardTheme, value: string) => {
@@ -81,7 +85,10 @@ export function ThemeModal() {
   const handleSaveCustom = () => {
     if (selectedTheme) {
       updateTheme(selectedTheme);
-      toast.success("Custom theme saved!", "Your custom theme has been applied");
+      toast.success(
+        "Custom theme saved!",
+        "Your custom theme has been applied"
+      );
       setCustomizing(false);
     }
   };
@@ -212,35 +219,15 @@ export function ThemeModal() {
                     handleCustomColorChange("cardBackground", value)
                   }
                 />
-                <div className="space-y-2">
-                  <Label>Background Color</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      type="color"
-                      value={
-                        selectedTheme?.background.type === "color"
-                          ? selectedTheme.background.value
-                          : "#ffffff"
-                      }
-                      onChange={(e) =>
-                        handleBackgroundChange("color", e.target.value)
-                      }
-                      className="w-14 h-10 p-1 cursor-pointer"
-                    />
-                    <Input
-                      value={
-                        selectedTheme?.background.type === "color"
-                          ? selectedTheme.background.value
-                          : ""
-                      }
-                      onChange={(e) =>
-                        handleBackgroundChange("color", e.target.value)
-                      }
-                      className="flex-1"
-                      placeholder="#ffffff"
-                    />
-                  </div>
-                </div>
+                <ColorPicker
+                  label="Background Color"
+                  value={
+                    selectedTheme?.background.type === "color"
+                      ? selectedTheme.background.value
+                      : "#ffffff"
+                  }
+                  onChange={(value) => handleBackgroundChange("color", value)}
+                />
               </div>
 
               {/* Border Radius */}
@@ -332,12 +319,12 @@ export function ThemeModal() {
                     selectedTheme?.borderRadius === "none"
                       ? "0"
                       : selectedTheme?.borderRadius === "sm"
-                        ? "0.25rem"
-                        : selectedTheme?.borderRadius === "md"
-                          ? "0.5rem"
-                          : selectedTheme?.borderRadius === "lg"
-                            ? "0.75rem"
-                            : "1rem",
+                      ? "0.25rem"
+                      : selectedTheme?.borderRadius === "md"
+                      ? "0.5rem"
+                      : selectedTheme?.borderRadius === "lg"
+                      ? "0.75rem"
+                      : "1rem",
                 }}
               >
                 <div className="flex items-center justify-between">
@@ -350,38 +337,5 @@ export function ThemeModal() {
         </div>
       </SheetContent>
     </Sheet>
-  );
-}
-
-/**
- * Reusable Color Picker Component
- */
-function ColorPicker({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-}) {
-  return (
-    <div className="space-y-2">
-      <Label>{label}</Label>
-      <div className="flex gap-2">
-        <Input
-          type="color"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="w-14 h-10 p-1 cursor-pointer"
-        />
-        <Input
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="flex-1 font-mono text-sm"
-          placeholder="#000000"
-        />
-      </div>
-    </div>
   );
 }

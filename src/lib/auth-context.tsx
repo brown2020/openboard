@@ -4,10 +4,11 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { User, onAuthStateChanged } from "firebase/auth";
 import { auth } from "./firebase";
 import { setAuthCookie, removeAuthCookie } from "./auth-cookie";
+import { removeStorageItem } from "./storage-utils";
 
-const AuthContext = createContext<{ user: User | null; loading: boolean }>({ 
-  user: null, 
-  loading: true 
+const AuthContext = createContext<{ user: User | null; loading: boolean }>({
+  user: null,
+  loading: true,
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -17,7 +18,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setUser(firebaseUser);
-      
+
       if (firebaseUser) {
         try {
           await setAuthCookie(firebaseUser);
@@ -27,11 +28,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } else {
         removeAuthCookie();
         // Clear localStorage user data when logged out
-        if (typeof window !== "undefined") {
-          localStorage.removeItem("openboard-user");
-        }
+        removeStorageItem("openboard-user");
       }
-      
+
       setLoading(false);
     });
 
@@ -50,7 +49,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading }}>{children}</AuthContext.Provider>
+    <AuthContext.Provider value={{ user, loading }}>
+      {children}
+    </AuthContext.Provider>
   );
 }
 

@@ -1,7 +1,7 @@
 "use client";
 
+import { useReducer, useCallback } from "react";
 import { useStorage } from "@/hooks/use-storage";
-import { useState } from "react";
 import {
   Sheet,
   SheetContent,
@@ -34,194 +34,260 @@ import {
   SocialLinksBlock,
   CalendarBlock,
   FormBlock,
+  Block,
 } from "@/types";
-import {
-  Link as LinkIcon,
-  Type,
-  Image,
-  RectangleHorizontal,
-  Minus,
-  Space,
-  FileText,
-  Video,
-  Globe,
-  Share2,
-  Calendar,
-  ClipboardList,
-} from "lucide-react";
-import { cn } from "@/lib/utils";
 import { RichTextEditor } from "./rich-text-editor";
 import { useAI } from "@/hooks/use-ai";
 import { Sparkles } from "lucide-react";
+import { BlockTypeSelector } from "./block-type-selector";
+
+// ============================================================================
+// Types & Interfaces
+// ============================================================================
 
 interface AddBlockSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-interface BlockTypeOption {
-  type: BlockType;
+type FormFieldType = "text" | "email" | "textarea";
+
+interface FormField {
+  id: string;
+  type: FormFieldType;
   label: string;
-  description: string;
-  icon: React.ReactNode;
-  category: "content" | "media" | "interaction" | "layout";
+  required: boolean;
+  placeholder?: string;
 }
 
-const FORM_FIELD_TYPES: Array<{ value: FormBlock["settings"]["fields"][number]["type"]; label: string }> =
-  [
-    { value: "text", label: "Text" },
-    { value: "email", label: "Email" },
-    { value: "textarea", label: "Textarea" },
-  ];
+interface SocialLink {
+  platform: string;
+  url: string;
+  icon: string;
+}
 
-const blockTypes: BlockTypeOption[] = [
-  {
-    type: "richtext",
-    label: "Rich Text",
-    description: "Add formatted text with styling",
-    icon: <FileText className="w-5 h-5" />,
-    category: "content",
-  },
-  {
-    type: "text",
-    label: "Simple Text",
-    description: "Plain text without formatting",
-    icon: <Type className="w-5 h-5" />,
-    category: "content",
-  },
-  {
-    type: "link",
-    label: "Link",
-    description: "Clickable link button",
-    icon: <LinkIcon className="w-5 h-5" />,
-    category: "interaction",
-  },
-  {
-    type: "button",
-    label: "Button",
-    description: "Call-to-action button",
-    icon: <RectangleHorizontal className="w-5 h-5" />,
-    category: "interaction",
-  },
-  {
-    type: "image",
-    label: "Image",
-    description: "Add an image",
-    icon: <Image className="w-5 h-5" />,
-    category: "media",
-  },
-  {
-    type: "video",
-    label: "Video",
-    description: "Embed a YouTube or Vimeo video",
-    icon: <Video className="w-5 h-5" />,
-    category: "media",
-  },
-  {
-    type: "embed",
-    label: "Embed",
-    description: "Spotify, Twitter, Instagram content",
-    icon: <Globe className="w-5 h-5" />,
-    category: "media",
-  },
-  {
-    type: "social-links",
-    label: "Social Links",
-    description: "Icon grid linking to your profiles",
-    icon: <Share2 className="w-5 h-5" />,
-    category: "interaction",
-  },
-  {
-    type: "calendar",
-    label: "Calendar",
-    description: "Embed Cal.com or Calendly",
-    icon: <Calendar className="w-5 h-5" />,
-    category: "interaction",
-  },
-  {
-    type: "form",
-    label: "Form",
-    description: "Collect leads with custom fields",
-    icon: <ClipboardList className="w-5 h-5" />,
-    category: "interaction",
-  },
-  {
-    type: "divider",
-    label: "Divider",
-    description: "Horizontal line separator",
-    icon: <Minus className="w-5 h-5" />,
-    category: "layout",
-  },
-  {
-    type: "spacer",
-    label: "Spacer",
-    description: "Add vertical space",
-    icon: <Space className="w-5 h-5" />,
-    category: "layout",
-  },
-];
+// Form state for all block types
+interface FormState {
+  selectedType: BlockType | null;
+  // Link
+  linkTitle: string;
+  linkUrl: string;
+  // Text
+  textContent: string;
+  // Rich Text
+  richTextContent: string;
+  // Button
+  buttonText: string;
+  buttonUrl: string;
+  // Image
+  imageUrl: string;
+  imageAlt: string;
+  selectedImageFile: File | null;
+  // Video
+  videoUrl: string;
+  videoTitle: string;
+  // Embed
+  embedUrl: string;
+  embedCustomUrl: string;
+  embedPlatform: EmbedBlock["settings"]["platform"];
+  // Social Links
+  socialLinks: SocialLink[];
+  socialLayout: SocialLinksBlock["settings"]["layout"];
+  // Calendar
+  calendarProvider: CalendarBlock["settings"]["provider"];
+  calendarUrl: string;
+  calendarTitle: string;
+  // Form
+  formFields: FormField[];
+  formSubmitText: string;
+  formSubmitUrl: string;
+}
+
+type FormAction =
+  | { type: "SET_SELECTED_TYPE"; payload: BlockType | null }
+  | { type: "SET_FIELD"; field: keyof FormState; value: unknown }
+  | {
+      type: "SET_SOCIAL_LINK";
+      index: number;
+      field: keyof SocialLink;
+      value: string;
+    }
+  | { type: "ADD_SOCIAL_LINK" }
+  | { type: "REMOVE_SOCIAL_LINK"; index: number }
+  | {
+      type: "SET_FORM_FIELD";
+      index: number;
+      field: keyof FormField;
+      value: unknown;
+    }
+  | { type: "ADD_FORM_FIELD" }
+  | { type: "REMOVE_FORM_FIELD"; index: number }
+  | { type: "RESET" };
+
+// ============================================================================
+// Initial State & Reducer
+// ============================================================================
+
+const initialState: FormState = {
+  selectedType: null,
+  linkTitle: "",
+  linkUrl: "",
+  textContent: "",
+  richTextContent: "",
+  buttonText: "",
+  buttonUrl: "",
+  imageUrl: "",
+  imageAlt: "",
+  selectedImageFile: null,
+  videoUrl: "",
+  videoTitle: "",
+  embedUrl: "",
+  embedCustomUrl: "",
+  embedPlatform: "custom",
+  socialLinks: [
+    { platform: "Instagram", url: "", icon: "📸" },
+    { platform: "Twitter", url: "", icon: "🐦" },
+  ],
+  socialLayout: "horizontal",
+  calendarProvider: "cal",
+  calendarUrl: "",
+  calendarTitle: "",
+  formFields: [
+    { id: "field_name", type: "text", label: "Name", required: true },
+    { id: "field_email", type: "email", label: "Email", required: true },
+  ],
+  formSubmitText: "Send",
+  formSubmitUrl: "",
+};
+
+function formReducer(state: FormState, action: FormAction): FormState {
+  switch (action.type) {
+    case "SET_SELECTED_TYPE":
+      return { ...state, selectedType: action.payload };
+
+    case "SET_FIELD":
+      return { ...state, [action.field]: action.value };
+
+    case "SET_SOCIAL_LINK":
+      return {
+        ...state,
+        socialLinks: state.socialLinks.map((link, i) =>
+          i === action.index ? { ...link, [action.field]: action.value } : link
+        ),
+      };
+
+    case "ADD_SOCIAL_LINK":
+      return {
+        ...state,
+        socialLinks: [
+          ...state.socialLinks,
+          { platform: "", url: "", icon: "🔗" },
+        ],
+      };
+
+    case "REMOVE_SOCIAL_LINK":
+      return {
+        ...state,
+        socialLinks: state.socialLinks.filter((_, i) => i !== action.index),
+      };
+
+    case "SET_FORM_FIELD":
+      return {
+        ...state,
+        formFields: state.formFields.map((field, i) =>
+          i === action.index
+            ? { ...field, [action.field]: action.value }
+            : field
+        ),
+      };
+
+    case "ADD_FORM_FIELD":
+      return {
+        ...state,
+        formFields: [
+          ...state.formFields,
+          {
+            id: `field_${Date.now()}`,
+            type: "text",
+            label: "Untitled field",
+            required: false,
+          },
+        ],
+      };
+
+    case "REMOVE_FORM_FIELD":
+      if (state.formFields.length === 1) return state;
+      return {
+        ...state,
+        formFields: state.formFields.filter((_, i) => i !== action.index),
+      };
+
+    case "RESET":
+      return initialState;
+
+    default:
+      return state;
+  }
+}
+
+// ============================================================================
+// Helper Functions
+// ============================================================================
+
+function detectVideoPlatform(url: string): VideoBlock["settings"]["platform"] {
+  if (/youtu\.be|youtube\.com/.test(url)) return "youtube";
+  if (/vimeo\.com/.test(url)) return "vimeo";
+  return "custom";
+}
+
+function detectEmbedPlatform(url: string): EmbedBlock["settings"]["platform"] {
+  if (/spotify\.com/.test(url)) return "spotify";
+  if (/twitter\.com|x\.com/.test(url)) return "twitter";
+  if (/instagram\.com/.test(url)) return "instagram";
+  return "custom";
+}
+
+function generateBlockId(): string {
+  return `block_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+}
+
+// ============================================================================
+// Component
+// ============================================================================
 
 export function AddBlockSheet({ open, onOpenChange }: AddBlockSheetProps) {
   const { addBlock, currentBoard } = useBoardStore();
   const { uploadFile, uploading } = useStorage();
   const { generate, isLoading: isAILoading } = useAI();
-  const [selectedType, setSelectedType] = useState<BlockType | null>(null);
+  const [state, dispatch] = useReducer(formReducer, initialState);
 
-  // Form states for different block types
-  const [linkTitle, setLinkTitle] = useState("");
-  const [linkUrl, setLinkUrl] = useState("");
-  const [textContent, setTextContent] = useState("");
-  const [richTextContent, setRichTextContent] = useState("");
-  const [buttonText, setButtonText] = useState("");
-  const [buttonUrl, setButtonUrl] = useState("");
-  const [imageUrl, setImageUrl] = useState("");
-  const [imageAlt, setImageAlt] = useState("");
-  const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
-  const [videoUrl, setVideoUrl] = useState("");
-  const [videoTitle, setVideoTitle] = useState("");
-  const [embedUrl, setEmbedUrl] = useState("");
-  const [embedCustomUrl, setEmbedCustomUrl] = useState("");
-  const [embedPlatform, setEmbedPlatform] =
-    useState<EmbedBlock["settings"]["platform"]>("custom");
-  const [socialLinks, setSocialLinks] = useState<
-    SocialLinksBlock["settings"]["links"]
-  >([
-    { platform: "Instagram", url: "", icon: "📸" },
-    { platform: "Twitter", url: "", icon: "🐦" },
-  ]);
-  const [socialLayout, setSocialLayout] =
-    useState<SocialLinksBlock["settings"]["layout"]>("horizontal");
-  const [calendarProvider, setCalendarProvider] =
-    useState<CalendarBlock["settings"]["provider"]>("cal");
-  const [calendarUrl, setCalendarUrl] = useState("");
-  const [calendarTitle, setCalendarTitle] = useState("");
-  const [formFields, setFormFields] = useState<FormBlock["settings"]["fields"]>([
-    { id: "field_name", type: "text", label: "Name", required: true },
-    { id: "field_email", type: "email", label: "Email", required: true },
-  ]);
-  const [formSubmitText, setFormSubmitText] =
-    useState<FormBlock["settings"]["submitText"]>("Send");
-  const [formSubmitUrl, setFormSubmitUrl] = useState("");
+  const setField = useCallback(
+    <K extends keyof FormState>(field: K, value: FormState[K]) => {
+      dispatch({ type: "SET_FIELD", field, value });
+    },
+    []
+  );
 
   const handleAISuggestion = async () => {
-    if (!selectedType) return;
+    if (!state.selectedType) return;
 
     let prompt = "";
     let type: "content-suggestions" | "link-title" = "content-suggestions";
 
-    switch (selectedType) {
+    switch (state.selectedType) {
       case "richtext":
       case "text":
-        prompt = "Write a short, engaging paragraph for a personal board about: ";
+        prompt =
+          "Write a short, engaging paragraph for a personal board about: ";
         const topic = window.prompt("What should this text be about?");
         if (!topic) return;
         prompt += topic;
         break;
       case "link":
         prompt = "Generate a catchy title for a link to: ";
-        const url = linkUrl || window.prompt("What is the link URL?");
+        const url = state.linkUrl || window.prompt("What is the link URL?");
         if (!url) return;
-        setLinkUrl(url);
+        setField("linkUrl", url);
         prompt += url;
         type = "link-title";
         break;
@@ -230,162 +296,65 @@ export function AddBlockSheet({ open, onOpenChange }: AddBlockSheetProps) {
     }
 
     await generate(prompt, type, (data) => {
-      if (selectedType === "link") {
-        setLinkTitle(data.replace(/^"|"$/g, ""));
-      } else if (selectedType === "text") {
-        setTextContent(data);
-      } else if (selectedType === "richtext") {
-        setRichTextContent(`<p>${data}</p>`);
+      if (state.selectedType === "link") {
+        setField("linkTitle", data.replace(/^"|"$/g, ""));
+      } else if (state.selectedType === "text") {
+        setField("textContent", data);
+      } else if (state.selectedType === "richtext") {
+        setField("richTextContent", `<p>${data}</p>`);
       }
     });
   };
 
-  const resetForm = () => {
-    setSelectedType(null);
-    setLinkTitle("");
-    setLinkUrl("");
-    setTextContent("");
-    setRichTextContent("");
-    setButtonText("");
-    setButtonUrl("");
-    setImageUrl("");
-    setImageAlt("");
-    setSelectedImageFile(null);
-    setVideoUrl("");
-    setVideoTitle("");
-    setEmbedUrl("");
-    setEmbedCustomUrl("");
-    setEmbedPlatform("custom");
-    setSocialLinks([
-      { platform: "Instagram", url: "", icon: "📸" },
-      { platform: "Twitter", url: "", icon: "🐦" },
-    ]);
-    setSocialLayout("horizontal");
-    setCalendarProvider("cal");
-    setCalendarUrl("");
-    setCalendarTitle("");
-    setFormFields([
-      { id: "field_name", type: "text", label: "Name", required: true },
-      { id: "field_email", type: "email", label: "Email", required: true },
-    ]);
-    setFormSubmitText("Send");
-    setFormSubmitUrl("");
-  };
-
-  const detectVideoPlatform = (
-    url: string
-  ): VideoBlock["settings"]["platform"] => {
-    if (/youtu\.be|youtube\.com/.test(url)) {
-      return "youtube";
-    }
-    if (/vimeo\.com/.test(url)) {
-      return "vimeo";
-    }
-    return "custom";
-  };
-
-  const detectEmbedPlatform = (
-    url: string
-  ): EmbedBlock["settings"]["platform"] => {
-    if (/spotify\.com/.test(url)) return "spotify";
-    if (/twitter\.com|x\.com/.test(url)) return "twitter";
-    if (/instagram\.com/.test(url)) return "instagram";
-    return "custom";
-  };
-
-  const handleSocialLinkChange = (
-    index: number,
-    field: "platform" | "url" | "icon",
-    value: string
-  ) => {
-    setSocialLinks((prev) =>
-      prev.map((link, i) => (i === index ? { ...link, [field]: value } : link))
-    );
-  };
-
-  const handleAddSocialLink = () => {
-    setSocialLinks((prev) => [...prev, { platform: "", url: "", icon: "🔗" }]);
-  };
-
-  const handleRemoveSocialLink = (index: number) => {
-    setSocialLinks((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  const handleFormFieldChange = (
-    index: number,
-    field: keyof FormBlock["settings"]["fields"][number],
-    value: string | boolean
-  ) => {
-    setFormFields((prev) =>
-      prev.map((item, i) => (i === index ? { ...item, [field]: value } : item))
-    );
-  };
-
-  const handleAddFormField = () => {
-    setFormFields((prev) => [
-      ...prev,
-      {
-        id: `field_${Date.now()}`,
-        type: "text",
-        label: "Untitled field",
-        required: false,
-      },
-    ]);
-  };
-
-  const handleRemoveFormField = (index: number) => {
-    if (formFields.length === 1) return;
-    setFormFields((prev) => prev.filter((_, i) => i !== index));
-  };
-
   const handleAddBlock = async () => {
-    if (!selectedType || !currentBoard) return;
+    if (!state.selectedType || !currentBoard) return;
 
     const order = currentBoard.blocks.length;
-    const id = `block_${Date.now()}`;
+    const id = generateBlockId();
+    const baseBlock = { id, order, visible: true };
 
-    let newBlock: any = {
-      id,
-      order,
-      visible: true,
-    };
+    let newBlock: Block | null = null;
 
-    switch (selectedType) {
+    switch (state.selectedType) {
       case "richtext":
-        if (!richTextContent) return;
+        if (!state.richTextContent) return;
         newBlock = {
-          ...newBlock,
+          ...baseBlock,
           type: "richtext",
-          settings: { content: richTextContent, alignment: "left" },
+          settings: { content: state.richTextContent, alignment: "left" },
         } as RichTextBlock;
         break;
 
       case "text":
-        if (!textContent) return;
+        if (!state.textContent) return;
         newBlock = {
-          ...newBlock,
+          ...baseBlock,
           type: "text",
-          settings: { content: textContent, alignment: "left", fontSize: "md" },
+          settings: {
+            content: state.textContent,
+            alignment: "left",
+            fontSize: "md",
+          },
         } as TextBlock;
         break;
 
       case "link":
-        if (!linkTitle || !linkUrl) return;
+        if (!state.linkTitle || !state.linkUrl) return;
         newBlock = {
-          ...newBlock,
+          ...baseBlock,
           type: "link",
-          settings: { url: linkUrl, title: linkTitle },
+          settings: { url: state.linkUrl, title: state.linkTitle },
         } as LinkBlock;
         break;
 
       case "button":
-        if (!buttonText || !buttonUrl) return;
+        if (!state.buttonText || !state.buttonUrl) return;
         newBlock = {
-          ...newBlock,
+          ...baseBlock,
           type: "button",
           settings: {
-            text: buttonText,
-            url: buttonUrl,
+            text: state.buttonText,
+            url: state.buttonUrl,
             style: "primary",
             size: "md",
           },
@@ -393,108 +362,102 @@ export function AddBlockSheet({ open, onOpenChange }: AddBlockSheetProps) {
         break;
 
       case "image":
-        let finalImageUrl = imageUrl;
-        if (selectedImageFile) {
-          const uploadedUrl = await uploadFile(selectedImageFile);
-          if (uploadedUrl) {
-            finalImageUrl = uploadedUrl;
-          }
+        let finalImageUrl = state.imageUrl;
+        if (state.selectedImageFile) {
+          const uploadedUrl = await uploadFile(state.selectedImageFile);
+          if (uploadedUrl) finalImageUrl = uploadedUrl;
         }
-
-        if (!finalImageUrl || !imageAlt) return;
+        if (!finalImageUrl || !state.imageAlt) return;
         newBlock = {
-          ...newBlock,
+          ...baseBlock,
           type: "image",
-          settings: { url: finalImageUrl, alt: imageAlt, aspectRatio: "auto" },
+          settings: {
+            url: finalImageUrl,
+            alt: state.imageAlt,
+            aspectRatio: "auto",
+          },
         } as ImageBlock;
         break;
 
       case "video":
-        if (!videoUrl) return;
+        if (!state.videoUrl) return;
         newBlock = {
-          ...newBlock,
+          ...baseBlock,
           type: "video",
           settings: {
-            url: videoUrl,
-            platform: detectVideoPlatform(videoUrl),
-            title: videoTitle || undefined,
+            url: state.videoUrl,
+            platform: detectVideoPlatform(state.videoUrl),
+            title: state.videoTitle || undefined,
           },
         } as VideoBlock;
         break;
 
       case "embed":
-        if (!embedUrl && !embedCustomUrl) return;
+        if (!state.embedUrl && !state.embedCustomUrl) return;
         newBlock = {
-          ...newBlock,
+          ...baseBlock,
           type: "embed",
           settings: {
-            url: embedUrl || embedCustomUrl,
-            embedCode: embedCustomUrl || undefined,
+            url: state.embedUrl || state.embedCustomUrl,
+            embedCode: state.embedCustomUrl || undefined,
             platform:
-              embedPlatform !== "custom"
-                ? embedPlatform
-                : detectEmbedPlatform(embedUrl || embedCustomUrl),
+              state.embedPlatform !== "custom"
+                ? state.embedPlatform
+                : detectEmbedPlatform(state.embedUrl || state.embedCustomUrl),
           },
         } as EmbedBlock;
         break;
 
       case "social-links":
-        const preparedLinks = socialLinks
+        const preparedLinks = state.socialLinks
           .map((link, index) => ({
             platform: link.platform?.trim() || `Link ${index + 1}`,
             url: link.url.trim(),
             icon: link.icon?.trim() || "🔗",
           }))
           .filter((link) => link.url);
-
         if (preparedLinks.length === 0) return;
-
         newBlock = {
-          ...newBlock,
+          ...baseBlock,
           type: "social-links",
-          settings: {
-            links: preparedLinks,
-            layout: socialLayout,
-          },
+          settings: { links: preparedLinks, layout: state.socialLayout },
         } as SocialLinksBlock;
         break;
 
       case "calendar":
-        if (!calendarUrl) return;
+        if (!state.calendarUrl) return;
         newBlock = {
-          ...newBlock,
+          ...baseBlock,
           type: "calendar",
           settings: {
-            provider: calendarProvider,
-            url: calendarUrl,
-            title: calendarTitle || undefined,
+            provider: state.calendarProvider,
+            url: state.calendarUrl,
+            title: state.calendarTitle || undefined,
           },
         } as CalendarBlock;
         break;
 
       case "form":
-        const preparedFields = formFields.map((field, index) => ({
+        const preparedFields = state.formFields.map((field, index) => ({
           ...field,
           id: field.id || `field_${index}`,
           label: field.label || `Field ${index + 1}`,
         }));
-
         if (preparedFields.length === 0) return;
-
         newBlock = {
-          ...newBlock,
+          ...baseBlock,
           type: "form",
           settings: {
             fields: preparedFields,
-            submitText: formSubmitText || "Submit",
-            submitUrl: formSubmitUrl || undefined,
+            submitText: state.formSubmitText || "Submit",
+            submitUrl: state.formSubmitUrl || undefined,
           },
         } as FormBlock;
         break;
 
       case "divider":
         newBlock = {
-          ...newBlock,
+          ...baseBlock,
           type: "divider",
           settings: { style: "solid", width: "full" },
         } as DividerBlock;
@@ -502,52 +465,55 @@ export function AddBlockSheet({ open, onOpenChange }: AddBlockSheetProps) {
 
       case "spacer":
         newBlock = {
-          ...newBlock,
+          ...baseBlock,
           type: "spacer",
           settings: { height: "md" },
         } as SpacerBlock;
         break;
-
-      default:
-        return;
     }
 
-    addBlock(newBlock);
-    resetForm();
-    onOpenChange(false);
+    if (newBlock) {
+      addBlock(newBlock);
+      dispatch({ type: "RESET" });
+      onOpenChange(false);
+    }
   };
 
   const renderBlockForm = () => {
-    if (!selectedType) return null;
+    if (!state.selectedType) return null;
 
-    switch (selectedType) {
+    const AIButton = (
+      <Button
+        variant="ghost"
+        size="sm"
+        className="h-6 text-xs text-muted-foreground"
+        onClick={handleAISuggestion}
+        disabled={isAILoading}
+      >
+        <Sparkles className="w-3 h-3 mr-1" />
+        {isAILoading ? "Generating..." : "AI Suggestion"}
+      </Button>
+    );
+
+    switch (state.selectedType) {
       case "richtext":
         return (
           <div className="space-y-4">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label>Content</Label>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-6 text-xs text-muted-foreground"
-                  onClick={handleAISuggestion}
-                  disabled={isAILoading}
-                >
-                  <Sparkles className="w-3 h-3 mr-1" />
-                  {isAILoading ? "Generating..." : "AI Suggestion"}
-                </Button>
+                {AIButton}
               </div>
               <RichTextEditor
-                content={richTextContent}
-                onChange={setRichTextContent}
+                content={state.richTextContent}
+                onChange={(v) => setField("richTextContent", v)}
                 placeholder="Start writing your rich text content..."
               />
             </div>
             <Button
               className="w-full"
               onClick={handleAddBlock}
-              disabled={!richTextContent}
+              disabled={!state.richTextContent}
             >
               Add Rich Text
             </Button>
@@ -560,28 +526,19 @@ export function AddBlockSheet({ open, onOpenChange }: AddBlockSheetProps) {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="text-content">Content</Label>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-6 text-xs text-muted-foreground"
-                  onClick={handleAISuggestion}
-                  disabled={isAILoading}
-                >
-                  <Sparkles className="w-3 h-3 mr-1" />
-                  {isAILoading ? "Generating..." : "AI Suggestion"}
-                </Button>
+                {AIButton}
               </div>
               <Input
                 id="text-content"
                 placeholder="Enter your text..."
-                value={textContent}
-                onChange={(e) => setTextContent(e.target.value)}
+                value={state.textContent}
+                onChange={(e) => setField("textContent", e.target.value)}
               />
             </div>
             <Button
               className="w-full"
               onClick={handleAddBlock}
-              disabled={!textContent}
+              disabled={!state.textContent}
             >
               Add Text
             </Button>
@@ -594,22 +551,13 @@ export function AddBlockSheet({ open, onOpenChange }: AddBlockSheetProps) {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="link-title">Title</Label>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-6 text-xs text-muted-foreground"
-                  onClick={handleAISuggestion}
-                  disabled={isAILoading}
-                >
-                  <Sparkles className="w-3 h-3 mr-1" />
-                  {isAILoading ? "Generating..." : "AI Suggestion"}
-                </Button>
+                {AIButton}
               </div>
               <Input
                 id="link-title"
                 placeholder="My Website"
-                value={linkTitle}
-                onChange={(e) => setLinkTitle(e.target.value)}
+                value={state.linkTitle}
+                onChange={(e) => setField("linkTitle", e.target.value)}
               />
             </div>
             <div className="space-y-2">
@@ -617,14 +565,14 @@ export function AddBlockSheet({ open, onOpenChange }: AddBlockSheetProps) {
               <Input
                 id="link-url"
                 placeholder="https://example.com"
-                value={linkUrl}
-                onChange={(e) => setLinkUrl(e.target.value)}
+                value={state.linkUrl}
+                onChange={(e) => setField("linkUrl", e.target.value)}
               />
             </div>
             <Button
               className="w-full"
               onClick={handleAddBlock}
-              disabled={!linkTitle || !linkUrl}
+              disabled={!state.linkTitle || !state.linkUrl}
             >
               Add Link
             </Button>
@@ -639,8 +587,8 @@ export function AddBlockSheet({ open, onOpenChange }: AddBlockSheetProps) {
               <Input
                 id="button-text"
                 placeholder="Click me"
-                value={buttonText}
-                onChange={(e) => setButtonText(e.target.value)}
+                value={state.buttonText}
+                onChange={(e) => setField("buttonText", e.target.value)}
               />
             </div>
             <div className="space-y-2">
@@ -648,14 +596,14 @@ export function AddBlockSheet({ open, onOpenChange }: AddBlockSheetProps) {
               <Input
                 id="button-url"
                 placeholder="https://example.com"
-                value={buttonUrl}
-                onChange={(e) => setButtonUrl(e.target.value)}
+                value={state.buttonUrl}
+                onChange={(e) => setField("buttonUrl", e.target.value)}
               />
             </div>
             <Button
               className="w-full"
               onClick={handleAddBlock}
-              disabled={!buttonText || !buttonUrl}
+              disabled={!state.buttonText || !state.buttonUrl}
             >
               Add Button
             </Button>
@@ -675,9 +623,8 @@ export function AddBlockSheet({ open, onOpenChange }: AddBlockSheetProps) {
                   accept="image/*"
                   onChange={(e) => {
                     if (e.target.files?.[0]) {
-                      setSelectedImageFile(e.target.files[0]);
-                      // Clear URL input when file is selected to avoid confusion
-                      setImageUrl("");
+                      setField("selectedImageFile", e.target.files[0]);
+                      setField("imageUrl", "");
                     }
                   }}
                 />
@@ -696,10 +643,10 @@ export function AddBlockSheet({ open, onOpenChange }: AddBlockSheetProps) {
               <Input
                 id="image-url"
                 placeholder="https://example.com/image.jpg"
-                value={imageUrl}
+                value={state.imageUrl}
                 onChange={(e) => {
-                  setImageUrl(e.target.value);
-                  setSelectedImageFile(null);
+                  setField("imageUrl", e.target.value);
+                  setField("selectedImageFile", null);
                 }}
               />
             </div>
@@ -708,14 +655,18 @@ export function AddBlockSheet({ open, onOpenChange }: AddBlockSheetProps) {
               <Input
                 id="image-alt"
                 placeholder="Description of image"
-                value={imageAlt}
-                onChange={(e) => setImageAlt(e.target.value)}
+                value={state.imageAlt}
+                onChange={(e) => setField("imageAlt", e.target.value)}
               />
             </div>
             <Button
               className="w-full"
               onClick={handleAddBlock}
-              disabled={(!imageUrl && !selectedImageFile) || !imageAlt || uploading}
+              disabled={
+                (!state.imageUrl && !state.selectedImageFile) ||
+                !state.imageAlt ||
+                uploading
+              }
             >
               {uploading ? "Uploading..." : "Add Image"}
             </Button>
@@ -730,8 +681,8 @@ export function AddBlockSheet({ open, onOpenChange }: AddBlockSheetProps) {
               <Input
                 id="video-url"
                 placeholder="https://www.youtube.com/watch?v=..."
-                value={videoUrl}
-                onChange={(e) => setVideoUrl(e.target.value)}
+                value={state.videoUrl}
+                onChange={(e) => setField("videoUrl", e.target.value)}
               />
               <p className="text-xs text-muted-foreground">
                 Supports YouTube, Vimeo, or custom embed URLs.
@@ -742,14 +693,14 @@ export function AddBlockSheet({ open, onOpenChange }: AddBlockSheetProps) {
               <Input
                 id="video-title"
                 placeholder="My latest video"
-                value={videoTitle}
-                onChange={(e) => setVideoTitle(e.target.value)}
+                value={state.videoTitle}
+                onChange={(e) => setField("videoTitle", e.target.value)}
               />
             </div>
             <Button
               className="w-full"
               onClick={handleAddBlock}
-              disabled={!videoUrl}
+              disabled={!state.videoUrl}
             >
               Add Video
             </Button>
@@ -762,10 +713,11 @@ export function AddBlockSheet({ open, onOpenChange }: AddBlockSheetProps) {
             <div className="space-y-2">
               <Label>Platform</Label>
               <Select
-                value={embedPlatform}
-                onValueChange={(value) =>
-                  setEmbedPlatform(
-                    value as EmbedBlock["settings"]["platform"]
+                value={state.embedPlatform}
+                onValueChange={(v) =>
+                  setField(
+                    "embedPlatform",
+                    v as EmbedBlock["settings"]["platform"]
                   )
                 }
               >
@@ -785,8 +737,8 @@ export function AddBlockSheet({ open, onOpenChange }: AddBlockSheetProps) {
               <Input
                 id="embed-url"
                 placeholder="https://open.spotify.com/track/..."
-                value={embedUrl}
-                onChange={(e) => setEmbedUrl(e.target.value)}
+                value={state.embedUrl}
+                onChange={(e) => setField("embedUrl", e.target.value)}
               />
             </div>
             <div className="space-y-2">
@@ -794,18 +746,18 @@ export function AddBlockSheet({ open, onOpenChange }: AddBlockSheetProps) {
               <Input
                 id="embed-custom"
                 placeholder="https://open.spotify.com/embed/track/..."
-                value={embedCustomUrl}
-                onChange={(e) => setEmbedCustomUrl(e.target.value)}
+                value={state.embedCustomUrl}
+                onChange={(e) => setField("embedCustomUrl", e.target.value)}
               />
               <p className="text-xs text-muted-foreground">
                 Use this if the default embed URL doesn&apos;t match what you
-                need (e.g., custom iframe src).
+                need.
               </p>
             </div>
             <Button
               className="w-full"
               onClick={handleAddBlock}
-              disabled={!embedUrl && !embedCustomUrl}
+              disabled={!state.embedUrl && !state.embedCustomUrl}
             >
               Add Embed
             </Button>
@@ -818,9 +770,12 @@ export function AddBlockSheet({ open, onOpenChange }: AddBlockSheetProps) {
             <div className="space-y-2">
               <Label>Layout</Label>
               <Select
-                value={socialLayout}
-                onValueChange={(value) =>
-                  setSocialLayout(value as SocialLinksBlock["settings"]["layout"])
+                value={state.socialLayout}
+                onValueChange={(v) =>
+                  setField(
+                    "socialLayout",
+                    v as SocialLinksBlock["settings"]["layout"]
+                  )
                 }
               >
                 <SelectTrigger>
@@ -832,17 +787,18 @@ export function AddBlockSheet({ open, onOpenChange }: AddBlockSheetProps) {
                 </SelectContent>
               </Select>
             </div>
-
             <div className="space-y-3 max-h-[360px] overflow-y-auto pr-2">
-              {socialLinks.map((link, index) => (
+              {state.socialLinks.map((link, index) => (
                 <div key={index} className="border rounded-lg p-3 space-y-3">
                   <div className="flex items-center justify-between text-sm font-medium">
                     <span>Link {index + 1}</span>
-                    {socialLinks.length > 1 && (
+                    {state.socialLinks.length > 1 && (
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleRemoveSocialLink(index)}
+                        onClick={() =>
+                          dispatch({ type: "REMOVE_SOCIAL_LINK", index })
+                        }
                         className="h-6 px-2 text-muted-foreground"
                       >
                         Remove
@@ -855,7 +811,12 @@ export function AddBlockSheet({ open, onOpenChange }: AddBlockSheetProps) {
                       placeholder="Instagram"
                       value={link.platform}
                       onChange={(e) =>
-                        handleSocialLinkChange(index, "platform", e.target.value)
+                        dispatch({
+                          type: "SET_SOCIAL_LINK",
+                          index,
+                          field: "platform",
+                          value: e.target.value,
+                        })
                       }
                     />
                   </div>
@@ -865,7 +826,12 @@ export function AddBlockSheet({ open, onOpenChange }: AddBlockSheetProps) {
                       placeholder="https://instagram.com/username"
                       value={link.url}
                       onChange={(e) =>
-                        handleSocialLinkChange(index, "url", e.target.value)
+                        dispatch({
+                          type: "SET_SOCIAL_LINK",
+                          index,
+                          field: "url",
+                          value: e.target.value,
+                        })
                       }
                     />
                   </div>
@@ -876,27 +842,30 @@ export function AddBlockSheet({ open, onOpenChange }: AddBlockSheetProps) {
                       maxLength={4}
                       value={link.icon}
                       onChange={(e) =>
-                        handleSocialLinkChange(index, "icon", e.target.value)
+                        dispatch({
+                          type: "SET_SOCIAL_LINK",
+                          index,
+                          field: "icon",
+                          value: e.target.value,
+                        })
                       }
                     />
                   </div>
                 </div>
               ))}
             </div>
-
             <Button
               variant="outline"
               size="sm"
-              onClick={handleAddSocialLink}
+              onClick={() => dispatch({ type: "ADD_SOCIAL_LINK" })}
               className="w-full"
             >
               Add Another Link
             </Button>
-
             <Button
               className="w-full"
               onClick={handleAddBlock}
-              disabled={socialLinks.every((link) => !link.url)}
+              disabled={state.socialLinks.every((link) => !link.url)}
             >
               Add Social Links
             </Button>
@@ -909,10 +878,11 @@ export function AddBlockSheet({ open, onOpenChange }: AddBlockSheetProps) {
             <div className="space-y-2">
               <Label>Provider</Label>
               <Select
-                value={calendarProvider}
-                onValueChange={(value) =>
-                  setCalendarProvider(
-                    value as CalendarBlock["settings"]["provider"]
+                value={state.calendarProvider}
+                onValueChange={(v) =>
+                  setField(
+                    "calendarProvider",
+                    v as CalendarBlock["settings"]["provider"]
                   )
                 }
               >
@@ -930,12 +900,12 @@ export function AddBlockSheet({ open, onOpenChange }: AddBlockSheetProps) {
               <Input
                 id="calendar-url"
                 placeholder={
-                  calendarProvider === "cal"
+                  state.calendarProvider === "cal"
                     ? "https://cal.com/username"
                     : "https://calendly.com/username"
                 }
-                value={calendarUrl}
-                onChange={(e) => setCalendarUrl(e.target.value)}
+                value={state.calendarUrl}
+                onChange={(e) => setField("calendarUrl", e.target.value)}
               />
             </div>
             <div className="space-y-2">
@@ -943,14 +913,14 @@ export function AddBlockSheet({ open, onOpenChange }: AddBlockSheetProps) {
               <Input
                 id="calendar-title"
                 placeholder="Book a call"
-                value={calendarTitle}
-                onChange={(e) => setCalendarTitle(e.target.value)}
+                value={state.calendarTitle}
+                onChange={(e) => setField("calendarTitle", e.target.value)}
               />
             </div>
             <Button
               className="w-full"
               onClick={handleAddBlock}
-              disabled={!calendarUrl}
+              disabled={!state.calendarUrl}
             >
               Add Calendar
             </Button>
@@ -963,16 +933,16 @@ export function AddBlockSheet({ open, onOpenChange }: AddBlockSheetProps) {
             <div className="space-y-2">
               <Label>Submit Button Text</Label>
               <Input
-                value={formSubmitText}
-                onChange={(e) => setFormSubmitText(e.target.value)}
+                value={state.formSubmitText}
+                onChange={(e) => setField("formSubmitText", e.target.value)}
                 placeholder="Send"
               />
             </div>
             <div className="space-y-2">
               <Label>Submit URL (optional)</Label>
               <Input
-                value={formSubmitUrl}
-                onChange={(e) => setFormSubmitUrl(e.target.value)}
+                value={state.formSubmitUrl}
+                onChange={(e) => setField("formSubmitUrl", e.target.value)}
                 placeholder="https://example.com/forms"
               />
               <p className="text-xs text-muted-foreground">
@@ -980,15 +950,17 @@ export function AddBlockSheet({ open, onOpenChange }: AddBlockSheetProps) {
               </p>
             </div>
             <div className="space-y-3 max-h-[360px] overflow-y-auto pr-2">
-              {formFields.map((field, index) => (
+              {state.formFields.map((field, index) => (
                 <div key={field.id} className="border rounded-lg p-3 space-y-3">
                   <div className="flex items-center justify-between text-sm font-medium">
                     <span>Field {index + 1}</span>
-                    {formFields.length > 1 && (
+                    {state.formFields.length > 1 && (
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleRemoveFormField(index)}
+                        onClick={() =>
+                          dispatch({ type: "REMOVE_FORM_FIELD", index })
+                        }
                         className="h-6 px-2 text-muted-foreground"
                       >
                         Remove
@@ -1001,14 +973,17 @@ export function AddBlockSheet({ open, onOpenChange }: AddBlockSheetProps) {
                       className="w-full rounded-md border px-2 py-1 text-sm"
                       value={field.type}
                       onChange={(e) =>
-                        handleFormFieldChange(index, "type", e.target.value)
+                        dispatch({
+                          type: "SET_FORM_FIELD",
+                          index,
+                          field: "type",
+                          value: e.target.value,
+                        })
                       }
                     >
-                      {FORM_FIELD_TYPES.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
+                      <option value="text">Text</option>
+                      <option value="email">Email</option>
+                      <option value="textarea">Textarea</option>
                     </select>
                   </div>
                   <div className="space-y-2">
@@ -1016,7 +991,12 @@ export function AddBlockSheet({ open, onOpenChange }: AddBlockSheetProps) {
                     <Input
                       value={field.label}
                       onChange={(e) =>
-                        handleFormFieldChange(index, "label", e.target.value)
+                        dispatch({
+                          type: "SET_FORM_FIELD",
+                          index,
+                          field: "label",
+                          value: e.target.value,
+                        })
                       }
                       placeholder="Your name"
                     />
@@ -1026,11 +1006,12 @@ export function AddBlockSheet({ open, onOpenChange }: AddBlockSheetProps) {
                     <Input
                       value={field.placeholder || ""}
                       onChange={(e) =>
-                        handleFormFieldChange(
+                        dispatch({
+                          type: "SET_FORM_FIELD",
                           index,
-                          "placeholder",
-                          e.target.value
-                        )
+                          field: "placeholder",
+                          value: e.target.value,
+                        })
                       }
                       placeholder="Enter name..."
                     />
@@ -1041,11 +1022,12 @@ export function AddBlockSheet({ open, onOpenChange }: AddBlockSheetProps) {
                       id={`form-required-${field.id}`}
                       checked={field.required}
                       onChange={(e) =>
-                        handleFormFieldChange(
+                        dispatch({
+                          type: "SET_FORM_FIELD",
                           index,
-                          "required",
-                          e.target.checked
-                        )
+                          field: "required",
+                          value: e.target.checked,
+                        })
                       }
                     />
                     <Label
@@ -1061,7 +1043,7 @@ export function AddBlockSheet({ open, onOpenChange }: AddBlockSheetProps) {
             <Button
               variant="outline"
               size="sm"
-              onClick={handleAddFormField}
+              onClick={() => dispatch({ type: "ADD_FORM_FIELD" })}
               className="w-full"
             >
               Add Field
@@ -1081,7 +1063,7 @@ export function AddBlockSheet({ open, onOpenChange }: AddBlockSheetProps) {
               it after adding.
             </p>
             <Button className="w-full" onClick={handleAddBlock}>
-              Add {selectedType === "divider" ? "Divider" : "Spacer"}
+              Add {state.selectedType === "divider" ? "Divider" : "Spacer"}
             </Button>
           </div>
         );
@@ -1096,152 +1078,30 @@ export function AddBlockSheet({ open, onOpenChange }: AddBlockSheetProps) {
       <SheetContent className="overflow-y-auto">
         <SheetHeader>
           <SheetTitle>
-            {selectedType ? "Configure Block" : "Add Block"}
+            {state.selectedType ? "Configure Block" : "Add Block"}
           </SheetTitle>
           <SheetDescription>
-            {selectedType
+            {state.selectedType
               ? "Fill in the details for your block"
               : "Choose a block type to add to your board"}
           </SheetDescription>
         </SheetHeader>
 
         <div className="mt-6">
-          {!selectedType ? (
-            <div className="space-y-6">
-              {/* Content Blocks */}
-              <div className="space-y-3">
-                <h3 className="text-sm font-medium text-muted-foreground">
-                  Content
-                </h3>
-                <div className="grid gap-2">
-                  {blockTypes
-                    .filter((b) => b.category === "content")
-                    .map((blockType) => (
-                      <button
-                        key={blockType.type}
-                        onClick={() => setSelectedType(blockType.type)}
-                        className={cn(
-                          "flex items-start gap-3 p-3 rounded-lg border bg-card text-left hover:bg-accent hover:border-accent-foreground/20 transition-colors"
-                        )}
-                      >
-                        <div className="text-muted-foreground mt-0.5">
-                          {blockType.icon}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium text-sm">
-                            {blockType.label}
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            {blockType.description}
-                          </div>
-                        </div>
-                      </button>
-                    ))}
-                </div>
-              </div>
-
-              {/* Interaction Blocks */}
-              <div className="space-y-3">
-                <h3 className="text-sm font-medium text-muted-foreground">
-                  Interactive
-                </h3>
-                <div className="grid gap-2">
-                  {blockTypes
-                    .filter((b) => b.category === "interaction")
-                    .map((blockType) => (
-                      <button
-                        key={blockType.type}
-                        onClick={() => setSelectedType(blockType.type)}
-                        className={cn(
-                          "flex items-start gap-3 p-3 rounded-lg border bg-card text-left hover:bg-accent hover:border-accent-foreground/20 transition-colors"
-                        )}
-                      >
-                        <div className="text-muted-foreground mt-0.5">
-                          {blockType.icon}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium text-sm">
-                            {blockType.label}
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            {blockType.description}
-                          </div>
-                        </div>
-                      </button>
-                    ))}
-                </div>
-              </div>
-
-              {/* Media Blocks */}
-              <div className="space-y-3">
-                <h3 className="text-sm font-medium text-muted-foreground">
-                  Media
-                </h3>
-                <div className="grid gap-2">
-                  {blockTypes
-                    .filter((b) => b.category === "media")
-                    .map((blockType) => (
-                      <button
-                        key={blockType.type}
-                        onClick={() => setSelectedType(blockType.type)}
-                        className={cn(
-                          "flex items-start gap-3 p-3 rounded-lg border bg-card text-left hover:bg-accent hover:border-accent-foreground/20 transition-colors"
-                        )}
-                      >
-                        <div className="text-muted-foreground mt-0.5">
-                          {blockType.icon}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium text-sm">
-                            {blockType.label}
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            {blockType.description}
-                          </div>
-                        </div>
-                      </button>
-                    ))}
-                </div>
-              </div>
-
-              {/* Layout Blocks */}
-              <div className="space-y-3">
-                <h3 className="text-sm font-medium text-muted-foreground">
-                  Layout
-                </h3>
-                <div className="grid gap-2">
-                  {blockTypes
-                    .filter((b) => b.category === "layout")
-                    .map((blockType) => (
-                      <button
-                        key={blockType.type}
-                        onClick={() => setSelectedType(blockType.type)}
-                        className={cn(
-                          "flex items-start gap-3 p-3 rounded-lg border bg-card text-left hover:bg-accent hover:border-accent-foreground/20 transition-colors"
-                        )}
-                      >
-                        <div className="text-muted-foreground mt-0.5">
-                          {blockType.icon}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium text-sm">
-                            {blockType.label}
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            {blockType.description}
-                          </div>
-                        </div>
-                      </button>
-                    ))}
-                </div>
-              </div>
-            </div>
+          {!state.selectedType ? (
+            <BlockTypeSelector
+              onSelect={(type) =>
+                dispatch({ type: "SET_SELECTED_TYPE", payload: type })
+              }
+            />
           ) : (
             <div className="space-y-4">
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setSelectedType(null)}
+                onClick={() =>
+                  dispatch({ type: "SET_SELECTED_TYPE", payload: null })
+                }
               >
                 ← Back to block types
               </Button>

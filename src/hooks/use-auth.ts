@@ -6,10 +6,19 @@ import { useUserStore, clearAllAuthState } from "@/stores/user-store";
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { UserProfile } from "@/types";
+import { getValidToken } from "@/lib/auth-utils";
 
 export function useAuth() {
   const { user: firebaseUser, loading: authLoading } = useAuthContext();
-  const { user, setUser, clearUser, setLoading, isLoading, isHydrated, setHydrated } = useUserStore();
+  const {
+    user,
+    setUser,
+    clearUser,
+    setLoading,
+    isLoading,
+    isHydrated,
+    setHydrated,
+  } = useUserStore();
   const [syncError, setSyncError] = useState<string | null>(null);
 
   // Clear any stale localStorage on mount
@@ -42,8 +51,8 @@ export function useAuth() {
 
       try {
         // Force refresh the ID token to ensure Firestore has the latest auth state
-        await firebaseUser.getIdToken(true);
-        
+        await getValidToken(firebaseUser);
+
         const userRef = doc(db, "users", firebaseUser.uid);
         const userSnap = await getDoc(userRef);
 
@@ -87,7 +96,16 @@ export function useAuth() {
     };
 
     syncUser();
-  }, [firebaseUser, authLoading, user, setUser, clearUser, setLoading, isHydrated, setHydrated]);
+  }, [
+    firebaseUser,
+    authLoading,
+    user,
+    setUser,
+    clearUser,
+    setLoading,
+    isHydrated,
+    setHydrated,
+  ]);
 
   return {
     user,

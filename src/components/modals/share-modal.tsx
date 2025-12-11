@@ -40,14 +40,14 @@ import {
 } from "lucide-react";
 import { BoardPrivacy } from "@/types";
 import { cn } from "@/lib/utils";
-import { useToastNotification } from "@/components/ui/toast";
+import { useToast } from "@/stores/ui-store";
 
 export function ShareModal() {
   const { currentBoard } = useBoardStore();
   const { activeModal, closeModal } = useModal();
   const { updateBoard } = useBoards();
-  const toast = useToastNotification();
-  
+  const toast = useToast();
+
   const [privacy, setPrivacy] = useState<BoardPrivacy>("public");
   const [copied, setCopied] = useState<string | null>(null);
   const [password, setPassword] = useState("");
@@ -70,7 +70,7 @@ export function ShareModal() {
   const boardUrl = `${
     typeof window !== "undefined" ? window.location.origin : ""
   }/u/${currentBoard.ownerUsername}/${currentBoard.slug}`;
-  
+
   const embedCode = `<iframe src="${boardUrl}" width="100%" height="600" frameborder="0" style="border-radius: 12px; border: 1px solid #e5e5e5;"></iframe>`;
 
   const handleCopy = (text: string, type: string) => {
@@ -130,9 +130,15 @@ export function ShareModal() {
 
   // Social share URLs
   const socialLinks = {
-    twitter: `https://twitter.com/intent/tweet?url=${encodeURIComponent(boardUrl)}&text=${encodeURIComponent(`Check out my board: ${currentBoard.title}`)}`,
-    facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(boardUrl)}`,
-    linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(boardUrl)}`,
+    twitter: `https://twitter.com/intent/tweet?url=${encodeURIComponent(
+      boardUrl
+    )}&text=${encodeURIComponent(`Check out my board: ${currentBoard.title}`)}`,
+    facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
+      boardUrl
+    )}`,
+    linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(
+      boardUrl
+    )}`,
   };
 
   return (
@@ -155,7 +161,11 @@ export function ShareModal() {
               <Lock className="w-4 h-4" />
               Privacy Settings
             </Label>
-            <Select value={privacy} onValueChange={handlePrivacyChange} disabled={isSaving}>
+            <Select
+              value={privacy}
+              onValueChange={handlePrivacyChange}
+              disabled={isSaving}
+            >
               <SelectTrigger className="w-full">
                 <SelectValue />
               </SelectTrigger>
@@ -262,35 +272,32 @@ export function ShareModal() {
 
           {/* Quick Share Buttons */}
           <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              className="flex-1"
-              asChild
-            >
-              <a href={socialLinks.twitter} target="_blank" rel="noopener noreferrer">
+            <Button variant="outline" size="sm" className="flex-1" asChild>
+              <a
+                href={socialLinks.twitter}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 <Twitter className="w-4 h-4 mr-2" />
                 Twitter
               </a>
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="flex-1"
-              asChild
-            >
-              <a href={socialLinks.facebook} target="_blank" rel="noopener noreferrer">
+            <Button variant="outline" size="sm" className="flex-1" asChild>
+              <a
+                href={socialLinks.facebook}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 <Facebook className="w-4 h-4 mr-2" />
                 Facebook
               </a>
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="flex-1"
-              asChild
-            >
-              <a href={socialLinks.linkedin} target="_blank" rel="noopener noreferrer">
+            <Button variant="outline" size="sm" className="flex-1" asChild>
+              <a
+                href={socialLinks.linkedin}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 <Linkedin className="w-4 h-4 mr-2" />
                 LinkedIn
               </a>
@@ -342,11 +349,9 @@ export function ShareModal() {
                 onChange={(e) => setNewCollaborator(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleAddCollaborator()}
               />
-              <Button onClick={handleAddCollaborator}>
-                Invite
-              </Button>
+              <Button onClick={handleAddCollaborator}>Invite</Button>
             </div>
-            
+
             {collaborators.length === 0 ? (
               <p className="text-sm text-muted-foreground py-2">
                 No collaborators yet. Add team members by email.

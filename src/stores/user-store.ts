@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { UserProfile } from "@/types";
+import { clearOpenboardStorage, removeStorageItem } from "@/lib/storage-utils";
 
 // NOTE: We intentionally do NOT persist this store to localStorage
 // to avoid hydration issues with stale auth data. The user profile
@@ -30,38 +31,17 @@ export const useUserStore = create<UserState>()((set) => ({
 
   clearUser: () => {
     // Clear any stale localStorage data from previous versions
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("openboard-user");
-    }
+    removeStorageItem("openboard-user");
     return set({ user: null, isLoading: false, isHydrated: true });
   },
 
   setLoading: (isLoading) => set({ isLoading }),
-  
+
   setHydrated: (hydrated) => set({ isHydrated: hydrated }),
 }));
 
-// Utility to clear all persisted auth state
-export function clearAllAuthState() {
-  if (typeof window === "undefined") return;
-  
-  // Clear any openboard-related localStorage
-  const keysToRemove: string[] = [];
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i);
-    if (key && key.includes("openboard")) {
-      keysToRemove.push(key);
-    }
-  }
-  keysToRemove.forEach((key) => localStorage.removeItem(key));
-  
-  // Clear sessionStorage too
-  const sessionKeysToRemove: string[] = [];
-  for (let i = 0; i < sessionStorage.length; i++) {
-    const key = sessionStorage.key(i);
-    if (key && key.includes("openboard")) {
-      sessionKeysToRemove.push(key);
-    }
-  }
-  sessionKeysToRemove.forEach((key) => sessionStorage.removeItem(key));
-}
+/**
+ * Utility to clear all persisted auth state
+ * @deprecated Use clearOpenboardStorage from @/lib/storage-utils instead
+ */
+export const clearAllAuthState = clearOpenboardStorage;

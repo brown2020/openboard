@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { useBoardStore } from "@/stores/board-store";
-import { Edit2, Trash2, Eye, EyeOff } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -15,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { BlockControls } from "./block-controls";
 
 interface ButtonBlockProps {
   block: ButtonBlockType;
@@ -22,12 +22,25 @@ interface ButtonBlockProps {
   isEditing?: boolean;
 }
 
+const SIZE_MAP = {
+  sm: "default" as const,
+  md: "lg" as const,
+  lg: "lg" as const,
+};
+
+const VARIANT_MAP = {
+  primary: "default" as const,
+  secondary: "secondary" as const,
+  outline: "outline" as const,
+  ghost: "ghost" as const,
+};
+
 export function ButtonBlock({
   block,
   onClick,
   isEditing = false,
 }: ButtonBlockProps) {
-  const { updateBlock, deleteBlock } = useBoardStore();
+  const { updateBlock } = useBoardStore();
   const [isEditMode, setIsEditMode] = useState(false);
   const { text, url, style = "primary", size = "md" } = block.settings;
 
@@ -35,29 +48,6 @@ export function ButtonBlock({
   const [editUrl, setEditUrl] = useState(url);
   const [editStyle, setEditStyle] = useState(style);
   const [editSize, setEditSize] = useState(size);
-
-  const sizeMap = {
-    sm: "default" as const,
-    md: "lg" as const,
-    lg: "lg" as const,
-  };
-
-  const variantMap = {
-    primary: "default" as const,
-    secondary: "secondary" as const,
-    outline: "outline" as const,
-    ghost: "ghost" as const,
-  };
-
-  const toggleVisibility = () => {
-    updateBlock(block.id, { visible: !block.visible });
-  };
-
-  const handleDelete = () => {
-    if (confirm("Are you sure you want to delete this block?")) {
-      deleteBlock(block.id);
-    }
-  };
 
   const handleSave = () => {
     updateBlock(block.id, {
@@ -133,36 +123,11 @@ export function ButtonBlock({
     <div className="group relative">
       {/* Editor Controls */}
       {isEditing && (
-        <div className="absolute -top-2 -right-2 z-10 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => setIsEditMode(true)}
-            className="h-7 w-7 p-0 shadow-md"
-          >
-            <Edit2 className="h-3 w-3" />
-          </Button>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={toggleVisibility}
-            className="h-7 w-7 p-0 shadow-md"
-          >
-            {block.visible ? (
-              <Eye className="h-3 w-3" />
-            ) : (
-              <EyeOff className="h-3 w-3" />
-            )}
-          </Button>
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={handleDelete}
-            className="h-7 w-7 p-0 shadow-md"
-          >
-            <Trash2 className="h-3 w-3" />
-          </Button>
-        </div>
+        <BlockControls
+          blockId={block.id}
+          isVisible={block.visible}
+          onEdit={() => setIsEditMode(true)}
+        />
       )}
 
       {/* Button Content */}
@@ -174,8 +139,8 @@ export function ButtonBlock({
       >
         {isEditing ? (
           <Button
-            variant={variantMap[style]}
-            size={sizeMap[size]}
+            variant={VARIANT_MAP[style]}
+            size={SIZE_MAP[size]}
             className={cn(
               "min-w-[200px]",
               size === "lg" && "text-lg px-8 py-6"
@@ -185,8 +150,8 @@ export function ButtonBlock({
           </Button>
         ) : (
           <Button
-            variant={variantMap[style]}
-            size={sizeMap[size]}
+            variant={VARIANT_MAP[style]}
+            size={SIZE_MAP[size]}
             className={cn(
               "min-w-[200px]",
               size === "lg" && "text-lg px-8 py-6"

@@ -18,32 +18,18 @@ import {
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useBoardStore } from "@/stores/board-store";
-import { Board, BoardTheme } from "@/types";
+import { Board } from "@/types";
 import { useAuthContext } from "@/lib/auth-context";
 import { useUserStore } from "@/stores/user-store";
-
-const DEFAULT_THEME: BoardTheme = {
-  name: "Default",
-  background: {
-    type: "color",
-    value: "#ffffff",
-  },
-  primaryColor: "#000000",
-  textColor: "#000000",
-  cardBackground: "#f5f5f5",
-  borderRadius: "md",
-  font: {
-    heading: "system-ui",
-    body: "system-ui",
-  },
-};
+import { DEFAULT_THEME } from "@/lib/constants";
+import { getValidToken } from "@/lib/auth-utils";
 
 export function useBoards() {
   // Get Firebase user directly from auth context
   const { user: firebaseUser, loading: authLoading } = useAuthContext();
   // Get user profile from store
   const { user: userProfile, isHydrated } = useUserStore();
-  
+
   const { boards, setBoards, setStatus, setError } = useBoardStore();
   const unsubscribeRef = useRef<(() => void) | null>(null);
   const [isReady, setIsReady] = useState(false);
@@ -63,7 +49,7 @@ export function useBoards() {
 
       try {
         // Force refresh the ID token to ensure Firestore has the latest auth state
-        await firebaseUser.getIdToken(true);
+        await getValidToken(firebaseUser);
         setIsReady(true);
       } catch (error) {
         console.error("Error refreshing token:", error);
@@ -100,7 +86,7 @@ export function useBoards() {
     }
 
     setStatus("loading");
-    
+
     const boardsRef = collection(db, "boards");
     const q = query(
       boardsRef,
@@ -144,8 +130,8 @@ export function useBoards() {
 
       try {
         // Ensure fresh token
-        await firebaseUser.getIdToken(true);
-        
+        await getValidToken(firebaseUser);
+
         const boardId = `${firebaseUser.uid}_${slug}`;
         const boardRef = doc(db, "boards", boardId);
 

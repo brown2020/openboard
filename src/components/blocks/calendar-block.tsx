@@ -13,13 +13,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Eye,
-  EyeOff,
-  Edit2,
-  Trash2,
-  Calendar as CalendarIcon,
-} from "lucide-react";
+import { Calendar as CalendarIcon } from "lucide-react";
+import { BlockControls } from "./block-controls";
 
 type Provider = CalendarBlockType["settings"]["provider"];
 
@@ -34,7 +29,7 @@ const PROVIDER_LABEL: Record<Provider, string> = {
   calendly: "Calendly",
 };
 
-const normalizeCalendarUrl = (url: string, provider: Provider) => {
+function normalizeCalendarUrl(url: string, provider: Provider): string {
   if (!url) return "";
   if (provider === "cal") {
     if (url.includes("/embed")) return url;
@@ -42,20 +37,21 @@ const normalizeCalendarUrl = (url: string, provider: Provider) => {
   }
   if (provider === "calendly") {
     if (url.includes("embed")) return url;
+    const hostname =
+      typeof window !== "undefined" ? window.location.hostname : "example.com";
     return `https://calendly.com/${url
       .replace("https://calendly.com/", "")
-      .replace(/^\/+/, "")}?embed_domain=${typeof window !== "undefined" ? window.location.hostname : "example.com"
-      }&embed_type=Inline`;
+      .replace(/^\/+/, "")}?embed_domain=${hostname}&embed_type=Inline`;
   }
   return url;
-};
+}
 
 export function CalendarBlock({
   block,
   isEditing = false,
   onClick,
 }: CalendarBlockProps) {
-  const { updateBlock, deleteBlock } = useBoardStore();
+  const { updateBlock } = useBoardStore();
   const [isEditMode, setIsEditMode] = useState(false);
   const { provider, url, title } = block.settings;
 
@@ -67,16 +63,6 @@ export function CalendarBlock({
     () => normalizeCalendarUrl(url, provider),
     [url, provider]
   );
-
-  const toggleVisibility = () => {
-    updateBlock(block.id, { visible: !block.visible });
-  };
-
-  const handleDelete = () => {
-    if (confirm("Delete this block?")) {
-      deleteBlock(block.id);
-    }
-  };
 
   const handleSave = () => {
     updateBlock(block.id, {
@@ -142,36 +128,11 @@ export function CalendarBlock({
   return (
     <div className="group relative" onClick={onClick}>
       {isEditing && (
-        <div className="absolute -top-2 -right-2 z-10 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => setIsEditMode(true)}
-            className="h-7 w-7 p-0 shadow-md"
-          >
-            <Edit2 className="h-3 w-3" />
-          </Button>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={toggleVisibility}
-            className="h-7 w-7 p-0 shadow-md"
-          >
-            {block.visible ? (
-              <Eye className="h-3 w-3" />
-            ) : (
-              <EyeOff className="h-3 w-3" />
-            )}
-          </Button>
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={handleDelete}
-            className="h-7 w-7 p-0 shadow-md"
-          >
-            <Trash2 className="h-3 w-3" />
-          </Button>
-        </div>
+        <BlockControls
+          blockId={block.id}
+          isVisible={block.visible}
+          onEdit={() => setIsEditMode(true)}
+        />
       )}
 
       <div className="border rounded-lg bg-card overflow-hidden">
@@ -198,4 +159,3 @@ export function CalendarBlock({
     </div>
   );
 }
-
