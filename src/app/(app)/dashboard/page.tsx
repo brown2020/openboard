@@ -3,20 +3,12 @@
 import { useAuth } from "@/hooks/use-auth";
 import { useBoards } from "@/hooks/use-boards";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
 
 export default function DashboardPage() {
   const { user, isLoaded } = useAuth();
   const { boards } = useBoards();
-  const router = useRouter();
 
-  useEffect(() => {
-    if (isLoaded && !user) {
-      router.push("/login");
-    }
-  }, [user, isLoaded, router]);
-
+  // Route protection is handled by proxy.ts - show skeleton while loading
   if (!isLoaded || !user) {
     return (
       <div className="p-4">

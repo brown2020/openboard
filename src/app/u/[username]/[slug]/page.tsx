@@ -8,6 +8,7 @@ import { BlockRenderer } from "@/components/blocks/block-renderer";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { getThemeBackground } from "@/lib/utils";
 
 // Mark this route as dynamic for Next.js 16
 export const dynamic = "force-dynamic";
@@ -137,12 +138,7 @@ export default function PublicBoardPage({ params }: PageProps) {
   return (
     <div
       className="min-h-screen"
-      style={{
-        background:
-          board.theme.background.type === "gradient"
-            ? board.theme.background.value
-            : board.theme.background.value,
-      }}
+      style={{ background: getThemeBackground(board.theme) }}
     >
       <div className="container mx-auto px-4 py-16">
         <div className="max-w-2xl mx-auto">

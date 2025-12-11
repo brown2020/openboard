@@ -17,6 +17,7 @@ import { BOARD_TEMPLATES } from "@/lib/templates";
 import { BoardTemplate, Block } from "@/types";
 import { Search, Star, TrendingUp } from "lucide-react";
 import Link from "next/link";
+import { generateUniqueSlug, getThemeBackground } from "@/lib/utils";
 
 export default function TemplatesPage() {
   const { user } = useAuth();
@@ -37,16 +38,14 @@ export default function TemplatesPage() {
 
   const handleUseTemplate = async (template: BoardTemplate) => {
     if (!user) {
-      router.push("/sign-in");
+      router.push("/login");
       return;
     }
 
     setIsCreating(template.id);
 
     // Generate unique slug
-    const slug = `${template.name
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")}-${Date.now().toString().slice(-4)}`;
+    const slug = generateUniqueSlug(template.name);
     const board = await createBoard(template.name, slug);
 
     if (board) {
@@ -127,12 +126,7 @@ export default function TemplatesPage() {
                 {/* Preview */}
                 <div
                   className="h-48 p-6 relative"
-                  style={{
-                    background:
-                      template.theme.background.type === "gradient"
-                        ? template.theme.background.value
-                        : template.theme.background.value,
-                  }}
+                  style={{ background: getThemeBackground(template.theme) }}
                 >
                   {template.featured && (
                     <div className="absolute top-3 right-3 bg-yellow-500 text-white px-2 py-1 rounded-full text-xs font-semibold flex items-center gap-1">

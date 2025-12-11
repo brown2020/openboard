@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useBoards } from "@/hooks/use-boards";
 import { useRouter } from "next/navigation";
@@ -18,6 +18,7 @@ import {
 import { Plus, ExternalLink, Settings, Copy } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
+import { generateSlug, getThemeBackground } from "@/lib/utils";
 
 export default function BoardsPage() {
   const { user, isLoaded } = useAuth();
@@ -27,12 +28,6 @@ export default function BoardsPage() {
   const [newBoardTitle, setNewBoardTitle] = useState("");
   const [newBoardSlug, setNewBoardSlug] = useState("");
   const [sheetOpen, setSheetOpen] = useState(false);
-
-  useEffect(() => {
-    if (isLoaded && !user) {
-      router.push("/");
-    }
-  }, [user, isLoaded, router]);
 
   const handleCreateBoard = async () => {
     if (!newBoardTitle || !newBoardSlug) return;
@@ -47,13 +42,6 @@ export default function BoardsPage() {
       setNewBoardSlug("");
       router.push(`/board/${board.id}`);
     }
-  };
-
-  const generateSlug = (title: string) => {
-    return title
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/(^-|-$)/g, "");
   };
 
   const handleTitleChange = (title: string) => {
@@ -167,12 +155,7 @@ export default function BoardsPage() {
               {/* Preview */}
               <div
                 className="h-32 p-4"
-                style={{
-                  background:
-                    board.theme.background.type === "gradient"
-                      ? board.theme.background.value
-                      : board.theme.background.value,
-                }}
+                style={{ background: getThemeBackground(board.theme) }}
               >
                 <h3
                   className="font-bold text-lg"
