@@ -203,7 +203,8 @@ export interface Board {
   layout: BoardLayout;
   theme: BoardTheme;
   privacy: BoardPrivacy;
-  password?: string;
+  /** Only stored server-side for password protected boards; never display to clients */
+  passwordHash?: string;
   customDomain?: string;
   favicon?: string;
   seo: {

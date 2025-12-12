@@ -10,6 +10,7 @@ import {
   browserSessionPersistence,
 } from "firebase/auth";
 import { useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +21,7 @@ import {
   AuthError,
   GoogleSignInButton,
 } from "@/components/auth";
+import { setAuthCookie } from "@/lib/auth-cookie";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -28,6 +30,16 @@ export default function LoginPage() {
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const redirectTo = (() => {
+    const raw = searchParams.get("redirect");
+    if (!raw) return "/boards";
+    // Only allow internal paths.
+    if (!raw.startsWith("/")) return "/boards";
+    if (raw.startsWith("//")) return "/boards";
+    return raw;
+  })();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,7 +52,8 @@ export default function LoginPage() {
         rememberMe ? browserLocalPersistence : browserSessionPersistence
       );
       await signInWithEmailAndPassword(auth, email, password);
-      router.push("/boards");
+      await setAuthCookie(auth.currentUser);
+      router.push(redirectTo);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
@@ -54,7 +67,8 @@ export default function LoginPage() {
 
     try {
       await signInWithPopup(auth, googleProvider);
-      router.push("/boards");
+      await setAuthCookie(auth.currentUser);
+      router.push(redirectTo);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "An error occurred");
     } finally {

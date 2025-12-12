@@ -8,6 +8,7 @@ import {
   signInWithPopup,
 } from "firebase/auth";
 import { useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,6 +19,7 @@ import {
   AuthError,
   GoogleSignInButton,
 } from "@/components/auth";
+import { setAuthCookie } from "@/lib/auth-cookie";
 
 export default function SignupPage() {
   const [email, setEmail] = useState("");
@@ -27,6 +29,15 @@ export default function SignupPage() {
   const [verificationSent, setVerificationSent] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const redirectTo = (() => {
+    const raw = searchParams.get("redirect");
+    if (!raw) return "/boards";
+    if (!raw.startsWith("/")) return "/boards";
+    if (raw.startsWith("//")) return "/boards";
+    return raw;
+  })();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,7 +65,8 @@ export default function SignupPage() {
       await sendEmailVerification(userCredential.user);
       setVerificationSent(true);
       setTimeout(() => {
-        router.push("/boards");
+        // Ensure server session cookie is set before hitting protected routes.
+        setAuthCookie(auth.currentUser).finally(() => router.push(redirectTo));
       }, 2000);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "An error occurred");
@@ -69,7 +81,8 @@ export default function SignupPage() {
 
     try {
       await signInWithPopup(auth, googleProvider);
-      router.push("/boards");
+      await setAuthCookie(auth.currentUser);
+      router.push(redirectTo);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "An error occurred");
     } finally {

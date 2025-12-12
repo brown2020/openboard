@@ -1,29 +1,13 @@
 import OpenAI from "openai";
-import { getAuth } from "firebase-admin/auth";
-import { initializeApp, getApps, cert } from "firebase-admin/app";
 import { cookies } from "next/headers";
 import { FIREBASE_AUTH_COOKIE } from "@/lib/auth-constants";
+import { verifyFirebaseAuthCookie } from "@/lib/firebase-admin";
 
 const openai = process.env.OPENAI_API_KEY
   ? new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
     })
   : null;
-
-// Initialize Firebase Admin
-if (getApps().length === 0) {
-  try {
-    initializeApp({
-      credential: cert({
-        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-        privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
-      }),
-    });
-  } catch (error) {
-    console.log("Firebase admin initialization error", error);
-  }
-}
 
 // Note: Using Node.js runtime (not edge) because Firebase Admin SDK requires it
 // export const runtime = "edge";
@@ -49,9 +33,9 @@ export async function POST(req: Request) {
       return new Response("Unauthorized", { status: 401 });
     }
 
-    // Verify the Firebase token
+    // Verify the Firebase token/session cookie
     try {
-      await getAuth().verifyIdToken(firebaseAuthCookie);
+      await verifyFirebaseAuthCookie(firebaseAuthCookie);
     } catch (error) {
       console.error("Token verification error:", error);
       return new Response("Unauthorized", { status: 401 });
