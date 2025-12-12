@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAuthContext } from "@/lib/auth-context";
-import { useUserStore, clearAllAuthState } from "@/stores/user-store";
+import { useUserStore } from "@/stores/user-store";
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { UserProfile } from "@/types";
@@ -20,11 +20,6 @@ export function useAuth() {
     setHydrated,
   } = useUserStore();
   const [syncError, setSyncError] = useState<string | null>(null);
-
-  // Clear any stale localStorage on mount
-  useEffect(() => {
-    clearAllAuthState();
-  }, []);
 
   useEffect(() => {
     const syncUser = async () => {

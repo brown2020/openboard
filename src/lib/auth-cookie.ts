@@ -2,9 +2,7 @@
 
 import { User } from "firebase/auth";
 import Cookies from "js-cookie";
-
-// Cookie name for Firebase auth
-export const FIREBASE_AUTH_COOKIE = "firebaseAuth";
+import { FIREBASE_AUTH_COOKIE } from "@/lib/auth-constants";
 
 // Set the auth cookie with the user's ID token
 export const setAuthCookie = async (user: User | null) => {

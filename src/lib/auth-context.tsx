@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
-import { User, onAuthStateChanged } from "firebase/auth";
+import { User, onIdTokenChanged } from "firebase/auth";
 import { auth } from "./firebase";
 import { setAuthCookie, removeAuthCookie } from "./auth-cookie";
 import { removeStorageItem } from "./storage-utils";
@@ -16,7 +16,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+    // Use onIdTokenChanged so the cookie stays fresh as Firebase rotates ID tokens.
+    const unsubscribe = onIdTokenChanged(auth, async (firebaseUser) => {
       setUser(firebaseUser);
 
       if (firebaseUser) {

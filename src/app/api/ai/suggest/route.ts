@@ -1,6 +1,8 @@
 import OpenAI from "openai";
 import { getAuth } from "firebase-admin/auth";
 import { initializeApp, getApps, cert } from "firebase-admin/app";
+import { cookies } from "next/headers";
+import { FIREBASE_AUTH_COOKIE } from "@/lib/auth-constants";
 
 const openai = process.env.OPENAI_API_KEY
   ? new OpenAI({
@@ -40,11 +42,8 @@ export async function POST(req: Request) {
     }
 
     // Get the Firebase token from the cookie
-    const cookieHeader = req.headers.get("cookie");
-    const firebaseAuthCookie = cookieHeader
-      ?.split(";")
-      .find((c) => c.trim().startsWith("firebaseAuth="))
-      ?.split("=")[1];
+    const cookieStore = await cookies();
+    const firebaseAuthCookie = cookieStore.get(FIREBASE_AUTH_COOKIE)?.value;
 
     if (!firebaseAuthCookie) {
       return new Response("Unauthorized", { status: 401 });
