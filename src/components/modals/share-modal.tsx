@@ -60,7 +60,7 @@ export function ShareModal() {
   useEffect(() => {
     if (currentBoard) {
       setPrivacy(currentBoard.privacy);
-      setPassword(currentBoard.password || "");
+      setPassword("");
       setCollaborators(currentBoard.collaborators || []);
     }
   }, [currentBoard]);
@@ -83,10 +83,17 @@ export function ShareModal() {
   const handlePrivacyChange = async (newPrivacy: BoardPrivacy) => {
     setIsSaving(true);
     setPrivacy(newPrivacy);
-    await updateBoard(currentBoard.id, {
-      privacy: newPrivacy,
-      password: newPrivacy === "password" ? password || undefined : undefined,
-    });
+    if (newPrivacy === "password") {
+      // Require explicit password save via the secure endpoint.
+      toast.info("Set a password", "Enter a password below and click Save");
+    } else {
+      await fetch("/api/boards/privacy", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ boardId: currentBoard.id, privacy: newPrivacy }),
+      });
+      await updateBoard(currentBoard.id, { privacy: newPrivacy });
+    }
     setIsSaving(false);
     toast.success("Privacy updated", `Board is now ${newPrivacy}`);
   };
@@ -94,7 +101,22 @@ export function ShareModal() {
   const handlePasswordSave = async () => {
     if (privacy !== "password") return;
     setIsSaving(true);
-    await updateBoard(currentBoard.id, { password: password || undefined });
+    const res = await fetch("/api/boards/privacy", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        boardId: currentBoard.id,
+        privacy: "password",
+        password,
+      }),
+    });
+    if (!res.ok) {
+      const payload = (await res.json().catch(() => null)) as { error?: string } | null;
+      toast.error("Save failed", payload?.error || "Failed to save password");
+      setIsSaving(false);
+      return;
+    }
+    await updateBoard(currentBoard.id, { privacy: "password" });
     setIsSaving(false);
     toast.success("Password saved");
   };
