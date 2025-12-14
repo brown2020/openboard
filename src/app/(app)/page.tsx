@@ -25,20 +25,21 @@ export default function Home() {
   const { user } = useAuth();
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white overflow-hidden">
-      {/* Animated Background */}
+    <div className="min-h-screen bg-background text-foreground overflow-hidden">
+      {/* Soft Gradient Background */}
       <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 w-[600px] h-[600px] bg-violet-500/20 rounded-full blur-[120px] animate-pulse" />
-        <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-cyan-500/15 rounded-full blur-[100px] animate-pulse delay-1000" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-fuchsia-500/10 rounded-full blur-[140px]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-violet-50 via-background to-cyan-50" />
+        <div className="absolute top-1/4 left-1/4 w-[520px] h-[520px] bg-violet-500/10 rounded-full blur-[120px]" />
+        <div className="absolute bottom-1/4 right-1/4 w-[420px] h-[420px] bg-cyan-500/10 rounded-full blur-[100px]" />
       </div>
 
       {/* Grid Pattern Overlay */}
-      <div 
-        className="fixed inset-0 opacity-[0.03] pointer-events-none"
+      <div
+        className="fixed inset-0 opacity-[0.06] pointer-events-none"
         style={{
-          backgroundImage: `linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)`,
-          backgroundSize: '60px 60px',
+          backgroundImage:
+            "linear-gradient(rgba(0,0,0,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.08) 1px, transparent 1px)",
+          backgroundSize: "60px 60px",
         }}
       />
 
@@ -50,27 +51,27 @@ export default function Home() {
             alt="OpenBoard"
             width={180}
             height={50}
-            className="h-10 w-auto brightness-0 invert"
+            className="h-10 w-auto"
           />
           <div className="flex items-center gap-4">
             <a
               href="https://github.com/brown2020/openboard"
               target="_blank"
               rel="noopener noreferrer"
-              className="p-2 rounded-full hover:bg-white/10 transition-colors"
+              className="p-2 rounded-full hover:bg-muted transition-colors"
             >
               <Github className="w-5 h-5" />
             </a>
             {user ? (
-              <Button asChild className="bg-white text-black hover:bg-white/90">
+              <Button asChild>
                 <Link href="/boards">Go to Boards</Link>
               </Button>
             ) : (
               <div className="flex items-center gap-2">
-                <Button asChild variant="ghost" className="text-white hover:bg-white/10">
+                <Button asChild variant="ghost">
                   <Link href="/login">Sign In</Link>
                 </Button>
-                <Button asChild className="bg-white text-black hover:bg-white/90">
+                <Button asChild>
                   <Link href="/signup">Get Started</Link>
                 </Button>
               </div>
@@ -83,10 +84,15 @@ export default function Home() {
       <section className="relative z-10 container mx-auto px-6 pt-20 pb-32">
         <div className="max-w-5xl mx-auto text-center">
           {/* Badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 mb-8 backdrop-blur-sm">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-sm text-white/70">100% Open Source</span>
-            <a href="https://github.com/brown2020/openboard" target="_blank" rel="noopener noreferrer" className="text-emerald-400 hover:underline">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-background/70 border border-border mb-8 backdrop-blur-sm">
+            <span className="w-2 h-2 rounded-full bg-emerald-500" />
+            <span className="text-sm text-muted-foreground">100% Open Source</span>
+            <a
+              href="https://github.com/brown2020/openboard"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-emerald-700 hover:underline"
+            >
               View on GitHub <ExternalLink className="w-3 h-3 inline" />
             </a>
           </div>
@@ -99,7 +105,7 @@ export default function Home() {
             </span>
           </h1>
 
-          <p className="text-xl md:text-2xl text-white/60 max-w-2xl mx-auto mb-10 leading-relaxed">
+          <p className="text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed">
             Create stunning, shareable boards for your links, content, and projects. 
             No limits. No fees. Just pure creativity.
           </p>
@@ -107,7 +113,7 @@ export default function Home() {
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
             {user ? (
-              <Button size="lg" asChild className="h-14 px-8 text-lg bg-white text-black hover:bg-white/90 rounded-full">
+              <Button size="lg" asChild className="h-14 px-8 text-lg rounded-full">
                 <Link href="/boards">
                   Open Dashboard
                   <ArrowRight className="w-5 h-5 ml-2" />
@@ -115,13 +121,13 @@ export default function Home() {
               </Button>
             ) : (
               <>
-                <Button size="lg" asChild className="h-14 px-8 text-lg bg-white text-black hover:bg-white/90 rounded-full group">
+                <Button size="lg" asChild className="h-14 px-8 text-lg rounded-full group">
                   <Link href="/signup">
                     Start Creating
                     <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
                   </Link>
                 </Button>
-                <Button size="lg" variant="ghost" asChild className="h-14 px-8 text-lg text-white hover:bg-white/10 rounded-full border border-white/20">
+                <Button size="lg" variant="outline" asChild className="h-14 px-8 text-lg rounded-full">
                   <Link href="/login">
                     Sign In
                   </Link>
@@ -131,17 +137,17 @@ export default function Home() {
           </div>
 
           {/* Trust Signals */}
-          <div className="flex items-center justify-center gap-8 text-sm text-white/40">
+          <div className="flex items-center justify-center gap-8 text-sm text-muted-foreground">
             <span className="flex items-center gap-2">
-              <span className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center">✓</span>
+              <span className="w-5 h-5 rounded-full bg-emerald-500/15 flex items-center justify-center">✓</span>
               Free forever
             </span>
             <span className="flex items-center gap-2">
-              <span className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center">✓</span>
+              <span className="w-5 h-5 rounded-full bg-emerald-500/15 flex items-center justify-center">✓</span>
               No credit card
             </span>
             <span className="flex items-center gap-2">
-              <span className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center">✓</span>
+              <span className="w-5 h-5 rounded-full bg-emerald-500/15 flex items-center justify-center">✓</span>
               Unlimited boards
             </span>
           </div>

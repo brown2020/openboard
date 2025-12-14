@@ -10,8 +10,6 @@ import {
   LogOut,
   User,
   Settings,
-  Moon,
-  Sun,
 } from "lucide-react";
 import { useSidebar } from "./ui/sidebar";
 import { useAuthContext } from "@/lib/auth-context";
@@ -29,19 +27,7 @@ export default function Header() {
   const clearUser = useUserStore((state) => state.clearUser);
   const router = useRouter();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
-
-  // Check system preference and localStorage on mount
-  useEffect(() => {
-    const stored = localStorage.getItem("theme");
-    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    
-    if (stored === "dark" || (!stored && prefersDark)) {
-      setIsDarkMode(true);
-      document.documentElement.classList.add("dark");
-    }
-  }, []);
 
   // Handle clicks outside profile menu
   useEffect(() => {
@@ -54,19 +40,6 @@ export default function Header() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
-  const toggleDarkMode = () => {
-    const newMode = !isDarkMode;
-    setIsDarkMode(newMode);
-    
-    if (newMode) {
-      document.documentElement.classList.add("dark");
-      localStorage.setItem("theme", "dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-      localStorage.setItem("theme", "light");
-    }
-  };
 
   const handleSignOut = async () => {
     try {
@@ -123,19 +96,6 @@ export default function Header() {
 
       {/* Right Side */}
       <div className="flex items-center gap-2">
-        {/* Dark Mode Toggle */}
-        <button
-          onClick={toggleDarkMode}
-          className="p-2 rounded-lg hover:bg-muted transition-colors"
-          aria-label={isDarkMode ? "Switch to light mode" : "Switch to dark mode"}
-        >
-          {isDarkMode ? (
-            <Sun className="w-5 h-5" />
-          ) : (
-            <Moon className="w-5 h-5" />
-          )}
-        </button>
-
         {user ? (
           <div className="relative" ref={profileRef}>
             <button
