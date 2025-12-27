@@ -31,7 +31,6 @@ export function useAuth() {
       // If no Firebase user, clear everything and mark as hydrated
       if (!firebaseUser) {
         clearUser();
-        setHydrated(true);
         return;
       }
 
@@ -86,7 +85,6 @@ export function useAuth() {
         setSyncError(error instanceof Error ? error.message : "Unknown error");
         // On error, clear stale data but still mark as hydrated
         clearUser();
-        setHydrated(true);
       }
     };
 

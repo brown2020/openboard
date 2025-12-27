@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { AUTH_ROUTES, PROTECTED_ROUTES } from "@/lib/constants";
+import { AUTH_ROUTES, PROTECTED_ROUTES } from "@/lib/routes";
 import { FIREBASE_AUTH_COOKIE } from "@/lib/auth-constants";
 
 /**
@@ -52,7 +52,8 @@ export function proxy(request: NextRequest) {
   // Redirect unauthenticated users from protected routes
   if (isProtectedRoute && !isAuthenticated) {
     const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set("redirect", pathname);
+    // Preserve query string so post-login navigation doesn't lose context.
+    loginUrl.searchParams.set("redirect", `${pathname}${request.nextUrl.search}`);
     const res = NextResponse.redirect(loginUrl);
     if (shouldClearAuthCookie) {
       res.cookies.delete(FIREBASE_AUTH_COOKIE);

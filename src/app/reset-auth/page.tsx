@@ -1,52 +1,89 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { auth } from "@/lib/firebase";
 import { signOut } from "firebase/auth";
 import { removeAuthCookie } from "@/lib/auth-cookie";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
+function getStorageKeys(storage: Storage): string[] {
+  const keys: string[] = [];
+  for (let i = 0; i < storage.length; i++) {
+    const key = storage.key(i);
+    if (key) keys.push(key);
+  }
+  return keys;
+}
+
+function clearStorage(
+  storage: Storage,
+  storageLabel: "localStorage" | "sessionStorage",
+  addDetail: (msg: string) => void
+): void {
+  addDetail(`Clearing ${storageLabel}...`);
+  const keys = getStorageKeys(storage);
+  keys.forEach((key) => {
+    storage.removeItem(key);
+    addDetail(`  Removed ${storageLabel}: ${key}`);
+  });
+}
+
+function clearAllCookies(addDetail: (msg: string) => void): void {
+  addDetail("Clearing all cookies...");
+  document.cookie.split(";").forEach((c) => {
+    const name = c.trim().split("=")[0];
+    document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
+    addDetail(`  Cleared cookie: ${name}`);
+  });
+}
+
+async function clearIndexedDb(addDetail: (msg: string) => void): Promise<void> {
+  // Firebase uses IndexedDB for auth persistence.
+  addDetail("Clearing IndexedDB...");
+  try {
+    const databases = await indexedDB.databases();
+    for (const db of databases) {
+      if (db.name) {
+        indexedDB.deleteDatabase(db.name);
+        addDetail(`  Deleted IndexedDB: ${db.name}`);
+      }
+    }
+  } catch (e) {
+    addDetail(`  IndexedDB clear error: ${e instanceof Error ? e.message : "unknown"}`);
+    // Fallback: try to delete known Firebase databases
+    const knownDbs = [
+      "firebaseLocalStorageDb",
+      "firebase-heartbeat-database",
+      "firebase-installations-database",
+    ];
+    for (const dbName of knownDbs) {
+      try {
+        indexedDB.deleteDatabase(dbName);
+        addDetail(`  Deleted IndexedDB: ${dbName}`);
+      } catch {
+        // ignore
+      }
+    }
+  }
+}
+
 export default function ResetAuthPage() {
   const [status, setStatus] = useState<"idle" | "clearing" | "done">("idle");
   const [details, setDetails] = useState<string[]>([]);
 
-  const addDetail = (msg: string) => {
+  const addDetail = useCallback((msg: string) => {
     setDetails((prev) => [...prev, msg]);
-  };
+  }, []);
 
-  const handleReset = async () => {
+  const handleReset = useCallback(async () => {
     setStatus("clearing");
     setDetails([]);
 
     try {
-      // 1. Clear localStorage
-      addDetail("Clearing localStorage...");
-      const keysToRemove: string[] = [];
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key) {
-          keysToRemove.push(key);
-        }
-      }
-      keysToRemove.forEach((key) => {
-        localStorage.removeItem(key);
-        addDetail(`  Removed localStorage: ${key}`);
-      });
-
-      // 2. Clear sessionStorage
-      addDetail("Clearing sessionStorage...");
-      const sessionKeysToRemove: string[] = [];
-      for (let i = 0; i < sessionStorage.length; i++) {
-        const key = sessionStorage.key(i);
-        if (key) {
-          sessionKeysToRemove.push(key);
-        }
-      }
-      sessionKeysToRemove.forEach((key) => {
-        sessionStorage.removeItem(key);
-        addDetail(`  Removed sessionStorage: ${key}`);
-      });
+      // 1-2. Clear storage (intentionally clears ALL keys, not only OpenBoard keys)
+      clearStorage(localStorage, "localStorage", addDetail);
+      clearStorage(sessionStorage, "sessionStorage", addDetail);
 
       // 3. Clear auth cookie
       addDetail("Clearing auth cookie...");
@@ -63,40 +100,10 @@ export default function ResetAuthPage() {
       }
 
       // 5. Clear all cookies
-      addDetail("Clearing all cookies...");
-      document.cookie.split(";").forEach((c) => {
-        const name = c.trim().split("=")[0];
-        document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
-        addDetail(`  Cleared cookie: ${name}`);
-      });
+      clearAllCookies(addDetail);
 
       // 6. Clear IndexedDB (Firebase uses this for auth persistence)
-      addDetail("Clearing IndexedDB...");
-      try {
-        const databases = await indexedDB.databases();
-        for (const db of databases) {
-          if (db.name) {
-            indexedDB.deleteDatabase(db.name);
-            addDetail(`  Deleted IndexedDB: ${db.name}`);
-          }
-        }
-      } catch (e) {
-        addDetail(`  IndexedDB clear error: ${e instanceof Error ? e.message : "unknown"}`);
-        // Fallback: try to delete known Firebase databases
-        const knownDbs = [
-          "firebaseLocalStorageDb",
-          "firebase-heartbeat-database",
-          "firebase-installations-database"
-        ];
-        for (const dbName of knownDbs) {
-          try {
-            indexedDB.deleteDatabase(dbName);
-            addDetail(`  Deleted IndexedDB: ${dbName}`);
-          } catch {
-            // ignore
-          }
-        }
-      }
+      await clearIndexedDb(addDetail);
 
       addDetail("✅ All auth state cleared!");
       addDetail("⚠️ Please close this tab and open a new one to fully reset.");
@@ -105,13 +112,12 @@ export default function ResetAuthPage() {
       addDetail(`❌ Error: ${error instanceof Error ? error.message : "Unknown error"}`);
       setStatus("done");
     }
-  };
+  }, [addDetail]);
 
   useEffect(() => {
     // Auto-run on page load
-    handleReset();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    void handleReset();
+  }, [handleReset]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 p-4">

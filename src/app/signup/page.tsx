@@ -66,7 +66,11 @@ export default function SignupPage() {
       setVerificationSent(true);
       setTimeout(() => {
         // Ensure server session cookie is set before hitting protected routes.
-        setAuthCookie(auth.currentUser).finally(() => router.push(redirectTo));
+        setAuthCookie(auth.currentUser)
+          .then(() => router.push(redirectTo))
+          .catch((err: unknown) => {
+            setError(err instanceof Error ? err.message : "An error occurred");
+          });
       }, 2000);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "An error occurred");

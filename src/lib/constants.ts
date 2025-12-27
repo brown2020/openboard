@@ -1,26 +1,8 @@
 import { BoardTheme } from "@/types";
 
-// ============================================================================
-// Route Constants - Used by proxy.ts and client-side navigation
-// ============================================================================
-
-/** Routes that require authentication */
-export const PROTECTED_ROUTES = [
-  "/dashboard",
-  "/boards",
-  "/board",
-  "/templates",
-] as const;
-
-/** Routes only accessible when NOT authenticated */
-export const AUTH_ROUTES = ["/login", "/signup", "/reset-password"] as const;
-
-/** Public routes that bypass all checks */
-export const PUBLIC_ROUTES = ["/", "/u"] as const;
-
-export type ProtectedRoute = (typeof PROTECTED_ROUTES)[number];
-export type AuthRoute = (typeof AUTH_ROUTES)[number];
-export type PublicRoute = (typeof PUBLIC_ROUTES)[number];
+// Re-export route constants/types for backward compatibility.
+// (Prefer importing routes from `@/lib/routes` in new server-sensitive code.)
+export * from "./routes";
 
 // ============================================================================
 // Theme Constants
