@@ -97,7 +97,6 @@ export function useAuth() {
     clearUser,
     setLoading,
     isHydrated,
-    setHydrated,
   ]);
 
   return {

@@ -39,9 +39,3 @@ export const useUserStore = create<UserState>()((set) => ({
 
   setHydrated: (hydrated) => set({ isHydrated: hydrated }),
 }));
-
-/**
- * Utility to clear all persisted auth state
- * @deprecated Use clearOpenboardStorage from @/lib/storage-utils instead
- */
-export const clearAllAuthState = clearOpenboardStorage;

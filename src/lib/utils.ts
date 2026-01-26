@@ -24,11 +24,3 @@ export function generateUniqueSlug(text: string): string {
   const suffix = Date.now().toString().slice(-4);
   return `${baseSlug}-${suffix}`;
 }
-
-/**
- * Get CSS background value from theme
- * Works for both color and gradient backgrounds
- */
-export function getThemeBackground(theme: BoardTheme): string {
-  return theme.background.value;
-}

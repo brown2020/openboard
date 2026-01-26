@@ -4,6 +4,7 @@ import { RichTextBlock as RichTextBlockType } from "@/types";
 import { useBoardStore } from "@/stores/board-store";
 import { RichTextEditor } from "./rich-text-editor";
 import { cn } from "@/lib/utils";
+import { sanitizeHtml } from "@/lib/sanitize";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { BlockControls } from "./block-controls";
@@ -34,12 +35,12 @@ export function RichTextBlock({
   };
 
   if (!isEditing) {
-    // View mode for public pages
+    // View mode for public pages (sanitize to prevent XSS)
     return (
       <div className={cn("w-full", ALIGNMENT_CLASSES[alignment])}>
         <div
           className="prose prose-neutral dark:prose-invert max-w-none"
-          dangerouslySetInnerHTML={{ __html: content }}
+          dangerouslySetInnerHTML={{ __html: sanitizeHtml(content) }}
         />
       </div>
     );
@@ -85,7 +86,7 @@ export function RichTextBlock({
           <div
             className="prose prose-neutral dark:prose-invert max-w-none min-h-[40px] px-4 py-2 rounded-lg hover:bg-muted/30 transition-colors cursor-pointer"
             onClick={() => setIsEditMode(true)}
-            dangerouslySetInnerHTML={{ __html: content }}
+            dangerouslySetInnerHTML={{ __html: sanitizeHtml(content) }}
           />
         )}
       </div>

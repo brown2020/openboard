@@ -2,7 +2,6 @@ import * as React from "react";
 import { Minus, Plus } from "lucide-react";
 import OpenBoardLogo from "../images/openboard_logoword.png";
 
-import { SearchForm } from "@/components/search-form";
 import {
   Collapsible,
   CollapsibleContent,
@@ -81,7 +80,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
-        <SearchForm />
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
@@ -106,7 +104,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                         {item.items.map((item) => (
                           <SidebarMenuSubItem key={item.title}>
                             <SidebarMenuSubButton asChild>
-                              <a href={item.url}>{item.title}</a>
+                              <Link href={item.url}>{item.title}</Link>
                             </SidebarMenuSubButton>
                           </SidebarMenuSubItem>
                         ))}

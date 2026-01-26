@@ -46,7 +46,7 @@ export function ImageBlock({
   const [editAlt, setEditAlt] = useState(alt);
   const [editCaption, setEditCaption] = useState(caption || "");
   const [editLink, setEditLink] = useState(link || "");
-  const [editAspectRatio, setEditAspectRatio] = useState(aspectRatio);
+  const [editAspectRatio, setEditAspectRatio] = useState<"square" | "portrait" | "landscape" | "auto">(aspectRatio);
 
   const handleSave = async () => {
     let finalUrl = editUrl;
@@ -137,7 +137,7 @@ export function ImageBlock({
           <Label>Aspect Ratio</Label>
           <Select
             value={editAspectRatio}
-            onValueChange={(v: any) => setEditAspectRatio(v)}
+            onValueChange={(v) => setEditAspectRatio(v as "square" | "portrait" | "landscape" | "auto")}
           >
             <SelectTrigger>
               <SelectValue />

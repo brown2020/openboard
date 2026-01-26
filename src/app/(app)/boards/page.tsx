@@ -18,7 +18,7 @@ import {
 import { Plus, ExternalLink, Settings, Copy } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
-import { generateSlug, getThemeBackground } from "@/lib/utils";
+import { generateSlug } from "@/lib/utils";
 
 export default function BoardsPage() {
   const { user, isLoaded } = useAuth();
@@ -155,7 +155,7 @@ export default function BoardsPage() {
               {/* Preview */}
               <div
                 className="h-32 p-4"
-                style={{ background: getThemeBackground(board.theme) }}
+                style={{ background: board.theme.background.value }}
               >
                 <h3
                   className="font-bold text-lg"

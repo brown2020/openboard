@@ -3,7 +3,6 @@
 import { useEffect } from "react";
 import { Board } from "@/types";
 import { BlockRenderer } from "@/components/blocks/block-renderer";
-import { getThemeBackground } from "@/lib/utils";
 import { useAnalytics } from "@/hooks/use-analytics";
 
 type PublicBoard = Omit<Board, "passwordHash">;
@@ -22,7 +21,7 @@ export function PublicBoardClient({ board }: { board: PublicBoard }) {
   return (
     <div
       className="min-h-screen"
-      style={{ background: getThemeBackground(board.theme) }}
+      style={{ background: board.theme.background.value }}
     >
       <div className="container mx-auto px-4 py-16">
         <div className="max-w-2xl mx-auto">

@@ -17,7 +17,7 @@ import { BOARD_TEMPLATES } from "@/lib/templates";
 import { BoardTemplate, Block } from "@/types";
 import { Search, Star, TrendingUp } from "lucide-react";
 import Link from "next/link";
-import { generateUniqueSlug, getThemeBackground } from "@/lib/utils";
+import { generateUniqueSlug } from "@/lib/utils";
 
 export default function TemplatesPage() {
   const { user } = useAuth();
@@ -126,7 +126,7 @@ export default function TemplatesPage() {
                 {/* Preview */}
                 <div
                   className="h-48 p-6 relative"
-                  style={{ background: getThemeBackground(template.theme) }}
+                  style={{ background: template.theme.background.value }}
                 >
                   {template.featured && (
                     <div className="absolute top-3 right-3 bg-yellow-500 text-white px-2 py-1 rounded-full text-xs font-semibold flex items-center gap-1">

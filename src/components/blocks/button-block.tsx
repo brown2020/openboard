@@ -47,7 +47,7 @@ export function ButtonBlock({
   const [editText, setEditText] = useState(text);
   const [editUrl, setEditUrl] = useState(url);
   const [editStyle, setEditStyle] = useState(style);
-  const [editSize, setEditSize] = useState(size);
+  const [editSize, setEditSize] = useState<"sm" | "md" | "lg">(size);
 
   const handleSave = () => {
     updateBlock(block.id, {
@@ -82,7 +82,7 @@ export function ButtonBlock({
         </div>
         <div className="space-y-2">
           <Label>Style</Label>
-          <Select value={editStyle} onValueChange={(v: any) => setEditStyle(v)}>
+          <Select value={editStyle} onValueChange={(v) => setEditStyle(v as ButtonBlockType["settings"]["style"])}>
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
@@ -96,7 +96,7 @@ export function ButtonBlock({
         </div>
         <div className="space-y-2">
           <Label>Size</Label>
-          <Select value={editSize} onValueChange={(v: any) => setEditSize(v)}>
+          <Select value={editSize} onValueChange={(v) => setEditSize(v as "sm" | "md" | "lg")}>
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>

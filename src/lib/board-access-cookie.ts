@@ -1,6 +1,7 @@
 import "server-only";
 
 import crypto from "node:crypto";
+import { base64urlEncode, base64urlEncodeJson, base64urlDecodeJson } from "./base64url";
 
 const COOKIE_NAME = "openboard_board_access";
 
@@ -12,29 +13,6 @@ function getSecret(): string {
     );
   }
   return secret;
-}
-
-function base64urlEncode(buf: Buffer) {
-  return buf
-    .toString("base64")
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/g, "");
-}
-
-function base64urlEncodeJson(obj: unknown) {
-  return base64urlEncode(Buffer.from(JSON.stringify(obj), "utf8"));
-}
-
-function base64urlDecodeJson<T>(input: string): T | null {
-  try {
-    const base64 = input.replace(/-/g, "+").replace(/_/g, "/");
-    const padded = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), "=");
-    const raw = Buffer.from(padded, "base64").toString("utf8");
-    return JSON.parse(raw) as T;
-  } catch {
-    return null;
-  }
 }
 
 function sign(payloadB64: string) {

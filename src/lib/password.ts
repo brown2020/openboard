@@ -1,26 +1,13 @@
 import "server-only";
 
 import crypto from "node:crypto";
+import { base64urlEncode, base64urlDecodeToBuffer } from "./base64url";
 
 const SCRYPT_N = 1 << 15; // 32768
 const SCRYPT_R = 8;
 const SCRYPT_P = 1;
 const KEY_LEN = 32;
 const SALT_LEN = 16;
-
-function base64urlEncode(buf: Buffer) {
-  return buf
-    .toString("base64")
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/g, "");
-}
-
-function base64urlDecodeToBuffer(input: string) {
-  const base64 = input.replace(/-/g, "+").replace(/_/g, "/");
-  const padded = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), "=");
-  return Buffer.from(padded, "base64");
-}
 
 /**
  * Hash format:
