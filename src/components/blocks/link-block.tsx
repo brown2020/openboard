@@ -4,8 +4,8 @@ import { LinkBlock as LinkBlockType } from "@/types";
 import { ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
-import { useState } from "react";
 import { useBoardStore } from "@/stores/board-store";
+import { useBlockEditor } from "@/hooks/use-block-editor";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,26 +23,44 @@ export function LinkBlock({
   isEditing = false,
 }: LinkBlockProps) {
   const { updateBlock } = useBoardStore();
-  const [isEditMode, setIsEditMode] = useState(false);
   const { title, url, description, icon, thumbnail } = block.settings;
 
-  const [editTitle, setEditTitle] = useState(title);
-  const [editUrl, setEditUrl] = useState(url);
-  const [editDescription, setEditDescription] = useState(description || "");
-  const [editIcon, setEditIcon] = useState(icon || "");
-
-  const handleSave = () => {
-    updateBlock(block.id, {
-      settings: {
-        ...block.settings,
-        title: editTitle,
-        url: editUrl,
-        description: editDescription || undefined,
-        icon: editIcon || undefined,
-      },
-    });
-    setIsEditMode(false);
-  };
+  const {
+    isEditMode,
+    editSettings,
+    updateField,
+    handleSave,
+    handleCancel,
+    startEdit,
+    isValid,
+    isSaving,
+  } = useBlockEditor({
+    block,
+    isEditing,
+    initialSettings: {
+      title,
+      url,
+      description: description || "",
+      icon: icon || "",
+    },
+    onSave: async (settings) => {
+      updateBlock(block.id, {
+        settings: {
+          ...block.settings,
+          title: settings.title,
+          url: settings.url,
+          description: settings.description || undefined,
+          icon: settings.icon || undefined,
+        },
+      });
+    },
+    validate: (settings) => {
+      if (!settings.title || !settings.url) {
+        return "Title and URL are required";
+      }
+      return true;
+    },
+  });
 
   if (isEditMode && isEditing) {
     return (
@@ -50,40 +68,40 @@ export function LinkBlock({
         <div className="space-y-2">
           <Label>Title</Label>
           <Input
-            value={editTitle}
-            onChange={(e) => setEditTitle(e.target.value)}
+            value={editSettings.title}
+            onChange={(e) => updateField("title", e.target.value)}
             placeholder="Link title"
           />
         </div>
         <div className="space-y-2">
           <Label>URL</Label>
           <Input
-            value={editUrl}
-            onChange={(e) => setEditUrl(e.target.value)}
+            value={editSettings.url}
+            onChange={(e) => updateField("url", e.target.value)}
             placeholder="https://example.com"
           />
         </div>
         <div className="space-y-2">
           <Label>Description (optional)</Label>
           <Input
-            value={editDescription}
-            onChange={(e) => setEditDescription(e.target.value)}
+            value={editSettings.description}
+            onChange={(e) => updateField("description", e.target.value)}
             placeholder="Add a description"
           />
         </div>
         <div className="space-y-2">
           <Label>Icon (emoji, optional)</Label>
           <Input
-            value={editIcon}
-            onChange={(e) => setEditIcon(e.target.value)}
+            value={editSettings.icon}
+            onChange={(e) => updateField("icon", e.target.value)}
             placeholder="🔗"
           />
         </div>
         <div className="flex gap-2">
-          <Button onClick={handleSave} disabled={!editTitle || !editUrl}>
-            Save
+          <Button onClick={handleSave} disabled={!isValid || isSaving}>
+            {isSaving ? "Saving..." : "Save"}
           </Button>
-          <Button variant="outline" onClick={() => setIsEditMode(false)}>
+          <Button variant="outline" onClick={handleCancel}>
             Cancel
           </Button>
         </div>
@@ -98,7 +116,7 @@ export function LinkBlock({
         <BlockControls
           blockId={block.id}
           isVisible={block.visible}
-          onEdit={() => setIsEditMode(true)}
+          onEdit={startEdit}
         />
       )}
 

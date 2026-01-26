@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { Board } from "@/types";
 import { BlockRenderer } from "@/components/blocks/block-renderer";
 import { useAnalytics } from "@/hooks/use-analytics";
+import { PublicBoardErrorBoundary } from "@/components/error-boundary";
 
 type PublicBoard = Omit<Board, "passwordHash">;
 
@@ -19,11 +20,12 @@ export function PublicBoardClient({ board }: { board: PublicBoard }) {
   };
 
   return (
-    <div
-      className="min-h-screen"
-      style={{ background: board.theme.background.value }}
-    >
-      <div className="container mx-auto px-4 py-16">
+    <PublicBoardErrorBoundary>
+      <div
+        className="min-h-screen"
+        style={{ background: board.theme.background.value }}
+      >
+        <div className="container mx-auto px-4 py-16">
         <div className="max-w-2xl mx-auto">
           {/* Header */}
           <div className="text-center mb-12">
@@ -69,7 +71,8 @@ export function PublicBoardClient({ board }: { board: PublicBoard }) {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </PublicBoardErrorBoundary>
   );
 }
 

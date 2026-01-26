@@ -8,6 +8,7 @@ import { useModal, useEditor } from "@/stores/ui-store";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { BoardEditorErrorBoundary } from "@/components/error-boundary";
 import {
   Save,
   Eye,
@@ -303,7 +304,7 @@ export default function BoardEditorPage({ params }: PageProps) {
   }
 
   return (
-    <>
+    <BoardEditorErrorBoundary>
       <ThemeModal />
       <AnalyticsModal />
       <ShareModal />
@@ -541,6 +542,6 @@ export default function BoardEditorPage({ params }: PageProps) {
           </div>
         </div>
       </div>
-    </>
+    </BoardEditorErrorBoundary>
   );
 }

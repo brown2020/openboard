@@ -3,8 +3,8 @@
 import { ButtonBlock as ButtonBlockType } from "@/types";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
 import { useBoardStore } from "@/stores/board-store";
+import { useBlockEditor } from "@/hooks/use-block-editor";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -41,25 +41,31 @@ export function ButtonBlock({
   isEditing = false,
 }: ButtonBlockProps) {
   const { updateBlock } = useBoardStore();
-  const [isEditMode, setIsEditMode] = useState(false);
   const { text, url, style = "primary", size = "md" } = block.settings;
 
-  const [editText, setEditText] = useState(text);
-  const [editUrl, setEditUrl] = useState(url);
-  const [editStyle, setEditStyle] = useState(style);
-  const [editSize, setEditSize] = useState<"sm" | "md" | "lg">(size);
-
-  const handleSave = () => {
-    updateBlock(block.id, {
-      settings: {
-        text: editText,
-        url: editUrl,
-        style: editStyle,
-        size: editSize,
-      },
-    });
-    setIsEditMode(false);
-  };
+  const {
+    isEditMode,
+    editSettings,
+    updateField,
+    handleSave,
+    handleCancel,
+    startEdit,
+    isValid,
+    isSaving,
+  } = useBlockEditor({
+    block,
+    isEditing,
+    initialSettings: { text, url, style, size },
+    onSave: async (settings) => {
+      updateBlock(block.id, { settings });
+    },
+    validate: (settings) => {
+      if (!settings.text || !settings.url) {
+        return "Button text and URL are required";
+      }
+      return true;
+    },
+  });
 
   if (isEditMode && isEditing) {
     return (
@@ -67,22 +73,25 @@ export function ButtonBlock({
         <div className="space-y-2">
           <Label>Button Text</Label>
           <Input
-            value={editText}
-            onChange={(e) => setEditText(e.target.value)}
+            value={editSettings.text}
+            onChange={(e) => updateField("text", e.target.value)}
             placeholder="Click me"
           />
         </div>
         <div className="space-y-2">
           <Label>URL</Label>
           <Input
-            value={editUrl}
-            onChange={(e) => setEditUrl(e.target.value)}
+            value={editSettings.url}
+            onChange={(e) => updateField("url", e.target.value)}
             placeholder="https://example.com"
           />
         </div>
         <div className="space-y-2">
           <Label>Style</Label>
-          <Select value={editStyle} onValueChange={(v) => setEditStyle(v as ButtonBlockType["settings"]["style"])}>
+          <Select 
+            value={editSettings.style} 
+            onValueChange={(v) => updateField("style", v as ButtonBlockType["settings"]["style"])}
+          >
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
@@ -96,7 +105,10 @@ export function ButtonBlock({
         </div>
         <div className="space-y-2">
           <Label>Size</Label>
-          <Select value={editSize} onValueChange={(v) => setEditSize(v as "sm" | "md" | "lg")}>
+          <Select 
+            value={editSettings.size} 
+            onValueChange={(v) => updateField("size", v as "sm" | "md" | "lg")}
+          >
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
@@ -108,10 +120,10 @@ export function ButtonBlock({
           </Select>
         </div>
         <div className="flex gap-2">
-          <Button onClick={handleSave} disabled={!editText || !editUrl}>
-            Save
+          <Button onClick={handleSave} disabled={!isValid || isSaving}>
+            {isSaving ? "Saving..." : "Save"}
           </Button>
-          <Button variant="outline" onClick={() => setIsEditMode(false)}>
+          <Button variant="outline" onClick={handleCancel}>
             Cancel
           </Button>
         </div>
@@ -126,7 +138,7 @@ export function ButtonBlock({
         <BlockControls
           blockId={block.id}
           isVisible={block.visible}
-          onEdit={() => setIsEditMode(true)}
+          onEdit={startEdit}
         />
       )}
 

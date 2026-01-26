@@ -23,6 +23,7 @@ import { useAuthContext } from "@/lib/auth-context";
 import { useUserStore } from "@/stores/user-store";
 import { DEFAULT_THEME } from "@/lib/constants";
 import { getValidToken } from "@/lib/auth-utils";
+import { useErrorHandler, getFirebaseErrorMessage } from "./use-error-handler";
 
 export function useBoards() {
   // Get Firebase user directly from auth context
@@ -31,6 +32,7 @@ export function useBoards() {
   const { user: userProfile, isHydrated } = useUserStore();
 
   const { boards, setBoards, setStatus, setError } = useBoardStore();
+  const { handleError } = useErrorHandler();
   const unsubscribeRef = useRef<(() => void) | null>(null);
   const [isReady, setIsReady] = useState(false);
 
@@ -52,7 +54,7 @@ export function useBoards() {
         await getValidToken(firebaseUser);
         setIsReady(true);
       } catch (error) {
-        console.error("Error refreshing token:", error);
+        handleError(error, "Failed to refresh authentication token");
         setIsReady(false);
       }
     };
@@ -105,12 +107,12 @@ export function useBoards() {
         setStatus("success");
       },
       (error) => {
-        console.error("Error fetching boards:", error);
+        handleError(error, "Failed to load boards");
         // Check if it's an index error
         if (error.message.includes("index")) {
           setError("Database index required. Please check Firebase console.");
         } else {
-          setError(error.message);
+          setError(getFirebaseErrorMessage(error));
         }
       }
     );
@@ -160,10 +162,8 @@ export function useBoards() {
         await setDoc(boardRef, newBoard);
         return newBoard;
       } catch (error) {
-        console.error("Error creating board:", error);
-        setError(
-          error instanceof Error ? error.message : "Failed to create board"
-        );
+        handleError(error, "Failed to create board");
+        setError(getFirebaseErrorMessage(error));
         return null;
       }
     },
@@ -182,7 +182,7 @@ export function useBoards() {
         }
         return null;
       } catch (error) {
-        console.error("Error fetching board:", error);
+        handleError(error, "Failed to fetch board");
         return null;
       }
     },
@@ -208,7 +208,7 @@ export function useBoards() {
         }
         return null;
       } catch (error) {
-        console.error("Error fetching board by slug:", error);
+        handleError(error, "Failed to fetch board by slug");
         return null;
       }
     },
@@ -226,10 +226,8 @@ export function useBoards() {
         });
         return true;
       } catch (error) {
-        console.error("Error updating board:", error);
-        setError(
-          error instanceof Error ? error.message : "Failed to update board"
-        );
+        handleError(error, "Failed to update board");
+        setError(getFirebaseErrorMessage(error));
         return false;
       }
     },
@@ -244,10 +242,8 @@ export function useBoards() {
         await deleteDoc(boardRef);
         return true;
       } catch (error) {
-        console.error("Error deleting board:", error);
-        setError(
-          error instanceof Error ? error.message : "Failed to delete board"
-        );
+        handleError(error, "Failed to delete board");
+        setError(getFirebaseErrorMessage(error));
         return false;
       }
     },

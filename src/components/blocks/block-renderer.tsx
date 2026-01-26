@@ -13,6 +13,7 @@ import { EmbedBlock } from "./embed-block";
 import { SocialLinksBlock } from "./social-links-block";
 import { CalendarBlock } from "./calendar-block";
 import { FormBlock } from "./form-block";
+import { BlockErrorBoundary } from "@/components/error-boundary";
 
 interface BlockRendererProps {
   block: Block;
@@ -40,11 +41,12 @@ export function BlockRenderer({
     }
   };
 
-  switch (block.type) {
-    case "link":
-      return (
-        <LinkBlock block={block} onClick={handleClick} isEditing={isEditing} />
-      );
+  const renderBlock = () => {
+    switch (block.type) {
+      case "link":
+        return (
+          <LinkBlock block={block} onClick={handleClick} isEditing={isEditing} />
+        );
     case "text":
       return <TextBlock block={block} />;
     case "richtext":
@@ -97,11 +99,14 @@ export function BlockRenderer({
           onClick={handleClick}
         />
       );
-    case "form":
-      return (
-        <FormBlock block={block} isEditing={isEditing} onClick={handleClick} />
-      );
-    default:
-      return null;
-  }
+      case "form":
+        return (
+          <FormBlock block={block} isEditing={isEditing} onClick={handleClick} />
+        );
+      default:
+        return null;
+    }
+  };
+
+  return <BlockErrorBoundary>{renderBlock()}</BlockErrorBoundary>;
 }

@@ -7,6 +7,7 @@ import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { UserProfile } from "@/types";
 import { getValidToken } from "@/lib/auth-utils";
+import { useErrorHandler, getFirebaseErrorMessage } from "./use-error-handler";
 
 export function useAuth() {
   const { user: firebaseUser, loading: authLoading } = useAuthContext();
@@ -19,6 +20,7 @@ export function useAuth() {
     isHydrated,
     setHydrated,
   } = useUserStore();
+  const { handleError } = useErrorHandler();
   const [syncError, setSyncError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -81,8 +83,8 @@ export function useAuth() {
           }
         }
       } catch (error) {
-        console.error("Error syncing user:", error);
-        setSyncError(error instanceof Error ? error.message : "Unknown error");
+        handleError(error, "Failed to sync user profile");
+        setSyncError(getFirebaseErrorMessage(error));
         // On error, clear stale data but still mark as hydrated
         clearUser();
       }
