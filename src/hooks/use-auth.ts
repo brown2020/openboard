@@ -99,6 +99,8 @@ export function useAuth() {
     clearUser,
     setLoading,
     isHydrated,
+    handleError,
+    setHydrated,
   ]);
 
   return {

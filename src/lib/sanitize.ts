@@ -29,7 +29,7 @@ export function sanitizeHtml(html: string): string {
       "span",
       "div",
     ],
-    ALLOWED_ATTR: ["href", "target", "rel", "class", "style"],
+    ALLOWED_ATTR: ["href", "target", "rel", "class"],
     ALLOW_DATA_ATTR: false,
   });
 }

@@ -41,12 +41,11 @@ export function useBlockEditor<T extends Record<string, any>>({
   const [editSettings, setEditSettings] = useState<T>(initialSettings);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Reset edit settings when block changes or when exiting edit mode
+  // Reset edit settings when block ID changes
   useEffect(() => {
-    if (!isEditMode) {
-      setEditSettings(initialSettings);
-    }
-  }, [block.id, initialSettings, isEditMode]);
+    setEditSettings(initialSettings);
+    setIsEditMode(false);
+  }, [block.id]);
 
   const updateField = useCallback(<K extends keyof T>(field: K, value: T[K]) => {
     setEditSettings((prev) => ({ ...prev, [field]: value }));
@@ -80,14 +79,12 @@ export function useBlockEditor<T extends Record<string, any>>({
   }, [editSettings, onSave, transformBeforeSave, validationResult.isValid]);
 
   const handleCancel = useCallback(() => {
-    setEditSettings(initialSettings);
     setIsEditMode(false);
-  }, [initialSettings]);
+  }, []);
 
   const startEdit = useCallback(() => {
-    setEditSettings(initialSettings);
     setIsEditMode(true);
-  }, [initialSettings]);
+  }, []);
 
   return {
     isEditMode,

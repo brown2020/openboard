@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect, useState, useCallback } from "react";
+import { use, useEffect, useState, useCallback, useRef } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useBoards } from "@/hooks/use-boards";
 import { useBoardStore, useHistory } from "@/stores/board-store";
@@ -123,6 +123,7 @@ export default function BoardEditorPage({ params }: PageProps) {
   const [boardTitle, setBoardTitle] = useState("");
   const [boardDescription, setBoardDescription] = useState("");
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const loadedBoardIdRef = useRef<string | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -141,9 +142,12 @@ export default function BoardEditorPage({ params }: PageProps) {
     return () => setEditorMode(false);
   }, [setEditorMode]);
 
-  // Load board
+  // Load board - only once per board ID
   useEffect(() => {
     const loadBoard = async () => {
+      // Skip if already loaded this board
+      if (loadedBoardIdRef.current === resolvedParams.id) return;
+      
       if (!isLoaded) return;
       if (!user) {
         router.push("/login");
@@ -163,6 +167,7 @@ export default function BoardEditorPage({ params }: PageProps) {
         setCurrentBoard(board);
         setBoardTitle(board.title);
         setBoardDescription(board.description || "");
+        loadedBoardIdRef.current = resolvedParams.id;
       } else {
         toast.error(
           "Board not found",
@@ -174,15 +179,7 @@ export default function BoardEditorPage({ params }: PageProps) {
     };
 
     loadBoard();
-  }, [
-    resolvedParams.id,
-    user,
-    isLoaded,
-    getBoard,
-    setCurrentBoard,
-    router,
-    toast,
-  ]);
+  }, [resolvedParams.id, user, isLoaded]);
 
   // Track unsaved changes
   useEffect(() => {

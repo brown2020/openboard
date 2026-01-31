@@ -17,29 +17,31 @@ import { auth } from "@/lib/firebase";
 import { removeAuthCookie } from "@/lib/auth-cookie";
 import { useUserStore } from "@/stores/user-store";
 import { useRouter } from "next/navigation";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/stores/ui-store";
 
 export default function Header() {
   const { toggleSidebar, open, isMobile } = useSidebar();
   const { user } = useAuthContext();
   const clearUser = useUserStore((state) => state.clearUser);
   const router = useRouter();
+  const toast = useToast();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
 
   // Handle clicks outside profile menu
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
-        setIsProfileOpen(false);
-      }
-    };
+  const handleClickOutside = useCallback((event: MouseEvent) => {
+    if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
+      setIsProfileOpen(false);
+    }
+  }, []);
 
+  useEffect(() => {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  }, [handleClickOutside]);
 
   const handleSignOut = async () => {
     try {
@@ -49,7 +51,7 @@ export default function Header() {
       setIsProfileOpen(false);
       router.push("/");
     } catch (error) {
-      console.error("Error signing out:", error);
+      toast.error("Failed to sign out", "Please try again");
     }
   };
 

@@ -37,12 +37,12 @@ export function ThemeModal() {
 
   const isOpen = activeModal === "theme";
 
-  // Sync with current board theme
+  // Sync with current board theme when modal opens
   useEffect(() => {
-    if (currentBoard?.theme) {
+    if (isOpen && currentBoard?.theme) {
       setSelectedTheme(currentBoard.theme);
     }
-  }, [currentBoard?.theme]);
+  }, [isOpen, currentBoard?.id]);
 
   if (!currentBoard) return null;
 

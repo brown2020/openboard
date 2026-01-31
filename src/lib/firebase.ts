@@ -5,19 +5,23 @@ import { getAuth, GoogleAuthProvider } from "firebase/auth";
 
 /**
  * Firebase Configuration
- * Falls back to demo values for build-time initialization
+ * Requires environment variables in production
  */
+const isDev = process.env.NODE_ENV === "development";
+
 const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "demo-api-key",
-  authDomain:
-    process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "demo.firebaseapp.com",
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "demo-project",
-  storageBucket:
-    process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "demo.appspot.com",
-  messagingSenderId:
-    process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "123456789",
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "1:123456789:web:abc123",
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || (isDev ? "demo-api-key" : ""),
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || (isDev ? "demo.firebaseapp.com" : ""),
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || (isDev ? "demo-project" : ""),
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || (isDev ? "demo.appspot.com" : ""),
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || (isDev ? "123456789" : ""),
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || (isDev ? "1:123456789:web:abc123" : ""),
 };
+
+// Validate required config in production
+if (!isDev && (!firebaseConfig.apiKey || !firebaseConfig.projectId)) {
+  throw new Error("Missing required Firebase configuration. Please set NEXT_PUBLIC_FIREBASE_* environment variables.");
+}
 
 /**
  * Initialize Firebase - reuses existing app if already initialized

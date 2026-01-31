@@ -1,7 +1,7 @@
 import OpenAI from "openai";
-import { cookies } from "next/headers";
-import { FIREBASE_AUTH_COOKIE } from "@/lib/auth-constants";
-import { verifyFirebaseAuthCookie } from "@/lib/firebase-admin";
+import { NextResponse } from "next/server";
+import { z } from "zod";
+import { requireAuth, rateLimit, errorResponse } from "@/lib/api-utils";
 
 const openai = process.env.OPENAI_API_KEY
   ? new OpenAI({
@@ -9,39 +9,35 @@ const openai = process.env.OPENAI_API_KEY
     })
   : null;
 
-// Note: Using Node.js runtime (not edge) because Firebase Admin SDK requires it
-// export const runtime = "edge";
+const SuggestSchema = z.object({
+  prompt: z.string().min(1).max(5000),
+  type: z.enum(["board-description", "link-title", "content-suggestions", "seo-optimization"]),
+});
 
 export async function POST(req: Request) {
   try {
     // Check if OpenAI is configured
     if (!openai || !process.env.OPENAI_API_KEY) {
-      return new Response(
-        JSON.stringify({ error: "AI features are not configured" }),
-        {
-          status: 503,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
+      return errorResponse("AI features are not configured", 503);
     }
 
-    // Get the Firebase token from the cookie
-    const cookieStore = await cookies();
-    const firebaseAuthCookie = cookieStore.get(FIREBASE_AUTH_COOKIE)?.value;
+    // Verify authentication
+    const user = await requireAuth();
 
-    if (!firebaseAuthCookie) {
-      return new Response("Unauthorized", { status: 401 });
+    // Rate limit: 10 requests per minute per user
+    if (!rateLimit(`ai:${user.uid}`, 10, 60000)) {
+      return errorResponse("Too many requests. Please try again later.", 429);
     }
 
-    // Verify the Firebase token/session cookie
-    try {
-      await verifyFirebaseAuthCookie(firebaseAuthCookie);
-    } catch (error) {
-      console.error("Token verification error:", error);
-      return new Response("Unauthorized", { status: 401 });
+    // Validate request body
+    const body = await req.json().catch(() => null);
+    const validation = SuggestSchema.safeParse(body);
+    
+    if (!validation.success) {
+      return errorResponse("Invalid request body", 400);
     }
 
-    const { prompt, type } = await req.json();
+    const { prompt, type } = validation.data;
 
     let systemPrompt = "";
     const userPrompt = prompt;
@@ -81,11 +77,15 @@ export async function POST(req: Request) {
     // Create a ReadableStream from the OpenAI response
     const stream = new ReadableStream({
       async start(controller) {
-        for await (const chunk of response) {
-          const text = chunk.choices[0]?.delta?.content || "";
-          controller.enqueue(new TextEncoder().encode(text));
+        try {
+          for await (const chunk of response) {
+            const text = chunk.choices[0]?.delta?.content || "";
+            controller.enqueue(new TextEncoder().encode(text));
+          }
+          controller.close();
+        } catch (error) {
+          controller.error(error);
         }
-        controller.close();
       },
     });
 
@@ -97,7 +97,10 @@ export async function POST(req: Request) {
       },
     });
   } catch (error) {
+    if (error instanceof NextResponse) {
+      return error;
+    }
     console.error("AI API Error:", error);
-    return new Response("Internal Server Error", { status: 500 });
+    return errorResponse("Internal Server Error", 500);
   }
 }

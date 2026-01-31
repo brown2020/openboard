@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { devtools, subscribeWithSelector } from "zustand/middleware";
+import { devtools } from "zustand/middleware";
 import { Board, Block, BlockType, BoardTheme } from "@/types";
 import { DEFAULT_THEME } from "@/lib/constants";
 
@@ -106,7 +106,7 @@ const initialState: BoardState = {
  */
 export const useBoardStore = create<BoardStore>()(
   devtools(
-    subscribeWithSelector((set, get) => ({
+    (set, get) => ({
       ...initialState,
 
       // Board CRUD
@@ -114,11 +114,7 @@ export const useBoardStore = create<BoardStore>()(
         set({ boards, status: "success" }, false, "setBoards"),
 
       setCurrentBoard: (board) => {
-        set({ currentBoard: board }, false, "setCurrentBoard");
-        // Clear history when switching boards
-        if (board) {
-          get().saveToHistory("Initial state");
-        }
+        set({ currentBoard: board, history: [], historyIndex: -1 }, false, "setCurrentBoard");
       },
 
       addBoard: (board) =>
@@ -404,7 +400,7 @@ export const useBoardStore = create<BoardStore>()(
         if (!state.currentBoard) return;
 
         const entry: HistoryEntry = {
-          blocks: JSON.parse(JSON.stringify(state.currentBoard.blocks)),
+          blocks: structuredClone(state.currentBoard.blocks),
           timestamp: Date.now(),
           description,
         };
@@ -450,7 +446,7 @@ export const useBoardStore = create<BoardStore>()(
 
       // Reset
       reset: () => set(initialState, false, "reset"),
-    })),
+    }),
     { name: "openboard-board" }
   )
 );

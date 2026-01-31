@@ -60,7 +60,7 @@ export function useBoards() {
     };
 
     prepareAuth();
-  }, [authLoading, firebaseUser, isHydrated, userProfile?.id]);
+  }, [authLoading, firebaseUser, isHydrated, userProfile?.id, handleError]);
 
   // Subscribe to user's boards - ONLY when fully ready
   useEffect(() => {
@@ -123,7 +123,7 @@ export function useBoards() {
         unsubscribeRef.current = null;
       }
     };
-  }, [firebaseUser, authLoading, isReady, setBoards, setStatus, setError]);
+  }, [firebaseUser, authLoading, isReady, setBoards, setStatus, setError, handleError]);
 
   // Create a new board
   const createBoard = useCallback(
@@ -167,7 +167,7 @@ export function useBoards() {
         return null;
       }
     },
-    [userProfile, firebaseUser, setError]
+    [userProfile, firebaseUser, setError, handleError]
   );
 
   // Get a specific board by ID
@@ -186,7 +186,7 @@ export function useBoards() {
         return null;
       }
     },
-    []
+    [handleError]
   );
 
   // Get a board by username and slug
@@ -212,7 +212,7 @@ export function useBoards() {
         return null;
       }
     },
-    []
+    [handleError]
   );
 
   // Update a board
@@ -231,7 +231,7 @@ export function useBoards() {
         return false;
       }
     },
-    [setError]
+    [setError, handleError]
   );
 
   // Delete a board
@@ -247,7 +247,7 @@ export function useBoards() {
         return false;
       }
     },
-    [setError]
+    [setError, handleError]
   );
 
   return {

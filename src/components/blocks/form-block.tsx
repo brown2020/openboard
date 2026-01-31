@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { List, Type, Mail, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { BlockControls } from "./block-controls";
+import { useToast } from "@/stores/ui-store";
 
 type Field = FormBlockType["settings"]["fields"][number];
 
@@ -36,6 +37,7 @@ export function FormBlock({
   const [editFields, setEditFields] = useState<Field[]>(fields);
   const [editSubmitText, setEditSubmitText] = useState(submitText);
   const [editSubmitUrl, setEditSubmitUrl] = useState(submitUrl || "");
+  const toast = useToast();
 
   const handleSave = () => {
     const sanitizedFields = editFields
@@ -99,10 +101,9 @@ export function FormBlock({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         });
-        alert("Form submitted!");
+        toast.success("Form submitted successfully!");
       } catch (error) {
-        console.error("Form submission error:", error);
-        alert("Unable to submit form. Please try again later.");
+        toast.error("Unable to submit form", "Please try again later");
       }
     }
   };
