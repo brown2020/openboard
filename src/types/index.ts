@@ -35,6 +35,10 @@ export interface BaseBlock {
   order: number;
   visible: boolean;
   settings: Record<string, unknown>;
+  // Hierarchical structure fields (optional for backward compatibility)
+  parentId?: string;
+  depth?: number;
+  children?: string[];
 }
 
 export interface LinkBlock extends BaseBlock {

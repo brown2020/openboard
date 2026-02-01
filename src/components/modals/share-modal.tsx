@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useBoardStore } from "@/stores/board-store";
 import { useModal } from "@/stores/ui-store";
 import { useBoards } from "@/hooks/use-boards";
@@ -54,8 +54,18 @@ export function ShareModal() {
   const [collaborators, setCollaborators] = useState<string[]>([]);
   const [newCollaborator, setNewCollaborator] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const copyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isOpen = activeModal === "share";
+
+  // Cleanup copy timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (copyTimeoutRef.current) {
+        clearTimeout(copyTimeoutRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (currentBoard) {
@@ -73,29 +83,50 @@ export function ShareModal() {
 
   const embedCode = `<iframe src="${boardUrl}" width="100%" height="600" frameborder="0" style="border-radius: 12px; border: 1px solid #e5e5e5;"></iframe>`;
 
-  const handleCopy = (text: string, type: string) => {
+  const handleCopy = useCallback((text: string, type: string) => {
     navigator.clipboard.writeText(text);
     setCopied(type);
     toast.success("Copied!", `${type} copied to clipboard`);
-    setTimeout(() => setCopied(null), 2000);
-  };
+
+    // Clear previous timeout if exists
+    if (copyTimeoutRef.current) {
+      clearTimeout(copyTimeoutRef.current);
+    }
+    copyTimeoutRef.current = setTimeout(() => setCopied(null), 2000);
+  }, [toast]);
 
   const handlePrivacyChange = async (newPrivacy: BoardPrivacy) => {
+    if (!currentBoard) return;
+
     setIsSaving(true);
     setPrivacy(newPrivacy);
-    if (newPrivacy === "password") {
-      // Require explicit password save via the secure endpoint.
-      toast.info("Set a password", "Enter a password below and click Save");
-    } else {
-      await fetch("/api/boards/privacy", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ boardId: currentBoard.id, privacy: newPrivacy }),
-      });
-      await updateBoard(currentBoard.id, { privacy: newPrivacy });
+
+    try {
+      if (newPrivacy === "password") {
+        // Require explicit password save via the secure endpoint.
+        toast.info("Set a password", "Enter a password below and click Save");
+      } else {
+        const res = await fetch("/api/boards/privacy", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ boardId: currentBoard.id, privacy: newPrivacy }),
+        });
+
+        if (!res.ok) {
+          const payload = (await res.json().catch(() => null)) as { error?: string } | null;
+          toast.error("Save failed", payload?.error || "Failed to update privacy");
+          setIsSaving(false);
+          return;
+        }
+
+        await updateBoard(currentBoard.id, { privacy: newPrivacy });
+        toast.success("Privacy updated", `Board is now ${newPrivacy}`);
+      }
+    } catch (error) {
+      toast.error("Save failed", "An error occurred while updating privacy");
+    } finally {
+      setIsSaving(false);
     }
-    setIsSaving(false);
-    toast.success("Privacy updated", `Board is now ${newPrivacy}`);
   };
 
   const handlePasswordSave = async () => {
@@ -122,6 +153,8 @@ export function ShareModal() {
   };
 
   const handleAddCollaborator = async () => {
+    if (!currentBoard) return;
+
     const email = newCollaborator.trim().toLowerCase();
     if (!email || collaborators.includes(email)) {
       setNewCollaborator("");
@@ -142,6 +175,8 @@ export function ShareModal() {
   };
 
   const handleRemoveCollaborator = async (email: string) => {
+    if (!currentBoard) return;
+
     const next = collaborators.filter((c) => c !== email);
     setCollaborators(next);
     await updateBoard(currentBoard.id, { collaborators: next });

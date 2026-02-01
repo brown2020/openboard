@@ -6,7 +6,11 @@ import { BlockRenderer } from "@/components/blocks/block-renderer";
 import { useAnalytics } from "@/hooks/use-analytics";
 import { PublicBoardErrorBoundary } from "@/components/error-boundary";
 
-type PublicBoard = Omit<Board, "passwordHash">;
+// Serialized board type for client components (Timestamps converted to ISO strings)
+type PublicBoard = Omit<Board, "passwordHash" | "createdAt" | "updatedAt"> & {
+  createdAt: string | null;
+  updatedAt: string | null;
+};
 
 export function PublicBoardClient({ board }: { board: PublicBoard }) {
   const { trackView, trackClick } = useAnalytics();

@@ -3,18 +3,10 @@
 import { useMemo, useState } from "react";
 import { CalendarBlock as CalendarBlockType } from "@/types";
 import { useBoardStore } from "@/stores/board-store";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { BlockControls } from "./block-controls";
+import { BlockEditWrapper } from "./block-edit-wrapper";
+import { InputField, SelectField } from "./form-fields";
 
 type Provider = CalendarBlockType["settings"]["provider"];
 
@@ -23,6 +15,11 @@ interface CalendarBlockProps {
   isEditing?: boolean;
   onClick?: () => void;
 }
+
+const PROVIDER_OPTIONS = [
+  { value: "cal", label: "Cal.com" },
+  { value: "calendly", label: "Calendly" },
+];
 
 const PROVIDER_LABEL: Record<Provider, string> = {
   cal: "Cal.com",
@@ -75,53 +72,41 @@ export function CalendarBlock({
     setIsEditMode(false);
   };
 
+  const handleCancel = () => setIsEditMode(false);
+
   if (isEditMode && isEditing) {
     return (
-      <div className="p-4 border rounded-lg bg-card space-y-4">
-        <div className="space-y-2">
-          <Label>Provider</Label>
-          <Select
-            value={editProvider}
-            onValueChange={(value: Provider) => setEditProvider(value)}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select provider" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="cal">Cal.com</SelectItem>
-              <SelectItem value="calendly">Calendly</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-2">
-          <Label>Booking URL</Label>
-          <Input
-            value={editUrl}
-            onChange={(e) => setEditUrl(e.target.value)}
-            placeholder={
-              editProvider === "cal"
-                ? "https://cal.com/username"
-                : "https://calendly.com/username"
-            }
-          />
-        </div>
-        <div className="space-y-2">
-          <Label>Title (optional)</Label>
-          <Input
-            value={editTitle}
-            onChange={(e) => setEditTitle(e.target.value)}
-            placeholder="Book a call"
-          />
-        </div>
-        <div className="flex gap-2">
-          <Button onClick={handleSave} disabled={!editUrl}>
-            Save
-          </Button>
-          <Button variant="outline" onClick={() => setIsEditMode(false)}>
-            Cancel
-          </Button>
-        </div>
-      </div>
+      <BlockEditWrapper
+        isEditMode={isEditMode}
+        isEditing={isEditing}
+        onSave={handleSave}
+        onCancel={handleCancel}
+        isValid={!!editUrl}
+      >
+        <SelectField
+          label="Provider"
+          value={editProvider}
+          options={PROVIDER_OPTIONS}
+          onChange={(v) => setEditProvider(v as Provider)}
+          placeholder="Select provider"
+        />
+        <InputField
+          label="Booking URL"
+          value={editUrl}
+          onChange={setEditUrl}
+          placeholder={
+            editProvider === "cal"
+              ? "https://cal.com/username"
+              : "https://calendly.com/username"
+          }
+        />
+        <InputField
+          label="Title (optional)"
+          value={editTitle}
+          onChange={setEditTitle}
+          placeholder="Book a call"
+        />
+      </BlockEditWrapper>
     );
   }
 

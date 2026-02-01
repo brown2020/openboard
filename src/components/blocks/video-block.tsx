@@ -5,16 +5,10 @@ import { Video as VideoIcon } from "lucide-react";
 import { useBoardStore } from "@/stores/board-store";
 import { VideoBlock as VideoBlockType } from "@/types";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { BlockControls } from "./block-controls";
+import { BlockEditWrapper } from "./block-edit-wrapper";
+import { InputField, SelectField } from "./form-fields";
+import { normalizeVideoUrl } from "@/lib/block-utils";
 
 type VideoPlatform = VideoBlockType["settings"]["platform"];
 
@@ -24,27 +18,11 @@ interface VideoBlockProps {
   onClick?: () => void;
 }
 
-const SUPPORTED_PLATFORMS: VideoPlatform[] = ["youtube", "vimeo", "custom"];
-
-function getEmbedUrl(url: string, platform: VideoPlatform): string {
-  if (!url) return "";
-
-  if (platform === "youtube") {
-    const videoIdMatch = url.match(
-      /(?:v=|youtu\.be\/|embed\/)([A-Za-z0-9_-]{11})/
-    );
-    const videoId = videoIdMatch ? videoIdMatch[1] : null;
-    return videoId ? `https://www.youtube.com/embed/${videoId}` : "";
-  }
-
-  if (platform === "vimeo") {
-    const videoIdMatch = url.match(/vimeo\.com\/(?:video\/)?(\d+)/);
-    const videoId = videoIdMatch ? videoIdMatch[1] : null;
-    return videoId ? `https://player.vimeo.com/video/${videoId}` : "";
-  }
-
-  return url;
-}
+const PLATFORM_OPTIONS = [
+  { value: "youtube", label: "YouTube" },
+  { value: "vimeo", label: "Vimeo" },
+  { value: "custom", label: "Custom iframe/embed URL" },
+];
 
 export function VideoBlock({
   block,
@@ -59,7 +37,12 @@ export function VideoBlock({
   const [editPlatform, setEditPlatform] = useState<VideoPlatform>(platform);
   const [editTitle, setEditTitle] = useState(title || "");
 
-  const embedUrl = useMemo(() => getEmbedUrl(url, platform), [url, platform]);
+  // Use shared utility for URL normalization
+  const embedUrl = useMemo(() => {
+    if (!url) return "";
+    if (platform === "custom") return url;
+    return normalizeVideoUrl(url);
+  }, [url, platform]);
 
   const handleSave = () => {
     updateBlock(block.id, {
@@ -72,59 +55,37 @@ export function VideoBlock({
     setIsEditMode(false);
   };
 
+  const handleCancel = () => setIsEditMode(false);
+
   if (isEditMode && isEditing) {
     return (
-      <div className="p-4 border rounded-lg bg-card space-y-4">
-        <div className="space-y-2">
-          <Label>Video Platform</Label>
-          <Select
-            value={editPlatform}
-            onValueChange={(value: VideoPlatform) => setEditPlatform(value)}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select platform" />
-            </SelectTrigger>
-            <SelectContent>
-              {SUPPORTED_PLATFORMS.map((value) => (
-                <SelectItem key={value} value={value}>
-                  {value === "custom"
-                    ? "Custom iframe/embed URL"
-                    : value === "youtube"
-                    ? "YouTube"
-                    : "Vimeo"}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-2">
-          <Label>Video URL</Label>
-          <Input
-            value={editUrl}
-            onChange={(e) => setEditUrl(e.target.value)}
-            placeholder="https://www.youtube.com/watch?v=..."
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label>Title (optional)</Label>
-          <Input
-            value={editTitle}
-            onChange={(e) => setEditTitle(e.target.value)}
-            placeholder="My latest video"
-          />
-        </div>
-
-        <div className="flex gap-2">
-          <Button onClick={handleSave} disabled={!editUrl}>
-            Save
-          </Button>
-          <Button variant="outline" onClick={() => setIsEditMode(false)}>
-            Cancel
-          </Button>
-        </div>
-      </div>
+      <BlockEditWrapper
+        isEditMode={isEditMode}
+        isEditing={isEditing}
+        onSave={handleSave}
+        onCancel={handleCancel}
+        isValid={!!editUrl}
+      >
+        <SelectField
+          label="Video Platform"
+          value={editPlatform}
+          options={PLATFORM_OPTIONS}
+          onChange={(v) => setEditPlatform(v as VideoPlatform)}
+          placeholder="Select platform"
+        />
+        <InputField
+          label="Video URL"
+          value={editUrl}
+          onChange={setEditUrl}
+          placeholder="https://www.youtube.com/watch?v=..."
+        />
+        <InputField
+          label="Title (optional)"
+          value={editTitle}
+          onChange={setEditTitle}
+          placeholder="My latest video"
+        />
+      </BlockEditWrapper>
     );
   }
 

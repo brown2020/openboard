@@ -4,19 +4,19 @@ import { useMemo, useState } from "react";
 import { Globe, Music2, MessageSquare } from "lucide-react";
 import { EmbedBlock as EmbedBlockType } from "@/types";
 import { useBoardStore } from "@/stores/board-store";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { BlockControls } from "./block-controls";
+import { BlockEditWrapper } from "./block-edit-wrapper";
+import { InputField, SelectField } from "./form-fields";
+import { normalizeEmbedUrl } from "@/lib/block-utils";
 
 type EmbedPlatform = NonNullable<EmbedBlockType["settings"]["platform"]>;
+
+const PLATFORM_OPTIONS = [
+  { value: "spotify", label: "Spotify" },
+  { value: "twitter", label: "Twitter/X" },
+  { value: "instagram", label: "Instagram" },
+  { value: "custom", label: "Custom" },
+];
 
 const PLATFORM_LABEL: Record<EmbedPlatform, string> = {
   spotify: "Spotify",
@@ -45,7 +45,7 @@ function getDefaultEmbedCode(url: string, platform?: EmbedPlatform): string {
     case "instagram":
       return `${url}embed/`;
     default:
-      return url;
+      return normalizeEmbedUrl(url);
   }
 }
 
@@ -78,56 +78,43 @@ export function EmbedBlock({
     setIsEditMode(false);
   };
 
+  const handleCancel = () => setIsEditMode(false);
+
   if (isEditMode && isEditing) {
     return (
-      <div className="p-4 border rounded-lg bg-card space-y-4">
+      <BlockEditWrapper
+        isEditMode={isEditMode}
+        isEditing={isEditing}
+        onSave={handleSave}
+        onCancel={handleCancel}
+        isValid={!!editUrl || !!editEmbed}
+      >
+        <SelectField
+          label="Platform"
+          value={editPlatform}
+          options={PLATFORM_OPTIONS}
+          onChange={(v) => setEditPlatform(v as EmbedPlatform)}
+          placeholder="Select platform"
+        />
+        <InputField
+          label="Content URL"
+          value={editUrl}
+          onChange={setEditUrl}
+          placeholder="https://..."
+        />
         <div className="space-y-2">
-          <Label>Platform</Label>
-          <Select
-            value={editPlatform}
-            onValueChange={(value: EmbedPlatform) => setEditPlatform(value)}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select platform" />
-            </SelectTrigger>
-            <SelectContent>
-              {Object.entries(PLATFORM_LABEL).map(([value, label]) => (
-                <SelectItem key={value} value={value}>
-                  {label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-2">
-          <Label>Content URL</Label>
-          <Input
-            value={editUrl}
-            onChange={(e) => setEditUrl(e.target.value)}
-            placeholder="https://..."
-          />
-        </div>
-        <div className="space-y-2">
-          <Label>Custom Embed URL (optional)</Label>
-          <Input
+          <InputField
+            label="Custom Embed URL (optional)"
             value={editEmbed}
-            onChange={(e) => setEditEmbed(e.target.value)}
+            onChange={setEditEmbed}
             placeholder="https://open.spotify.com/embed/track/..."
           />
           <p className="text-xs text-muted-foreground">
-            Provide a custom embed iframe src if Spotify/Twitter defaults don’t
+            Provide a custom embed iframe src if Spotify/Twitter defaults don't
             match your content.
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button onClick={handleSave} disabled={!editUrl && !editEmbed}>
-            Save
-          </Button>
-          <Button variant="outline" onClick={() => setIsEditMode(false)}>
-            Cancel
-          </Button>
-        </div>
-      </div>
+      </BlockEditWrapper>
     );
   }
 

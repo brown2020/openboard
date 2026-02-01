@@ -46,9 +46,13 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Block } from "@/types";
+import { Block, BlockType } from "@/types";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/stores/ui-store";
+import {
+  CommandPalette,
+  getDefaultBlockSettings,
+} from "@/components/editor/command-palette";
 
 // Mark this route as dynamic for Next.js 16
 export const dynamic = "force-dynamic";
@@ -71,6 +75,8 @@ function SortableBlock({ block }: SortableBlockProps) {
     transition,
     isDragging,
   } = useSortable({ id: block.id });
+  const { selectedBlockId } = useEditor();
+  const isSelected = selectedBlockId === block.id;
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -81,20 +87,25 @@ function SortableBlock({ block }: SortableBlockProps) {
     <div
       ref={setNodeRef}
       style={style}
+      data-block-id={block.id}
       className={cn(
         "relative group",
-        isDragging && "opacity-50 z-50 scale-[1.02]"
+        isDragging && "opacity-50 z-50 scale-[1.02]",
+        // Selection indicator - blue left border like Notion
+        isSelected &&
+          "before:absolute before:-left-3 before:top-0 before:bottom-0 before:w-0.5 before:bg-blue-500 before:rounded-full"
       )}
     >
-      {/* Drag Handle */}
+      {/* Drag Handle - Always slightly visible, fully visible on hover */}
       <div
         {...attributes}
         {...listeners}
         className={cn(
           "absolute -left-10 top-1/2 -translate-y-1/2",
-          "opacity-0 group-hover:opacity-100 transition-all duration-200",
+          "opacity-30 group-hover:opacity-100 transition-all duration-200",
           "cursor-grab active:cursor-grabbing",
-          "p-1.5 rounded-md hover:bg-muted"
+          "p-1.5 rounded-md hover:bg-muted",
+          isSelected && "opacity-60"
         )}
         aria-label="Drag to reorder"
       >
@@ -110,8 +121,10 @@ export default function BoardEditorPage({ params }: PageProps) {
   const resolvedParams = use(params);
   const { user, isLoaded } = useAuth();
   const { getBoard, updateBoard: updateBoardDB } = useBoards();
-  const { currentBoard, setCurrentBoard, reorderBlocks } = useBoardStore();
-  const { setEditorMode, isSaving, setSaving } = useEditor();
+  const { currentBoard, setCurrentBoard, reorderBlocks, addBlock } =
+    useBoardStore();
+  const { setEditorMode, isSaving, setSaving, selectedBlockId, setSelectedBlock } =
+    useEditor();
   const { openModal } = useModal();
   const { canUndo, canRedo, undo, redo } = useHistory();
   const router = useRouter();
@@ -119,11 +132,60 @@ export default function BoardEditorPage({ params }: PageProps) {
 
   const [isLoading, setIsLoading] = useState(true);
   const [showAddBlock, setShowAddBlock] = useState(false);
+  const [showCommandPalette, setShowCommandPalette] = useState(false);
   const [editingHeader, setEditingHeader] = useState(false);
   const [boardTitle, setBoardTitle] = useState("");
   const [boardDescription, setBoardDescription] = useState("");
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const loadedBoardIdRef = useRef<string | null>(null);
+
+  // Refs to avoid stale closure issues in callbacks
+  const currentBoardRef = useRef(currentBoard);
+  const boardTitleRef = useRef(boardTitle);
+  const boardDescriptionRef = useRef(boardDescription);
+
+  // Keep refs in sync
+  useEffect(() => {
+    currentBoardRef.current = currentBoard;
+  }, [currentBoard]);
+
+  useEffect(() => {
+    boardTitleRef.current = boardTitle;
+  }, [boardTitle]);
+
+  useEffect(() => {
+    boardDescriptionRef.current = boardDescription;
+  }, [boardDescription]);
+
+  // Handle adding a new block from command palette
+  const handleAddBlockFromPalette = useCallback(
+    (type: BlockType) => {
+      const board = currentBoardRef.current;
+      if (!board) return;
+
+      const newBlockId = `block_${Date.now()}_${Math.random()
+        .toString(36)
+        .slice(2)}`;
+
+      // Find insert position (after selected block or at end)
+      const currentIndex = selectedBlockId
+        ? board.blocks.findIndex((b) => b.id === selectedBlockId)
+        : board.blocks.length - 1;
+
+      const newBlock: Block = {
+        id: newBlockId,
+        type,
+        order: currentIndex + 1,
+        visible: true,
+        settings: getDefaultBlockSettings(type),
+      } as Block;
+
+      addBlock(newBlock);
+      setSelectedBlock(newBlockId);
+      setHasUnsavedChanges(true);
+    },
+    [selectedBlockId, addBlock, setSelectedBlock]
+  );
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -205,38 +267,20 @@ export default function BoardEditorPage({ params }: PageProps) {
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [hasUnsavedChanges]);
 
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.metaKey || e.ctrlKey) {
-        if (e.key === "s") {
-          e.preventDefault();
-          handleSave();
-        } else if (e.key === "z" && !e.shiftKey && canUndo) {
-          e.preventDefault();
-          undo();
-        } else if (
-          (e.key === "z" && e.shiftKey) ||
-          (e.key === "y" && canRedo)
-        ) {
-          e.preventDefault();
-          redo();
-        }
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [canUndo, canRedo, undo, redo]);
-
+  // Save handler - defined before keyboard shortcuts that use it
   const handleSave = useCallback(async () => {
-    if (!currentBoard) return;
+    // Use refs to get latest values and avoid stale closure
+    const board = currentBoardRef.current;
+    const title = boardTitleRef.current;
+    const description = boardDescriptionRef.current;
+
+    if (!board) return;
 
     setSaving(true);
-    const success = await updateBoardDB(currentBoard.id, {
-      blocks: currentBoard.blocks,
-      title: boardTitle,
-      description: boardDescription,
+    const success = await updateBoardDB(board.id, {
+      blocks: board.blocks,
+      title,
+      description,
     });
     setSaving(false);
 
@@ -246,13 +290,90 @@ export default function BoardEditorPage({ params }: PageProps) {
     } else {
       toast.error("Save failed", "Failed to save changes. Please try again.");
     }
+  }, [updateBoardDB, setSaving, toast]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger shortcuts when typing in inputs
+      const target = e.target as HTMLElement;
+      const isTyping =
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.isContentEditable;
+
+      // Cmd/Ctrl shortcuts
+      if (e.metaKey || e.ctrlKey) {
+        if (e.key === "s") {
+          e.preventDefault();
+          handleSave();
+        } else if (e.key === "z" && !e.shiftKey) {
+          if (canUndo) {
+            e.preventDefault();
+            undo();
+          }
+        } else if ((e.key === "z" && e.shiftKey) || e.key === "y") {
+          if (canRedo) {
+            e.preventDefault();
+            redo();
+          }
+        } else if (e.key === "Enter" && !isTyping) {
+          // Cmd+Enter to add new block after selected
+          e.preventDefault();
+          setShowCommandPalette(true);
+        }
+      }
+
+      // Slash command (/) to open command palette
+      if (e.key === "/" && !isTyping && !showCommandPalette) {
+        e.preventDefault();
+        setShowCommandPalette(true);
+      }
+
+      // Escape to close command palette or deselect block
+      if (e.key === "Escape") {
+        if (showCommandPalette) {
+          setShowCommandPalette(false);
+        } else if (selectedBlockId) {
+          setSelectedBlock(null);
+        }
+      }
+
+      // Arrow key navigation between blocks (when not typing)
+      if (!isTyping && currentBoard) {
+        if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+          e.preventDefault();
+          const currentIndex = selectedBlockId
+            ? currentBoard.blocks.findIndex((b) => b.id === selectedBlockId)
+            : -1;
+
+          if (e.key === "ArrowUp" && currentIndex > 0) {
+            setSelectedBlock(currentBoard.blocks[currentIndex - 1].id);
+          } else if (
+            e.key === "ArrowDown" &&
+            currentIndex < currentBoard.blocks.length - 1
+          ) {
+            setSelectedBlock(currentBoard.blocks[currentIndex + 1].id);
+          } else if (e.key === "ArrowDown" && currentIndex === -1 && currentBoard.blocks.length > 0) {
+            // If no block selected, select the first one
+            setSelectedBlock(currentBoard.blocks[0].id);
+          }
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [
+    canUndo,
+    canRedo,
+    undo,
+    redo,
+    handleSave,
+    showCommandPalette,
+    selectedBlockId,
     currentBoard,
-    boardTitle,
-    boardDescription,
-    updateBoardDB,
-    setSaving,
-    toast,
+    setSelectedBlock,
   ]);
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -302,6 +423,12 @@ export default function BoardEditorPage({ params }: PageProps) {
 
   return (
     <BoardEditorErrorBoundary>
+      {/* Command Palette */}
+      <CommandPalette
+        isOpen={showCommandPalette}
+        onClose={() => setShowCommandPalette(false)}
+        onSelectBlock={handleAddBlockFromPalette}
+      />
       <ThemeModal />
       <AnalyticsModal />
       <ShareModal />
@@ -526,14 +653,14 @@ export default function BoardEditorPage({ params }: PageProps) {
             {/* Tips */}
             <div className="mt-6 text-center text-sm text-muted-foreground">
               <p>
+                <kbd className="px-1.5 py-0.5 bg-muted rounded text-xs">/</kbd>{" "}
+                Add block •{" "}
+                <kbd className="px-1.5 py-0.5 bg-muted rounded text-xs">↑↓</kbd>{" "}
+                Navigate •{" "}
                 <kbd className="px-1.5 py-0.5 bg-muted rounded text-xs">⌘S</kbd>{" "}
                 Save •{" "}
                 <kbd className="px-1.5 py-0.5 bg-muted rounded text-xs">⌘Z</kbd>{" "}
-                Undo •{" "}
-                <kbd className="px-1.5 py-0.5 bg-muted rounded text-xs">
-                  ⌘⇧Z
-                </kbd>{" "}
-                Redo • Drag blocks to reorder
+                Undo • Drag to reorder
               </p>
             </div>
           </div>

@@ -13,16 +13,17 @@ export const dynamic = "force-dynamic";
 export const dynamicParams = true;
 
 interface PageProps {
-  params: { username: string; slug: string };
+  params: Promise<{ username: string; slug: string }>;
 }
 
 export default async function PublicBoardPage({ params }: PageProps) {
+  const { username, slug } = await params;
   const adminDb = getAdminDb();
 
   const snap = await adminDb
     .collection("boards")
-    .where("ownerUsername", "==", params.username)
-    .where("slug", "==", params.slug)
+    .where("ownerUsername", "==", username)
+    .where("slug", "==", slug)
     .limit(1)
     .get();
 
@@ -68,7 +69,14 @@ export default async function PublicBoardPage({ params }: PageProps) {
 
   // Never pass passwordHash to the client tree.
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { passwordHash, ...boardPublic } = board;
+  const { passwordHash, createdAt, updatedAt, ...boardPublic } = board;
 
-  return <PublicBoardClient board={boardPublic} />;
+  // Serialize Firestore Timestamps to plain objects for Client Components
+  const serializedBoard = {
+    ...boardPublic,
+    createdAt: createdAt?.toDate?.() ? createdAt.toDate().toISOString() : null,
+    updatedAt: updatedAt?.toDate?.() ? updatedAt.toDate().toISOString() : null,
+  };
+
+  return <PublicBoardClient board={serializedBoard} />;
 }

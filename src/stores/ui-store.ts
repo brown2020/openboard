@@ -44,6 +44,7 @@ interface UIState {
 
   // Toast notifications
   toasts: Toast[];
+  toastTimeouts: Map<string, ReturnType<typeof setTimeout>>;
 
   // Sidebar state
   isSidebarOpen: boolean;
@@ -102,6 +103,7 @@ const initialState: UIState = {
 
   // Toast state
   toasts: [],
+  toastTimeouts: new Map(),
 
   // Sidebar state
   isSidebarOpen: true,
@@ -147,29 +149,58 @@ export const useUIStore = create<UIStore>()(
         const id = `toast_${Date.now()}_${Math.random().toString(36).slice(2)}`;
         const newToast: Toast = { ...toast, id };
 
-        set(
-          (state) => ({ toasts: [...state.toasts, newToast] }),
-          false,
-          "showToast"
-        );
-
         // Auto-dismiss after duration (default 5s)
         const duration = toast.duration ?? 5000;
+        let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
         if (duration > 0) {
-          setTimeout(() => {
+          timeoutId = setTimeout(() => {
             get().dismissToast(id);
           }, duration);
         }
-      },
-      dismissToast: (id) =>
+
         set(
-          (state) => ({
-            toasts: state.toasts.filter((toast) => toast.id !== id),
-          }),
+          (state) => {
+            const newTimeouts = new Map(state.toastTimeouts);
+            if (timeoutId) {
+              newTimeouts.set(id, timeoutId);
+            }
+            return {
+              toasts: [...state.toasts, newToast],
+              toastTimeouts: newTimeouts,
+            };
+          },
+          false,
+          "showToast"
+        );
+      },
+      dismissToast: (id) => {
+        const state = get();
+        // Clear the timeout to prevent memory leaks
+        const timeoutId = state.toastTimeouts.get(id);
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+        }
+
+        set(
+          (state) => {
+            const newTimeouts = new Map(state.toastTimeouts);
+            newTimeouts.delete(id);
+            return {
+              toasts: state.toasts.filter((toast) => toast.id !== id),
+              toastTimeouts: newTimeouts,
+            };
+          },
           false,
           "dismissToast"
-        ),
-      clearToasts: () => set({ toasts: [] }, false, "clearToasts"),
+        );
+      },
+      clearToasts: () => {
+        const state = get();
+        // Clear all timeouts
+        state.toastTimeouts.forEach((timeoutId) => clearTimeout(timeoutId));
+        set({ toasts: [], toastTimeouts: new Map() }, false, "clearToasts");
+      },
 
       // Sidebar actions
       toggleSidebar: () =>

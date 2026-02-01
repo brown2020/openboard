@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useCallback, useRef, useState } from "react";
+import { useEffect, useCallback, useRef } from "react";
 import {
   collection,
   query,
@@ -34,37 +34,13 @@ export function useBoards() {
   const { boards, setBoards, setStatus, setError } = useBoardStore();
   const { handleError } = useErrorHandler();
   const unsubscribeRef = useRef<(() => void) | null>(null);
-  const [isReady, setIsReady] = useState(false);
 
-  // Ensure auth token is fresh before subscribing
+  // Single effect with AbortController to prevent race conditions
   useEffect(() => {
-    const prepareAuth = async () => {
-      if (authLoading || !firebaseUser || !isHydrated || !userProfile?.id) {
-        setIsReady(false);
-        return;
-      }
+    // Create abort controller to handle cleanup and race conditions
+    const controller = new AbortController();
 
-      if (userProfile.id !== firebaseUser.uid) {
-        setIsReady(false);
-        return;
-      }
-
-      try {
-        // Force refresh the ID token to ensure Firestore has the latest auth state
-        await getValidToken(firebaseUser);
-        setIsReady(true);
-      } catch (error) {
-        handleError(error, "Failed to refresh authentication token");
-        setIsReady(false);
-      }
-    };
-
-    prepareAuth();
-  }, [authLoading, firebaseUser, isHydrated, userProfile?.id, handleError]);
-
-  // Subscribe to user's boards - ONLY when fully ready
-  useEffect(() => {
-    // Clean up any existing subscription
+    // Clean up any existing subscription first
     if (unsubscribeRef.current) {
       unsubscribeRef.current();
       unsubscribeRef.current = null;
@@ -82,48 +58,70 @@ export function useBoards() {
       return;
     }
 
-    // Don't subscribe until we're fully ready
-    if (!isReady) {
+    // Don't subscribe until user profile is hydrated and matches
+    if (!isHydrated || !userProfile?.id || userProfile.id !== firebaseUser.uid) {
       return;
     }
 
-    setStatus("loading");
+    const initSubscription = async () => {
+      try {
+        // Force refresh the ID token to ensure Firestore has the latest auth state
+        await getValidToken(firebaseUser);
 
-    const boardsRef = collection(db, "boards");
-    const q = query(
-      boardsRef,
-      where("ownerId", "==", firebaseUser.uid),
-      orderBy("updatedAt", "desc")
-    );
+        // Check if aborted before proceeding
+        if (controller.signal.aborted) return;
 
-    unsubscribeRef.current = onSnapshot(
-      q,
-      (snapshot) => {
-        const boardsData = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        })) as Board[];
-        setBoards(boardsData);
-        setStatus("success");
-      },
-      (error) => {
-        handleError(error, "Failed to load boards");
-        // Check if it's an index error
-        if (error.message.includes("index")) {
-          setError("Database index required. Please check Firebase console.");
-        } else {
-          setError(getFirebaseErrorMessage(error));
-        }
+        setStatus("loading");
+
+        const boardsRef = collection(db, "boards");
+        const q = query(
+          boardsRef,
+          where("ownerId", "==", firebaseUser.uid),
+          orderBy("updatedAt", "desc")
+        );
+
+        // Check again before setting up listener
+        if (controller.signal.aborted) return;
+
+        unsubscribeRef.current = onSnapshot(
+          q,
+          (snapshot) => {
+            if (controller.signal.aborted) return;
+            const boardsData = snapshot.docs.map((doc) => ({
+              id: doc.id,
+              ...doc.data(),
+            })) as Board[];
+            setBoards(boardsData);
+            setStatus("success");
+          },
+          (error) => {
+            if (controller.signal.aborted) return;
+            handleError(error, "Failed to load boards");
+            // Check if it's an index error
+            if (error.message.includes("index")) {
+              setError("Database index required. Please check Firebase console.");
+            } else {
+              setError(getFirebaseErrorMessage(error));
+            }
+          }
+        );
+      } catch (error) {
+        if (controller.signal.aborted) return;
+        handleError(error, "Failed to refresh authentication token");
       }
-    );
+    };
 
+    initSubscription();
+
+    // Cleanup function
     return () => {
+      controller.abort();
       if (unsubscribeRef.current) {
         unsubscribeRef.current();
         unsubscribeRef.current = null;
       }
     };
-  }, [firebaseUser, authLoading, isReady, setBoards, setStatus, setError, handleError]);
+  }, [firebaseUser, authLoading, isHydrated, userProfile?.id, setBoards, setStatus, setError, handleError]);
 
   // Create a new board
   const createBoard = useCallback(

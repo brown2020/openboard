@@ -1,6 +1,7 @@
 "use client";
 
-import { Block } from "@/types";
+import { ComponentType } from "react";
+import { Block, BlockType } from "@/types";
 import { LinkBlock } from "./link-block";
 import { TextBlock } from "./text-block";
 import { RichTextBlock } from "./richtext-block";
@@ -14,6 +15,34 @@ import { SocialLinksBlock } from "./social-links-block";
 import { CalendarBlock } from "./calendar-block";
 import { FormBlock } from "./form-block";
 import { BlockErrorBoundary } from "@/components/error-boundary";
+
+/**
+ * Standard props interface for all block components
+ */
+export interface BlockComponentProps<T extends Block = Block> {
+  block: T;
+  isEditing?: boolean;
+  onClick?: () => void;
+}
+
+/**
+ * Block component registry - maps block types to their components
+ * Makes it easy to add new block types without modifying the renderer
+ */
+const BLOCK_REGISTRY: Record<BlockType, ComponentType<BlockComponentProps<any>>> = {
+  link: LinkBlock,
+  text: TextBlock,
+  richtext: RichTextBlock,
+  image: ImageBlock,
+  button: ButtonBlock,
+  divider: DividerBlock,
+  spacer: SpacerBlock,
+  video: VideoBlock,
+  embed: EmbedBlock,
+  "social-links": SocialLinksBlock,
+  calendar: CalendarBlock,
+  form: FormBlock,
+};
 
 interface BlockRendererProps {
   block: Block;
@@ -41,72 +70,16 @@ export function BlockRenderer({
     }
   };
 
-  const renderBlock = () => {
-    switch (block.type) {
-      case "link":
-        return (
-          <LinkBlock block={block} onClick={handleClick} isEditing={isEditing} />
-        );
-    case "text":
-      return <TextBlock block={block} />;
-    case "richtext":
-      return <RichTextBlock block={block} isEditing={isEditing} />;
-    case "image":
-      return (
-        <ImageBlock block={block} onClick={handleClick} isEditing={isEditing} />
-      );
-    case "button":
-      return (
-        <ButtonBlock
-          block={block}
-          onClick={handleClick}
-          isEditing={isEditing}
-        />
-      );
-    case "divider":
-      return <DividerBlock block={block} />;
-    case "spacer":
-      return <SpacerBlock block={block} />;
-    case "video":
-      return (
-        <VideoBlock
-          block={block}
-          isEditing={isEditing}
-          onClick={handleClick}
-        />
-      );
-    case "embed":
-      return (
-        <EmbedBlock
-          block={block}
-          isEditing={isEditing}
-          onClick={handleClick}
-        />
-      );
-    case "social-links":
-      return (
-        <SocialLinksBlock
-          block={block}
-          isEditing={isEditing}
-          onClick={handleClick}
-        />
-      );
-    case "calendar":
-      return (
-        <CalendarBlock
-          block={block}
-          isEditing={isEditing}
-          onClick={handleClick}
-        />
-      );
-      case "form":
-        return (
-          <FormBlock block={block} isEditing={isEditing} onClick={handleClick} />
-        );
-      default:
-        return null;
-    }
-  };
+  const Component = BLOCK_REGISTRY[block.type];
 
-  return <BlockErrorBoundary>{renderBlock()}</BlockErrorBoundary>;
+  if (!Component) {
+    console.warn(`Unknown block type: ${block.type}`);
+    return null;
+  }
+
+  return (
+    <BlockErrorBoundary>
+      <Component block={block} isEditing={isEditing} onClick={handleClick} />
+    </BlockErrorBoundary>
+  );
 }

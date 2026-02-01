@@ -24,6 +24,9 @@ export function useAuth() {
   const [syncError, setSyncError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Use AbortController to prevent race conditions
+    const controller = new AbortController();
+
     const syncUser = async () => {
       // If auth is still loading, wait
       if (authLoading) {
@@ -33,6 +36,7 @@ export function useAuth() {
       // If no Firebase user, clear everything and mark as hydrated
       if (!firebaseUser) {
         clearUser();
+        setHydrated(true);
         return;
       }
 
@@ -49,12 +53,18 @@ export function useAuth() {
         // Force refresh the ID token to ensure Firestore has the latest auth state
         await getValidToken(firebaseUser);
 
+        // Check if aborted before proceeding
+        if (controller.signal.aborted) return;
+
         const userRef = doc(db, "users", firebaseUser.uid);
         const userSnap = await getDoc(userRef);
+
+        if (controller.signal.aborted) return;
 
         if (userSnap.exists()) {
           const userData = userSnap.data() as UserProfile;
           setUser(userData);
+          setHydrated(true);
         } else {
           // New user, create profile
           const username =
@@ -76,21 +86,30 @@ export function useAuth() {
 
           await setDoc(userRef, newUser);
 
+          if (controller.signal.aborted) return;
+
           // Fetch to get actual timestamps
           const createdUserSnap = await getDoc(userRef);
           if (createdUserSnap.exists()) {
             setUser(createdUserSnap.data() as UserProfile);
+            setHydrated(true);
           }
         }
       } catch (error) {
+        if (controller.signal.aborted) return;
         handleError(error, "Failed to sync user profile");
         setSyncError(getFirebaseErrorMessage(error));
         // On error, clear stale data but still mark as hydrated
         clearUser();
+        setHydrated(true);
       }
     };
 
     syncUser();
+
+    return () => {
+      controller.abort();
+    };
   }, [
     firebaseUser,
     authLoading,
