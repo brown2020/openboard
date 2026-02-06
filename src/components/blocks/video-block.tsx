@@ -4,7 +4,6 @@ import { useMemo, useState } from "react";
 import { Video as VideoIcon } from "lucide-react";
 import { useBoardStore } from "@/stores/board-store";
 import { VideoBlock as VideoBlockType } from "@/types";
-import { Button } from "@/components/ui/button";
 import { BlockControls } from "./block-controls";
 import { BlockEditWrapper } from "./block-edit-wrapper";
 import { InputField, SelectField } from "./form-fields";
@@ -114,6 +113,7 @@ export function VideoBlock({
           <div className="aspect-video bg-muted">
             <iframe
               src={embedUrl}
+              title={title || "Embedded video"}
               className="w-full h-full"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
               allowFullScreen

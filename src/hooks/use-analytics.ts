@@ -40,8 +40,8 @@ export function useAnalytics() {
         },
         { merge: true }
       );
-    } catch (error) {
-      console.error("Error tracking view:", error);
+    } catch {
+      // Analytics tracking is best-effort; failures are silently ignored
     }
   }, []);
 
@@ -81,8 +81,8 @@ export function useAnalytics() {
           userAgent,
         };
         await setDoc(clickRef, clickEvent);
-      } catch (error) {
-        console.error("Error tracking click:", error);
+      } catch {
+        // Click tracking is best-effort; failures are silently ignored
       }
     },
     []
@@ -106,8 +106,7 @@ export function useAnalytics() {
 
         const snapshot = await getDocs(q);
         return snapshot.docs.map((doc) => doc.data() as BoardAnalytics);
-      } catch (error) {
-        console.error("Error fetching analytics:", error);
+      } catch {
         return [];
       }
     },

@@ -49,7 +49,7 @@ export function FormBlock({
       .filter((field) => field.label);
 
     if (sanitizedFields.length === 0) {
-      alert("Add at least one field.");
+      toast.error("Validation error", "Add at least one field.");
       return;
     }
 

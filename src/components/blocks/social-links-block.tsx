@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/stores/ui-store";
 import { BlockControls } from "./block-controls";
 
 type Layout = SocialLinksBlockType["settings"]["layout"];
@@ -37,6 +38,7 @@ export function SocialLinksBlock({
   onClick,
 }: SocialLinksBlockProps) {
   const { updateBlock } = useBoardStore();
+  const toast = useToast();
   const [isEditMode, setIsEditMode] = useState(false);
   const [links, setLinks] = useState(block.settings.links);
   const [layout, setLayout] = useState<Layout>(block.settings.layout);
@@ -51,7 +53,7 @@ export function SocialLinksBlock({
       }));
 
     if (sanitized.length === 0) {
-      alert("Add at least one social link.");
+      toast.error("Validation error", "Add at least one social link.");
       return;
     }
 

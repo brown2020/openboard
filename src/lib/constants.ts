@@ -154,6 +154,12 @@ export const BLOCK_TYPES = [
     icon: "FaArrowsAltV",
   },
   {
+    type: "richtext",
+    label: "Rich Text",
+    description: "Add rich formatted content",
+    icon: "FaFileAlt",
+  },
+  {
     type: "embed",
     label: "Embed",
     description: "Embed content from other platforms",
@@ -164,5 +170,11 @@ export const BLOCK_TYPES = [
     label: "Calendar",
     description: "Add booking calendar",
     icon: "FaCalendar",
+  },
+  {
+    type: "form",
+    label: "Form",
+    description: "Add a contact or signup form",
+    icon: "FaWpforms",
   },
 ];

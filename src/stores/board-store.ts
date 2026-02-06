@@ -155,6 +155,7 @@ export const useBoardStore = create<BoardStore>()(
         const state = get();
         if (!state.currentBoard) return;
 
+        get().saveToHistory(`Added ${block.type} block`);
         set(
           {
             currentBoard: {
@@ -165,7 +166,6 @@ export const useBoardStore = create<BoardStore>()(
           false,
           "addBlock"
         );
-        get().saveToHistory(`Added ${block.type} block`);
       },
 
       updateBlock: (blockId, updates) => {
@@ -193,6 +193,9 @@ export const useBoardStore = create<BoardStore>()(
         if (!state.currentBoard) return;
 
         const block = state.currentBoard.blocks.find((b) => b.id === blockId);
+        if (block) {
+          get().saveToHistory(`Deleted ${block.type} block`);
+        }
         set(
           {
             currentBoard: {
@@ -203,9 +206,6 @@ export const useBoardStore = create<BoardStore>()(
           false,
           "deleteBlock"
         );
-        if (block) {
-          get().saveToHistory(`Deleted ${block.type} block`);
-        }
       },
 
       reorderBlocks: (blocks) => {
@@ -217,6 +217,7 @@ export const useBoardStore = create<BoardStore>()(
           order: index,
         }));
 
+        get().saveToHistory("Reordered blocks");
         set(
           {
             currentBoard: {
@@ -227,7 +228,6 @@ export const useBoardStore = create<BoardStore>()(
           false,
           "reorderBlocks"
         );
-        get().saveToHistory("Reordered blocks");
       },
 
       toggleBlockVisibility: (blockId) => {
@@ -263,6 +263,7 @@ export const useBoardStore = create<BoardStore>()(
           order: state.currentBoard.blocks.length,
         };
 
+        get().saveToHistory(`Duplicated ${block.type} block`);
         set(
           {
             currentBoard: {
@@ -273,7 +274,6 @@ export const useBoardStore = create<BoardStore>()(
           false,
           "duplicateBlock"
         );
-        get().saveToHistory(`Duplicated ${block.type} block`);
       },
 
       // Batch operations
@@ -281,6 +281,7 @@ export const useBoardStore = create<BoardStore>()(
         const state = get();
         if (!state.currentBoard) return;
 
+        get().saveToHistory(`Deleted ${blockIds.length} blocks`);
         set(
           {
             currentBoard: {
@@ -293,7 +294,6 @@ export const useBoardStore = create<BoardStore>()(
           false,
           "deleteMultipleBlocks"
         );
-        get().saveToHistory(`Deleted ${blockIds.length} blocks`);
       },
 
       updateMultipleBlocks: (updates) => {

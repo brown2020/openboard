@@ -49,7 +49,7 @@ export function useErrorHandler(): UseErrorHandlerReturn {
 
     setErrorState({
       message: error.message,
-      code: (error as any).code,
+      code: (error as { code?: string }).code,
       timestamp: Date.now(),
     });
   }, []);
@@ -60,8 +60,6 @@ export function useErrorHandler(): UseErrorHandlerReturn {
 
   const handleError = useCallback(
     (error: unknown, context?: string) => {
-      console.error(context || "Error occurred:", error);
-
       if (error instanceof Error) {
         setError(error);
         return;
@@ -90,21 +88,29 @@ export function useErrorHandler(): UseErrorHandlerReturn {
 /**
  * Helper to extract user-friendly error messages from Firebase errors.
  */
-export function getFirebaseErrorMessage(error: any): string {
-  const code = error?.code;
+export function getFirebaseErrorMessage(error: unknown): string {
+  const code = (error as { code?: string })?.code;
 
   const messages: Record<string, string> = {
     "auth/email-already-in-use": "This email is already registered",
     "auth/invalid-email": "Invalid email address",
     "auth/user-not-found": "No account found with this email",
     "auth/wrong-password": "Incorrect password",
+    "auth/invalid-credential": "Invalid email or password",
     "auth/weak-password": "Password is too weak",
     "auth/too-many-requests": "Too many attempts. Please try again later",
+    "auth/popup-closed-by-user": "Sign-in popup was closed. Please try again",
+    "auth/network-request-failed": "Network error. Please check your connection",
+    "auth/user-disabled": "This account has been disabled",
     "permission-denied": "You don't have permission to perform this action",
     "not-found": "The requested resource was not found",
     "already-exists": "This resource already exists",
     "unauthenticated": "Please sign in to continue",
+    "unavailable": "Service temporarily unavailable. Please try again",
+    "deadline-exceeded": "Request timed out. Please try again",
   };
 
-  return messages[code] || error?.message || "An error occurred";
+  if (code && messages[code]) return messages[code];
+  const msg = (error as { message?: string })?.message;
+  return msg || "An error occurred";
 }

@@ -74,7 +74,6 @@ export function useAuth() {
             updatedAt: ReturnType<typeof serverTimestamp>;
           } = {
             id: firebaseUser.uid,
-            clerkId: firebaseUser.uid,
             username,
             email: firebaseUser.email || "",
             displayName: firebaseUser.displayName || username,

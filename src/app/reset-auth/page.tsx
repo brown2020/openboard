@@ -85,10 +85,15 @@ export default function ResetAuthPage() {
       clearStorage(localStorage, "localStorage", addDetail);
       clearStorage(sessionStorage, "sessionStorage", addDetail);
 
-      // 3. Clear auth cookie
+      // 3. Clear auth cookie (including HttpOnly session cookie via API)
       addDetail("Clearing auth cookie...");
       removeAuthCookie();
-      addDetail("  Auth cookie removed");
+      try {
+        await fetch("/api/auth/session", { method: "DELETE" });
+        addDetail("  Server session cookie removed");
+      } catch {
+        addDetail("  Could not reach session API (may already be cleared)");
+      }
 
       // 4. Sign out from Firebase
       addDetail("Signing out from Firebase...");

@@ -1,8 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { useBoardStore } from "@/stores/board-store";
-import { useEditor } from "@/stores/ui-store";
 import { BlockType, Block } from "@/types";
 import { cn } from "@/lib/utils";
 import {

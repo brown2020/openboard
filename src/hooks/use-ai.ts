@@ -70,7 +70,6 @@ export function useAI(): UseAIResult {
         onData(result);
       }
     } catch (err) {
-      console.error("AI Generation Error:", err);
       setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
       setIsLoading(false);

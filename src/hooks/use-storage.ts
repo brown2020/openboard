@@ -64,7 +64,6 @@ export function useStorage(): UseStorageResult {
             setProgress(progress);
           },
           (error: StorageError) => {
-            console.error("Upload failed:", error);
             setError(error.message);
             setUploading(false);
             resolve(null);
@@ -74,8 +73,7 @@ export function useStorage(): UseStorageResult {
               const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
               setUploading(false);
               resolve(downloadURL);
-            } catch (err) {
-              console.error("Error getting download URL:", err);
+            } catch {
               setError("Failed to get download URL");
               setUploading(false);
               resolve(null);
@@ -84,7 +82,6 @@ export function useStorage(): UseStorageResult {
         );
       });
     } catch (err) {
-      console.error("Error starting upload:", err);
       setError(err instanceof Error ? err.message : "Unknown error occurred");
       setUploading(false);
       return null;

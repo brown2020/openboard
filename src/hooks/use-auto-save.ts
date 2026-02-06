@@ -3,7 +3,6 @@
 import { useEffect, useRef, useCallback, useState } from "react";
 import { useBoardStore } from "@/stores/board-store";
 import { useBoards } from "@/hooks/use-boards";
-import { useToast } from "@/stores/ui-store";
 import { Block } from "@/types";
 
 interface UseAutoSaveOptions {
@@ -45,7 +44,6 @@ export function useAutoSave({
 }: UseAutoSaveOptions): UseAutoSaveReturn {
   const { currentBoard } = useBoardStore();
   const { updateBoard } = useBoards();
-  const toast = useToast();
 
   const [isSaving, setIsSaving] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);

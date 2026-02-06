@@ -23,8 +23,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (firebaseUser) {
         try {
           await setAuthCookie(firebaseUser);
-        } catch (error) {
-          console.error("Error setting auth cookie:", error);
+        } catch {
+          // Auth cookie refresh failed; will retry on next token change
         }
       } else {
         removeAuthCookie();

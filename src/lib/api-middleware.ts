@@ -8,7 +8,7 @@ import type { DecodedIdToken } from "firebase-admin/auth";
  */
 export interface ApiContext<T = unknown> {
   data: T;
-  user: DecodedIdToken;
+  user: DecodedIdToken | null;
 }
 
 /**
@@ -87,7 +87,7 @@ export function withApiHandler<T extends z.ZodSchema>(
       // Call the handler
       return await handler({
         data: data as z.infer<T>,
-        user: user as DecodedIdToken,
+        user,
       });
     } catch (error) {
       // Handle thrown NextResponse errors (e.g., from requireAuth)
@@ -105,10 +105,10 @@ export function withApiHandler<T extends z.ZodSchema>(
 /**
  * Helper to verify board edit permissions within a handler
  */
-export async function verifyBoardAccess(
+export function verifyBoardAccess(
   userId: string,
   boardData: { ownerId?: string; collaborators?: string[] }
-): Promise<boolean> {
+): boolean {
   return canEditBoard(userId, boardData);
 }
 

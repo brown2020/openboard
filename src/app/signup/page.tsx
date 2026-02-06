@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { auth, googleProvider } from "@/lib/firebase";
 import {
   createUserWithEmailAndPassword,
@@ -20,8 +20,17 @@ import {
   GoogleSignInButton,
 } from "@/components/auth";
 import { setAuthCookie } from "@/lib/auth-cookie";
+import { getFirebaseErrorMessage } from "@/hooks/use-error-handler";
 
 export default function SignupPage() {
+  return (
+    <Suspense fallback={<AuthLayout title="Create your account" subtitle="Start creating beautiful boards"><div /></AuthLayout>}>
+      <SignupForm />
+    </Suspense>
+  );
+}
+
+function SignupForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -69,11 +78,11 @@ export default function SignupPage() {
         setAuthCookie(auth.currentUser)
           .then(() => router.push(redirectTo))
           .catch((err: unknown) => {
-            setError(err instanceof Error ? err.message : "An error occurred");
+            setError(getFirebaseErrorMessage(err));
           });
       }, 2000);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "An error occurred");
+      setError(getFirebaseErrorMessage(err));
     } finally {
       setIsLoading(false);
     }
@@ -88,7 +97,7 @@ export default function SignupPage() {
       await setAuthCookie(auth.currentUser);
       router.push(redirectTo);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "An error occurred");
+      setError(getFirebaseErrorMessage(err));
     } finally {
       setIsLoading(false);
     }

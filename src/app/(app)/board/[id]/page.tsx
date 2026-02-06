@@ -54,10 +54,6 @@ import {
   getDefaultBlockSettings,
 } from "@/components/editor/command-palette";
 
-// Mark this route as dynamic for Next.js 16
-export const dynamic = "force-dynamic";
-export const dynamicParams = true;
-
 interface PageProps {
   params: Promise<{ id: string }>;
 }
@@ -546,10 +542,7 @@ export default function BoardEditorPage({ params }: PageProps) {
             <div
               className="rounded-2xl p-8 min-h-[600px] shadow-xl"
               style={{
-                background:
-                  currentBoard.theme.background.type === "gradient"
-                    ? currentBoard.theme.background.value
-                    : currentBoard.theme.background.value,
+                background: currentBoard.theme.background.value,
               }}
             >
               {/* Header - Editable */}
@@ -614,7 +607,7 @@ export default function BoardEditorPage({ params }: PageProps) {
                     items={currentBoard.blocks.map((b) => b.id)}
                     strategy={verticalListSortingStrategy}
                   >
-                    {currentBoard.blocks
+                    {[...currentBoard.blocks]
                       .sort((a, b) => a.order - b.order)
                       .map((block) => (
                         <SortableBlock key={block.id} block={block} />

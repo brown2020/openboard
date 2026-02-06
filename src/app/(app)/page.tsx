@@ -167,7 +167,7 @@ export default function Home() {
                 <div className="max-w-md mx-auto text-center">
                   <div className="w-20 h-20 rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-500 mx-auto mb-6" />
                   <h3 className="text-2xl font-bold mb-2">@yourname</h3>
-                  <p className="text-white/60 mb-8">Creator • Developer • Designer</p>
+                  <p className="text-white/60 mb-8">Creator &bull; Developer &bull; Designer</p>
                   
                   <div className="space-y-3">
                     {["Portfolio", "Latest Project", "YouTube Channel", "Newsletter"].map((item, i) => (
@@ -197,7 +197,7 @@ export default function Home() {
           <h2 className="text-4xl md:text-5xl font-bold mb-4">
             Built for the modern web
           </h2>
-          <p className="text-xl text-white/60 max-w-2xl mx-auto">
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
             Everything you need to create, customize, and share your boards
           </p>
         </div>
@@ -261,8 +261,8 @@ export default function Home() {
             <h2 className="text-4xl md:text-5xl font-bold mb-4">
               Made for everyone
             </h2>
-            <p className="text-xl text-white/60">
-              Whether you're a creator, developer, or team
+            <p className="text-xl text-muted-foreground">
+              Whether you&apos;re a creator, developer, or team
             </p>
           </div>
 
@@ -291,11 +291,11 @@ export default function Home() {
         <div className="max-w-4xl mx-auto text-center">
           <div className="relative">
             <div className="absolute -inset-4 bg-gradient-to-r from-violet-500/20 via-fuchsia-500/20 to-cyan-500/20 rounded-3xl blur-2xl" />
-            <div className="relative bg-white/5 border border-white/10 rounded-3xl p-12 backdrop-blur-sm">
+            <div className="relative bg-muted/50 border border-border rounded-3xl p-12 backdrop-blur-sm">
               <h2 className="text-4xl md:text-5xl font-bold mb-6">
                 Ready to get started?
               </h2>
-              <p className="text-xl text-white/60 mb-8 max-w-lg mx-auto">
+              <p className="text-xl text-muted-foreground mb-8 max-w-lg mx-auto">
                 Join thousands of creators building beautiful boards with OpenBoard.
               </p>
               {!user && (
@@ -312,27 +312,27 @@ export default function Home() {
       </section>
 
       {/* Footer */}
-      <footer className="relative z-10 container mx-auto px-6 py-12 border-t border-white/10">
+      <footer className="relative z-10 container mx-auto px-6 py-12 border-t border-border">
         <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-2 text-white/40">
-            <span>© 2025 OpenBoard</span>
-            <span>•</span>
-            <span>Open source & free forever</span>
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <span>&copy; {new Date().getFullYear()} OpenBoard</span>
+            <span>&bull;</span>
+            <span>Open source &amp; free forever</span>
           </div>
           <div className="flex items-center gap-6">
             <a
               href="https://github.com/brown2020/openboard"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-white/40 hover:text-white transition-colors flex items-center gap-2"
+              className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-2"
             >
               <Github className="w-4 h-4" />
               GitHub
             </a>
-            <a href="#" className="text-white/40 hover:text-white transition-colors">
+            <a href="#" className="text-muted-foreground hover:text-foreground transition-colors">
               Documentation
             </a>
-            <a href="#" className="text-white/40 hover:text-white transition-colors">
+            <a href="#" className="text-muted-foreground hover:text-foreground transition-colors">
               Community
             </a>
           </div>
@@ -341,6 +341,17 @@ export default function Home() {
     </div>
   );
 }
+
+const GRADIENT_MAP: Record<string, string> = {
+  "from-violet-500 to-purple-500": "bg-gradient-to-br from-violet-500 to-purple-500",
+  "from-fuchsia-500 to-pink-500": "bg-gradient-to-br from-fuchsia-500 to-pink-500",
+  "from-cyan-500 to-blue-500": "bg-gradient-to-br from-cyan-500 to-blue-500",
+  "from-amber-500 to-orange-500": "bg-gradient-to-br from-amber-500 to-orange-500",
+  "from-emerald-500 to-teal-500": "bg-gradient-to-br from-emerald-500 to-teal-500",
+  "from-blue-500 to-indigo-500": "bg-gradient-to-br from-blue-500 to-indigo-500",
+  "from-red-500 to-rose-500": "bg-gradient-to-br from-red-500 to-rose-500",
+  "from-yellow-500 to-amber-500": "bg-gradient-to-br from-yellow-500 to-amber-500",
+};
 
 function FeatureCard({
   icon,
@@ -354,15 +365,15 @@ function FeatureCard({
   gradient: string;
 }) {
   return (
-    <div className="group relative p-6 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all duration-300 hover:scale-[1.02]">
+    <div className="group relative p-6 rounded-2xl bg-muted/50 border border-border hover:bg-muted transition-all duration-300 hover:scale-[1.02]">
       <div className={cn(
-        "inline-flex p-3 rounded-xl mb-4",
-        `bg-gradient-to-br ${gradient}`
+        "inline-flex p-3 rounded-xl mb-4 text-white",
+        GRADIENT_MAP[gradient] ?? "bg-gradient-to-br from-violet-500 to-purple-500"
       )}>
         {icon}
       </div>
       <h3 className="text-lg font-semibold mb-2">{title}</h3>
-      <p className="text-sm text-white/60">{description}</p>
+      <p className="text-sm text-muted-foreground">{description}</p>
     </div>
   );
 }
@@ -377,12 +388,12 @@ function UseCaseCard({
   items: string[];
 }) {
   return (
-    <div className="p-8 rounded-2xl bg-white/5 border border-white/10">
+    <div className="p-8 rounded-2xl bg-muted/50 border border-border">
       <div className="text-4xl mb-4">{emoji}</div>
       <h3 className="text-2xl font-bold mb-4">{title}</h3>
       <ul className="space-y-3">
         {items.map((item) => (
-          <li key={item} className="flex items-center gap-3 text-white/70">
+          <li key={item} className="flex items-center gap-3 text-muted-foreground">
             <span className="w-1.5 h-1.5 rounded-full bg-violet-500" />
             {item}
           </li>

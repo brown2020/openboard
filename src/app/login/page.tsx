@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { auth, googleProvider } from "@/lib/firebase";
 import {
   signInWithEmailAndPassword,
@@ -22,8 +22,17 @@ import {
   GoogleSignInButton,
 } from "@/components/auth";
 import { setAuthCookie } from "@/lib/auth-cookie";
+import { getFirebaseErrorMessage } from "@/hooks/use-error-handler";
 
 export default function LoginPage() {
+  return (
+    <Suspense fallback={<AuthLayout title="Sign in to OpenBoard" subtitle="Welcome back!"><div /></AuthLayout>}>
+      <LoginForm />
+    </Suspense>
+  );
+}
+
+function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -35,7 +44,6 @@ export default function LoginPage() {
   const redirectTo = (() => {
     const raw = searchParams.get("redirect");
     if (!raw) return "/boards";
-    // Only allow internal paths.
     if (!raw.startsWith("/")) return "/boards";
     if (raw.startsWith("//")) return "/boards";
     return raw;
@@ -55,7 +63,7 @@ export default function LoginPage() {
       await setAuthCookie(auth.currentUser);
       router.push(redirectTo);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "An error occurred");
+      setError(getFirebaseErrorMessage(err));
     } finally {
       setIsLoading(false);
     }
@@ -70,7 +78,7 @@ export default function LoginPage() {
       await setAuthCookie(auth.currentUser);
       router.push(redirectTo);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "An error occurred");
+      setError(getFirebaseErrorMessage(err));
     } finally {
       setIsLoading(false);
     }

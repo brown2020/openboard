@@ -75,7 +75,7 @@ export function proxy(request: NextRequest) {
 
 function isJwtExpired(token: string): boolean {
   const exp = getJwtExp(token);
-  if (!exp) return false;
+  if (!exp) return true;
   // Apply a small clock skew buffer (30s) to avoid edge timing flaps.
   const nowMs = Date.now();
   const expMs = exp * 1000;

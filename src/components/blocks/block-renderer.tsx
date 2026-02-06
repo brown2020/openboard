@@ -73,7 +73,6 @@ export function BlockRenderer({
   const Component = BLOCK_REGISTRY[block.type];
 
   if (!Component) {
-    console.warn(`Unknown block type: ${block.type}`);
     return null;
   }
 

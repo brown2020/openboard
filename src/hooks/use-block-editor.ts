@@ -70,8 +70,7 @@ export function useBlockEditor<T extends Record<string, any>>({
         : editSettings;
       await onSave(settingsToSave);
       setIsEditMode(false);
-    } catch (error) {
-      console.error("Block save failed:", error);
+    } catch {
       // Error will be handled by error boundary if critical
     } finally {
       setIsSaving(false);

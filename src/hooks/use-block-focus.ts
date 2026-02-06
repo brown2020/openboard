@@ -27,7 +27,7 @@ export function useBlockFocus({
   onEnterEdit,
 }: UseBlockFocusOptions): UseBlockFocusReturn {
   const { selectedBlockId, setSelectedBlock, isEditorMode } = useEditor();
-  const { currentBoard, reorderBlocks, deleteBlock } = useBoardStore();
+  const { currentBoard, deleteBlock } = useBoardStore();
   const blockRef = useRef<HTMLDivElement | null>(null);
 
   const isSelected = selectedBlockId === blockId;

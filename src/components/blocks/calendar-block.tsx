@@ -129,7 +129,8 @@ export function CalendarBlock({
           <div className="min-h-[450px] bg-muted">
             <iframe
               src={embedUrl}
-              className="w-full h-full"
+              title={title || "Calendar booking widget"}
+              className="w-full h-full min-h-[450px]"
               loading="lazy"
               allow="fullscreen"
             />

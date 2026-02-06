@@ -15,7 +15,7 @@ export function clearOpenboardStorage(): void {
   const localKeysToRemove: string[] = [];
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
-    if (key?.includes(STORAGE_PREFIX)) {
+    if (key?.startsWith(STORAGE_PREFIX)) {
       localKeysToRemove.push(key);
     }
   }
@@ -25,7 +25,7 @@ export function clearOpenboardStorage(): void {
   const sessionKeysToRemove: string[] = [];
   for (let i = 0; i < sessionStorage.length; i++) {
     const key = sessionStorage.key(i);
-    if (key?.includes(STORAGE_PREFIX)) {
+    if (key?.startsWith(STORAGE_PREFIX)) {
       sessionKeysToRemove.push(key);
     }
   }
@@ -62,7 +62,7 @@ export function setStorageItem<T>(key: string, value: T): void {
 
   try {
     localStorage.setItem(key, JSON.stringify(value));
-  } catch (error) {
-    console.error("Error saving to localStorage:", error);
+  } catch {
+    // localStorage may be full or disabled; silently ignore
   }
 }

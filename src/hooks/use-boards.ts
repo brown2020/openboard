@@ -135,6 +135,15 @@ export function useBoards() {
         const boardId = `${firebaseUser.uid}_${slug}`;
         const boardRef = doc(db, "boards", boardId);
 
+        // Prevent silent overwrites — check if this board ID already exists
+        const existingSnap = await getDoc(boardRef);
+        if (existingSnap.exists()) {
+          const suffix = Math.random().toString(36).slice(2, 6);
+          const fallbackSlug = `${slug}-${suffix}`;
+          const fallbackId = `${firebaseUser.uid}_${fallbackSlug}`;
+          return createBoard(title, fallbackSlug);
+        }
+
         const newBoard: Board = {
           id: boardId,
           slug,

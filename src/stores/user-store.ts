@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { UserProfile } from "@/types";
-import { clearOpenboardStorage, removeStorageItem } from "@/lib/storage-utils";
+import { removeStorageItem } from "@/lib/storage-utils";
 
 // NOTE: We intentionally do NOT persist this store to localStorage
 // to avoid hydration issues with stale auth data. The user profile

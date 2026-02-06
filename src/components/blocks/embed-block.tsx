@@ -146,6 +146,7 @@ export function EmbedBlock({
           <div className="aspect-video bg-muted">
             <iframe
               src={resolvedEmbed}
+              title={`Embedded ${normalizedPlatform} content`}
               className="w-full h-full"
               loading="lazy"
               allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"

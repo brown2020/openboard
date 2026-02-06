@@ -17,8 +17,9 @@ export async function POST(req: Request) {
       return errorResponse("Invalid request body", 400);
     }
 
-    // Rate limit: 10 requests per minute
-    if (!rateLimit("session:create", 10, 60000)) {
+    // Rate limit per IP: 10 requests per minute
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+    if (!rateLimit(`session:create:${ip}`, 10, 60000)) {
       return errorResponse("Too many requests. Please try again later.", 429);
     }
 

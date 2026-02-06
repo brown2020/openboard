@@ -132,24 +132,28 @@ export function ShareModal() {
   const handlePasswordSave = async () => {
     if (privacy !== "password") return;
     setIsSaving(true);
-    const res = await fetch("/api/boards/privacy", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        boardId: currentBoard.id,
-        privacy: "password",
-        password,
-      }),
-    });
-    if (!res.ok) {
-      const payload = (await res.json().catch(() => null)) as { error?: string } | null;
-      toast.error("Save failed", payload?.error || "Failed to save password");
+    try {
+      const res = await fetch("/api/boards/privacy", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          boardId: currentBoard.id,
+          privacy: "password",
+          password,
+        }),
+      });
+      if (!res.ok) {
+        const payload = (await res.json().catch(() => null)) as { error?: string } | null;
+        toast.error("Save failed", payload?.error || "Failed to save password");
+        return;
+      }
+      await updateBoard(currentBoard.id, { privacy: "password" });
+      toast.success("Password saved");
+    } catch {
+      toast.error("Save failed", "An error occurred while saving the password");
+    } finally {
       setIsSaving(false);
-      return;
     }
-    await updateBoard(currentBoard.id, { privacy: "password" });
-    setIsSaving(false);
-    toast.success("Password saved");
   };
 
   const handleAddCollaborator = async () => {

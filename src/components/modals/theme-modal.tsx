@@ -146,10 +146,7 @@ export function ThemeModal() {
                       : "border-border hover:border-primary/50"
                   )}
                   style={{
-                    background:
-                      theme.background.type === "gradient"
-                        ? theme.background.value
-                        : theme.background.value,
+                    background: theme.background.value,
                   }}
                 >
                   {selectedTheme?.name === theme.name && (
