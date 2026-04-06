@@ -14,7 +14,7 @@ import {
   Users,
   Layout,
   ArrowRight,
-  Github,
+  Code as Github,
   ExternalLink,
   ChevronRight,
 } from "lucide-react";

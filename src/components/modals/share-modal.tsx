@@ -34,9 +34,9 @@ import {
   Code,
   QrCode,
   ExternalLink,
-  Twitter,
-  Facebook,
-  Linkedin,
+  X as TwitterIcon,
+  Share as Facebook,
+  Link as Linkedin,
 } from "lucide-react";
 import { BoardPrivacy } from "@/types";
 import { cn } from "@/lib/utils";
@@ -339,7 +339,7 @@ export function ShareModal() {
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                <Twitter className="w-4 h-4 mr-2" />
+                <TwitterIcon className="w-4 h-4 mr-2" />
                 Twitter
               </a>
             </Button>
