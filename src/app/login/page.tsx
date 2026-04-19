@@ -42,7 +42,7 @@ function LoginForm() {
   const searchParams = useSearchParams();
 
   const redirectTo = (() => {
-    const raw = searchParams.get("redirect");
+    const raw = searchParams?.get("redirect");
     if (!raw) return "/boards";
     if (!raw.startsWith("/")) return "/boards";
     if (raw.startsWith("//")) return "/boards";
