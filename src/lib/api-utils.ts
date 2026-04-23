@@ -52,7 +52,7 @@ export async function requireAuth(): Promise<DecodedIdToken> {
 
   try {
     return await verifyFirebaseAuthCookie(authCookie);
-  } catch (error) {
+  } catch {
     throw NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 }

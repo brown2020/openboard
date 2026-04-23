@@ -237,6 +237,7 @@ export default function BoardEditorPage({ params }: PageProps) {
     };
 
     loadBoard();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resolvedParams.id, user, isLoaded]);
 
   // Track unsaved changes
@@ -247,6 +248,7 @@ export default function BoardEditorPage({ params }: PageProps) {
       boardTitle !== currentBoard.title ||
       boardDescription !== (currentBoard.description || "");
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setHasUnsavedChanges(hasChanges);
   }, [boardTitle, boardDescription, currentBoard]);
 

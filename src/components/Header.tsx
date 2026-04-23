@@ -50,7 +50,7 @@ export default function Header() {
       clearUser();
       setIsProfileOpen(false);
       router.push("/");
-    } catch (error) {
+    } catch {
       toast.error("Failed to sign out", "Please try again");
     }
   };

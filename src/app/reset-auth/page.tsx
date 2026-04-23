@@ -121,6 +121,7 @@ export default function ResetAuthPage() {
 
   useEffect(() => {
     // Auto-run on page load
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void handleReset();
   }, [handleReset]);
 

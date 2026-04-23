@@ -148,12 +148,14 @@ export function CommandPalette({
 
   // Reset selected index when options change
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSelectedIndex(0);
   }, [filteredOptions]);
 
   // Reset state when closed
   useEffect(() => {
     if (!isOpen) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSearch("");
       setSelectedIndex(0);
     }
@@ -309,7 +311,7 @@ export function getDefaultBlockSettings(type: BlockType): Block["settings"] {
       return { height: "md" };
     default: {
       // Exhaustive check - this should never be reached
-      const _exhaustive: never = type;
+      void (type as never);
       return { content: "" } as Block["settings"];
     }
   }

@@ -55,7 +55,7 @@ export function useStorage(): UseStorageResult {
       const storageRef = ref(storage, filePath);
       const uploadTask = uploadBytesResumable(storageRef, file);
 
-      return new Promise<string | null>((resolve, reject) => {
+      return new Promise<string | null>((resolve) => {
         uploadTask.on(
           "state_changed",
           (snapshot) => {

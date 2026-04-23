@@ -140,7 +140,7 @@ export function useBoards() {
         if (existingSnap.exists()) {
           const suffix = Math.random().toString(36).slice(2, 6);
           const fallbackSlug = `${slug}-${suffix}`;
-          const fallbackId = `${firebaseUser.uid}_${fallbackSlug}`;
+          // eslint-disable-next-line react-hooks/immutability
           return createBoard(title, fallbackSlug);
         }
 

@@ -109,7 +109,7 @@ function decodeBase64Url(input: string): string | null {
     if (typeof globalThis.atob === "function") {
       return globalThis.atob(padded);
     }
-    // eslint-disable-next-line no-undef
+     
     return Buffer.from(padded, "base64").toString("utf8");
   } catch {
     return null;

@@ -29,6 +29,7 @@ export interface BlockComponentProps<T extends Block = Block> {
  * Block component registry - maps block types to their components
  * Makes it easy to add new block types without modifying the renderer
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const BLOCK_REGISTRY: Record<BlockType, ComponentType<BlockComponentProps<any>>> = {
   link: LinkBlock,
   text: TextBlock,

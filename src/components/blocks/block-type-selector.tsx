@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import {
   Link as LinkIcon,
   Type,
-  Image,
+  Image as ImageIcon,
   RectangleHorizontal,
   Minus,
   Space,
@@ -64,7 +64,7 @@ export const BLOCK_TYPE_OPTIONS: BlockTypeOption[] = [
     type: "image",
     label: "Image",
     description: "Add an image",
-    icon: <Image className="w-5 h-5" />,
+    icon: <ImageIcon className="w-5 h-5" />,
     category: "media",
   },
   {
