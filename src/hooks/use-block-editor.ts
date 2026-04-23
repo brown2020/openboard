@@ -3,6 +3,7 @@
 import { useState, useCallback, useMemo, useEffect } from "react";
 import { Block } from "@/types";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export interface UseBlockEditorOptions<T extends Record<string, any>> {
   block: Block;
   isEditing: boolean;
@@ -29,9 +30,10 @@ export interface UseBlockEditorReturn<T> {
  * Shared hook for block editing patterns.
  * Centralizes edit mode state, validation, save/cancel logic.
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function useBlockEditor<T extends Record<string, any>>({
   block,
-  isEditing,
+  isEditing: _isEditing, // eslint-disable-line @typescript-eslint/no-unused-vars
   initialSettings,
   onSave,
   validate,
@@ -43,8 +45,10 @@ export function useBlockEditor<T extends Record<string, any>>({
 
   // Reset edit settings when block ID changes
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setEditSettings(initialSettings);
     setIsEditMode(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [block.id]);
 
   const updateField = useCallback(<K extends keyof T>(field: K, value: T[K]) => {

@@ -39,7 +39,6 @@ import {
   Link as Linkedin,
 } from "lucide-react";
 import { BoardPrivacy } from "@/types";
-import { cn } from "@/lib/utils";
 import { useToast } from "@/stores/ui-store";
 
 export function ShareModal() {
@@ -69,19 +68,12 @@ export function ShareModal() {
 
   useEffect(() => {
     if (currentBoard) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setPrivacy(currentBoard.privacy);
       setPassword("");
       setCollaborators(currentBoard.collaborators || []);
     }
   }, [currentBoard]);
-
-  if (!currentBoard) return null;
-
-  const boardUrl = `${
-    typeof window !== "undefined" ? window.location.origin : ""
-  }/u/${currentBoard.ownerUsername}/${currentBoard.slug}`;
-
-  const embedCode = `<iframe src="${boardUrl}" width="100%" height="600" frameborder="0" style="border-radius: 12px; border: 1px solid #e5e5e5;"></iframe>`;
 
   const handleCopy = useCallback((text: string, type: string) => {
     navigator.clipboard.writeText(text);
@@ -94,6 +86,14 @@ export function ShareModal() {
     }
     copyTimeoutRef.current = setTimeout(() => setCopied(null), 2000);
   }, [toast]);
+
+  if (!currentBoard) return null;
+
+  const boardUrl = `${
+    typeof window !== "undefined" ? window.location.origin : ""
+  }/u/${currentBoard.ownerUsername}/${currentBoard.slug}`;
+
+  const embedCode = `<iframe src="${boardUrl}" width="100%" height="600" frameborder="0" style="border-radius: 12px; border: 1px solid #e5e5e5;"></iframe>`;
 
   const handlePrivacyChange = async (newPrivacy: BoardPrivacy) => {
     if (!currentBoard) return;
@@ -122,7 +122,7 @@ export function ShareModal() {
         await updateBoard(currentBoard.id, { privacy: newPrivacy });
         toast.success("Privacy updated", `Board is now ${newPrivacy}`);
       }
-    } catch (error) {
+    } catch {
       toast.error("Save failed", "An error occurred while updating privacy");
     } finally {
       setIsSaving(false);

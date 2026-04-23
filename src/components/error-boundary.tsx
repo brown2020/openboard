@@ -147,7 +147,7 @@ export function PublicBoardErrorBoundary({ children }: { children: ReactNode }) 
             <div className="space-y-2">
               <h2 className="text-2xl font-bold">Board Not Available</h2>
               <p className="text-muted-foreground">
-                This board could not be loaded. It may have been deleted or you don't
+                This board could not be loaded. It may have been deleted or you don&apos;t
                 have permission to view it.
               </p>
             </div>

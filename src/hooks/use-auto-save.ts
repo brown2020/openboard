@@ -96,7 +96,7 @@ export function useAutoSave({
 
       onSaveComplete?.(success);
       return success;
-    } catch (error) {
+    } catch {
       if (isMountedRef.current) {
         setIsSaving(false);
       }
@@ -142,6 +142,7 @@ export function useAutoSave({
         clearTimeout(saveTimeoutRef.current);
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentBoard?.blocks, boardId, enabled, debounceMs, saveNow]);
 
   // Initialize lastSavedBlocksRef when board loads
@@ -149,6 +150,7 @@ export function useAutoSave({
     if (currentBoard && currentBoard.id === boardId) {
       lastSavedBlocksRef.current = JSON.stringify(currentBoard.blocks);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [boardId]); // Only on board ID change, not blocks change
 
   // Cleanup on unmount
@@ -213,7 +215,7 @@ export function useOptimisticUpdate() {
 
         setRollbackState(null);
         return true;
-      } catch (error) {
+      } catch {
         // Rollback on error
         setRollbackState(null);
         return false;

@@ -269,6 +269,7 @@ export const useActiveCollaborators = () => {
   const { collaborators } = useCollabStore();
 
   // Filter to only collaborators seen in last 30 seconds
+  // eslint-disable-next-line react-hooks/purity
   const cutoff = Date.now() - 30000;
   return Array.from(collaborators.values()).filter(
     (c) => c.lastSeen > cutoff

@@ -102,7 +102,7 @@ export function FormBlock({
           body: JSON.stringify(payload),
         });
         toast.success("Form submitted successfully!");
-      } catch (error) {
+      } catch {
         toast.error("Unable to submit form", "Please try again later");
       }
     }

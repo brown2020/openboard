@@ -47,13 +47,6 @@ export function AnalyticsModal() {
 
   const isOpen = activeModal === "analytics";
 
-  useEffect(() => {
-    if (isOpen && currentBoard) {
-      loadAnalytics();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, currentBoard, timeRange]);
-
   const loadAnalytics = async () => {
     if (!currentBoard) return;
 
@@ -62,6 +55,14 @@ export function AnalyticsModal() {
     setAnalytics(data);
     setIsLoading(false);
   };
+
+  useEffect(() => {
+    if (isOpen && currentBoard) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      void loadAnalytics();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, currentBoard, timeRange]);
 
   // Computed stats
   const stats = useMemo(() => {
