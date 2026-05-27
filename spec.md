@@ -68,7 +68,7 @@ OpenBoard is a working Next.js + Firebase SaaS-style app (deployed demo at openb
 | Custom domains | ❌ Not built | Type only |
 | QR codes | ✅ Shipped | Generated in share modal via `qrcode` |
 | Nested blocks | ❌ Not built | Dead code paths |
-| Form server relay | ❌ Not built | Client POST to external URL only |
+| Form server relay | ✅ Shipped | Public forms POST to `/api/forms/submit` |
 | i18n | ❌ Not built | English only |
 | Automated tests | ❌ None | Lint + tsc + build only |
 
@@ -121,7 +121,7 @@ Public visitor → /u/{user}/{slug} → [password gate?] → view + track analyt
 3. **Analytics `uniqueVisitors`** increments on every view — not deduplicated
 4. **`analytics.enabled` flag** is never checked before tracking
 5. **Referrer analytics** typed but not written
-6. **Form webhooks** often fail due to browser CORS posting to arbitrary URLs
+6. ~~**Form webhooks** often fail due to browser CORS posting to arbitrary URLs~~ — public forms relay through `/api/forms/submit`
 7. **Marketing copy** on landing page overstates collaboration, layouts, and custom domains
 8. ~~**Manual save required**~~ — auto-save debounces edits; manual Save / ⌘S still available for immediate persist
 9. ~~**Template preview images** reference `/templates/*.jpg` not present in `public/`~~ — SVG previews shipped for all five templates
@@ -217,17 +217,21 @@ Ordered by product impact and dependency. Each item is sized for one focused com
 
 ---
 
-### Milestone 6 — Form submissions via server relay
+### Milestone 6 — Form submissions via server relay ✅
+
+**Status:** Complete (May 2026)
 
 **User value:** Contact/signup forms on link pages actually work without CORS failures.
 
 **Acceptance criteria:**
-- Form submit POSTs to `/api/forms/submit` (new route)
-- Server forwards to board-configured webhook URL
-- Rate limited; basic spam protection (honeypot or rate limit per board)
-- Success/error feedback on public form block
+- [x] Form submit POSTs to `/api/forms/submit` (new route)
+- [x] Server forwards to board-configured webhook URL
+- [x] Rate limited; basic spam protection (honeypot or rate limit per board)
+- [x] Success/error feedback on public form block
 
-**Implementation intent:** New API route; optional Firestore log of submissions for board owner; update `form-block.tsx` public submit path.
+**Implementation note:** Public `FormBlock` posts to `/api/forms/submit`; server validates board access, required fields, and webhook URL (SSRF-safe), then relays JSON to the configured webhook with rate limits and a honeypot field.
+
+**Follow-up:** Optional Firestore submission log for board owners; select-field UI for form blocks.
 
 ---
 
@@ -323,3 +327,4 @@ Ordered by product impact and dependency. Each item is sized for one focused com
 | `POST /api/ai/suggest` | Required | AI streaming |
 | `POST /api/boards/privacy` | Required | Privacy + password hash |
 | `POST /api/boards/unlock` | Public | Password verify + access cookie |
+| `POST /api/forms/submit` | Public | Relay form submissions to configured webhook |

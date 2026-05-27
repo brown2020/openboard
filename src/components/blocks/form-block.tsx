@@ -6,17 +6,24 @@ import { useBoardStore } from "@/stores/board-store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { List, Type, Mail, Trash2 } from "lucide-react";
+import { CheckCircle2, List, Loader2, Type, Mail, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { BlockControls } from "./block-controls";
 import { useToast } from "@/stores/ui-store";
 
 type Field = FormBlockType["settings"]["fields"][number];
 
+type SubmitStatus =
+  | { state: "idle" }
+  | { state: "submitting" }
+  | { state: "success"; message: string }
+  | { state: "error"; message: string };
+
 interface FormBlockProps {
   block: FormBlockType;
   isEditing?: boolean;
   onClick?: () => void;
+  boardId?: string;
 }
 
 const FIELD_OPTIONS: Array<{ type: Field["type"]; label: string }> = [
@@ -29,6 +36,7 @@ export function FormBlock({
   block,
   isEditing = false,
   onClick,
+  boardId,
 }: FormBlockProps) {
   const { updateBlock } = useBoardStore();
   const [isEditMode, setIsEditMode] = useState(false);
@@ -37,7 +45,12 @@ export function FormBlock({
   const [editFields, setEditFields] = useState<Field[]>(fields);
   const [editSubmitText, setEditSubmitText] = useState(submitText);
   const [editSubmitUrl, setEditSubmitUrl] = useState(submitUrl || "");
+  const [submitStatus, setSubmitStatus] = useState<SubmitStatus>({
+    state: "idle",
+  });
   const toast = useToast();
+
+  const usesServerRelay = !isEditing && !!boardId;
 
   const handleSave = () => {
     const sanitizedFields = editFields
@@ -91,10 +104,70 @@ export function FormBlock({
   };
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (isEditing) {
+      return;
+    }
+
+    const formData = new FormData(event.currentTarget);
+    const payload = Object.fromEntries(formData.entries()) as Record<
+      string,
+      string
+    >;
+
+    if (usesServerRelay) {
+      if (!submitUrl) {
+        setSubmitStatus({
+          state: "error",
+          message: "This form is not configured to receive submissions yet.",
+        });
+        return;
+      }
+
+      setSubmitStatus({ state: "submitting" });
+
+      try {
+        const response = await fetch("/api/forms/submit", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            boardId,
+            blockId: block.id,
+            data: payload,
+            _gotcha: payload._gotcha ?? "",
+          }),
+        });
+
+        const body = (await response.json().catch(() => null)) as {
+          error?: string;
+        } | null;
+
+        if (!response.ok) {
+          setSubmitStatus({
+            state: "error",
+            message:
+              body?.error ?? "Unable to submit form. Please try again later.",
+          });
+          return;
+        }
+
+        event.currentTarget.reset();
+        setSubmitStatus({
+          state: "success",
+          message: "Thanks! Your submission was sent successfully.",
+        });
+      } catch {
+        setSubmitStatus({
+          state: "error",
+          message: "Unable to submit form. Please try again later.",
+        });
+      }
+
+      return;
+    }
+
     if (submitUrl) {
-      event.preventDefault();
-      const formData = new FormData(event.currentTarget);
-      const payload = Object.fromEntries(formData.entries());
       try {
         await fetch(submitUrl, {
           method: "POST",
@@ -102,13 +175,14 @@ export function FormBlock({
           body: JSON.stringify(payload),
         });
         toast.success("Form submitted successfully!");
-      } catch (error) {
+      } catch {
         toast.error("Unable to submit form", "Please try again later");
       }
     }
   };
 
   const renderedFields = useMemo(() => fields, [fields]);
+  const isSubmitting = submitStatus.state === "submitting";
 
   if (isEditMode && isEditing) {
     return (
@@ -122,14 +196,15 @@ export function FormBlock({
           />
         </div>
         <div className="space-y-2">
-          <Label>Submit URL (optional)</Label>
+          <Label>Webhook URL (optional)</Label>
           <Input
             value={editSubmitUrl}
             onChange={(e) => setEditSubmitUrl(e.target.value)}
-            placeholder="https://example.com/forms"
+            placeholder="https://example.com/webhook"
           />
           <p className="text-xs text-muted-foreground">
-            When provided, submissions POST JSON to this URL.
+            Public submissions are relayed through OpenBoard to this URL to avoid
+            browser CORS issues.
           </p>
         </div>
         <div className="space-y-3 max-h-[360px] overflow-y-auto pr-2">
@@ -237,20 +312,38 @@ export function FormBlock({
           !block.visible && isEditing && "opacity-50"
         )}
       >
-        <form className="space-y-4" onSubmit={handleSubmit}>
+        <form className="space-y-4" onSubmit={handleSubmit} noValidate>
+          <div
+            aria-hidden="true"
+            className="absolute left-[-9999px] h-0 w-0 overflow-hidden"
+          >
+            <label htmlFor={`${block.id}-gotcha`}>Leave blank</label>
+            <input
+              id={`${block.id}-gotcha`}
+              type="text"
+              name="_gotcha"
+              tabIndex={-1}
+              autoComplete="off"
+            />
+          </div>
+
           {renderedFields.map((field) => {
             const FieldIcon =
               field.type === "email"
                 ? Mail
                 : field.type === "textarea"
-                ? List
-                : Type;
+                  ? List
+                  : Type;
             return (
               <div key={field.id} className="space-y-2">
                 <Label className="flex items-center gap-2 text-sm font-medium">
-                  <FieldIcon className="w-4 h-4 text-primary" />
+                  <FieldIcon className="w-4 h-4 text-primary" aria-hidden="true" />
                   {field.label}
-                  {field.required && <span className="text-red-500">*</span>}
+                  {field.required && (
+                    <span className="text-red-500" aria-hidden="true">
+                      *
+                    </span>
+                  )}
                 </Label>
                 {field.type === "textarea" ? (
                   <textarea
@@ -258,7 +351,7 @@ export function FormBlock({
                     placeholder={field.placeholder || ""}
                     className="w-full rounded-md border px-3 py-2 text-sm bg-background"
                     required={field.required}
-                    disabled={isEditing}
+                    disabled={isEditing || isSubmitting}
                   />
                 ) : (
                   <Input
@@ -266,14 +359,42 @@ export function FormBlock({
                     name={field.id}
                     placeholder={field.placeholder || ""}
                     required={field.required}
-                    disabled={isEditing}
+                    disabled={isEditing || isSubmitting}
                   />
                 )}
               </div>
             );
           })}
-          <Button type="submit" disabled={isEditing}>
-            {submitText}
+
+          {submitStatus.state === "success" && (
+            <div
+              className="flex items-start gap-2 rounded-md border border-green-500/30 bg-green-500/10 px-3 py-2 text-sm text-green-700 dark:text-green-300"
+              role="status"
+              aria-live="polite"
+            >
+              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+              <span>{submitStatus.message}</span>
+            </div>
+          )}
+
+          {submitStatus.state === "error" && (
+            <div
+              className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive"
+              role="alert"
+            >
+              {submitStatus.message}
+            </div>
+          )}
+
+          <Button type="submit" disabled={isEditing || isSubmitting}>
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
+                Submitting...
+              </>
+            ) : (
+              submitText
+            )}
           </Button>
         </form>
       </div>

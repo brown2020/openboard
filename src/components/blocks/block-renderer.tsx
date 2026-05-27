@@ -23,6 +23,7 @@ export interface BlockComponentProps<T extends Block = Block> {
   block: T;
   isEditing?: boolean;
   onClick?: () => void;
+  boardId?: string;
 }
 
 /**
@@ -49,6 +50,7 @@ interface BlockRendererProps {
   isEditing?: boolean;
   onClick?: () => void;
   onBlockClick?: (blockId: string) => void;
+  boardId?: string;
 }
 
 export function BlockRenderer({
@@ -56,6 +58,7 @@ export function BlockRenderer({
   isEditing = false,
   onClick,
   onBlockClick,
+  boardId,
 }: BlockRendererProps) {
   if (!block.visible && !isEditing) {
     return null;
@@ -78,7 +81,12 @@ export function BlockRenderer({
 
   return (
     <BlockErrorBoundary>
-      <Component block={block} isEditing={isEditing} onClick={handleClick} />
+      <Component
+        block={block}
+        isEditing={isEditing}
+        onClick={handleClick}
+        boardId={boardId}
+      />
     </BlockErrorBoundary>
   );
 }
