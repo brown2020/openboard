@@ -48,6 +48,7 @@ import {
 import { BoardPrivacy } from "@/types";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/stores/ui-store";
+import { BoardQrCode } from "@/components/modals/board-qr-code";
 
 export function ShareModal() {
   const { currentBoard } = useBoardStore();
@@ -516,11 +517,7 @@ export function ShareModal() {
               <QrCode className="w-4 h-4" />
               QR Code
             </Label>
-            <div className="w-full h-48 border-2 border-dashed rounded-xl flex flex-col items-center justify-center text-muted-foreground bg-muted/30">
-              <QrCode className="w-12 h-12 mb-2 opacity-30" />
-              <p className="font-medium">QR Code</p>
-              <p className="text-sm">Coming Soon</p>
-            </div>
+            <BoardQrCode url={boardUrl} boardSlug={currentBoard.slug} />
           </div>
         </div>
       </SheetContent>

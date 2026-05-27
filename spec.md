@@ -59,14 +59,14 @@ OpenBoard is a working Next.js + Firebase SaaS-style app (deployed demo at openb
 | Privacy: private | ✅ Shipped | Blocks public view |
 | Privacy: password | ✅ Shipped | Server hash + unlock API + access cookie |
 | Privacy: unlisted | ✅ Shipped | Direct URL access; `noindex` robots meta |
-| Share / embed | ✅ Shipped | QR code placeholder only |
+| Share / embed | ✅ Shipped | Includes QR code PNG download in share modal |
 | Analytics (per board) | ✅ Shipped | Modal with views/clicks/devices |
 | Dashboard | ✅ Basic | Aggregate counts; no charts |
 | AI suggestions | ✅ Optional | Requires `OPENAI_API_KEY` |
 | Collaboration | ✅ Shipped | Email invite resolves to UID; shared boards in list |
 | Auto-save | ✅ Shipped | 2s debounce via `useAutoSave` in board editor |
 | Custom domains | ❌ Not built | Type only |
-| QR codes | ❌ Not built | UI placeholder |
+| QR codes | ✅ Shipped | Generated in share modal via `qrcode` |
 | Nested blocks | ❌ Not built | Dead code paths |
 | Form server relay | ❌ Not built | Client POST to external URL only |
 | i18n | ❌ Not built | English only |
@@ -187,16 +187,18 @@ Ordered by product impact and dependency. Each item is sized for one focused com
 
 ---
 
-### Milestone 4 — QR code generation in share modal
+### Milestone 4 — QR code generation in share modal ✅
+
+**Status:** Complete (May 2026)
 
 **User value:** Creators print/share QR codes for events, business cards, and offline promo — README lists this as wanted.
 
 **Acceptance criteria:**
-- Share modal displays scannable QR for board URL
-- Download PNG button
-- Works on mobile and desktop
+- [x] Share modal displays scannable QR for board URL
+- [x] Download PNG button
+- [x] Works on mobile and desktop
 
-**Implementation intent:** Add lightweight QR library (e.g. `qrcode` or SVG generator); replace "Coming Soon" placeholder in `share-modal.tsx`.
+**Implementation note:** `BoardQrCode` client component uses the `qrcode` package to render a data-URL PNG and download `{slug}-qr.png` from the share modal.
 
 ---
 
