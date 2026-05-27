@@ -247,7 +247,7 @@ export function ShareModal() {
                     <div className="text-left">
                       <p className="font-medium">Unlisted</p>
                       <p className="text-xs text-muted-foreground">
-                        Only with link
+                        Direct link only, hidden from search
                       </p>
                     </div>
                   </div>

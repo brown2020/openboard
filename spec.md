@@ -58,7 +58,7 @@ OpenBoard is a working Next.js + Firebase SaaS-style app (deployed demo at openb
 | Public pages | ✅ Shipped | RSC fetch + client render |
 | Privacy: private | ✅ Shipped | Blocks public view |
 | Privacy: password | ✅ Shipped | Server hash + unlock API + access cookie |
-| Privacy: unlisted | ⚠️ Partial | Stored; behaves like public if URL known *(inferred)* |
+| Privacy: unlisted | ✅ Shipped | Direct URL access; `noindex` robots meta |
 | Share / embed | ✅ Shipped | QR code placeholder only |
 | Analytics (per board) | ✅ Shipped | Modal with views/clicks/devices |
 | Dashboard | ✅ Basic | Aggregate counts; no charts |
@@ -117,7 +117,7 @@ Public visitor → /u/{user}/{slug} → [password gate?] → view + track analyt
 *(Mix of code-verified and inferred)*
 
 1. **Collaboration is non-functional end-to-end** — share modal stores emails; Firestore rules check UIDs; collaborator query missing
-2. **Unlisted boards are not hidden** from direct URL access
+2. ~~**Unlisted boards are not hidden** from direct URL access~~ — unlisted boards are intentionally reachable via direct URL; they are excluded from search indexes (`noindex`)
 3. **Analytics `uniqueVisitors`** increments on every view — not deduplicated
 4. **`analytics.enabled` flag** is never checked before tracking
 5. **Referrer analytics** typed but not written
@@ -151,16 +151,20 @@ Ordered by product impact and dependency. Each item is sized for one focused com
 
 ---
 
-### Milestone 2 — Enforce unlisted privacy on public pages
+### Milestone 2 — Enforce unlisted privacy on public pages ✅
+
+**Status:** Complete (May 2026)
 
 **User value:** Creators can share link-in-bio pages with a direct link without public discovery.
 
 **Acceptance criteria:**
-- `privacy: "unlisted"` boards render for direct URL visitors
-- Unlisted boards are not listed on any public index (none exists today — document behavior)
-- Optional: return 404 instead of board content when accessed without referrer/token *(product choice: prefer 404 for true unlisted)*
+- [x] `privacy: "unlisted"` boards render for direct URL visitors
+- [x] Unlisted boards are not listed on any public index (none exists today — documented below)
+- [x] Search engines discouraged via `noindex, nofollow` metadata (referrer-gated 404 deferred — breaks share flows)
 
-**Implementation intent:** Update `u/[username]/[slug]/page.tsx` to handle `unlisted`; align README/spec wording; consider `noindex` meta tag on unlisted pages.
+**Implementation note:** `lib/public-board-access.ts` defines robots policy; `generateMetadata` on `u/[username]/[slug]/page.tsx` sets `noindex` for unlisted boards; shared fetch in `lib/public-board-server.ts`.
+
+**Unlisted behavior:** Accessible at `/u/{username}/{slug}` for anyone with the link. Not indexed by search engines. No public board directory exists in the app.
 
 ---
 
