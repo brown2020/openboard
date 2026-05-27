@@ -113,9 +113,23 @@ export function useAnalytics() {
     []
   );
 
+  const getAnalyticsForBoards = useCallback(
+    async (boardIds: string[], days: number = 30): Promise<BoardAnalytics[]> => {
+      if (boardIds.length === 0) return [];
+
+      const results = await Promise.all(
+        boardIds.map((boardId) => getAnalytics(boardId, days))
+      );
+
+      return results.flat();
+    },
+    [getAnalytics]
+  );
+
   return {
     trackView,
     trackClick,
     getAnalytics,
+    getAnalyticsForBoards,
   };
 }

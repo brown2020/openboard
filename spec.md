@@ -61,7 +61,7 @@ OpenBoard is a working Next.js + Firebase SaaS-style app (deployed demo at openb
 | Privacy: unlisted | ✅ Shipped | Direct URL access; `noindex` robots meta |
 | Share / embed | ✅ Shipped | Includes QR code PNG download in share modal |
 | Analytics (per board) | ✅ Shipped | Modal with views/clicks/devices |
-| Dashboard | ✅ Basic | Aggregate counts; no charts |
+| Dashboard | ✅ Shipped | 7/30-day views & clicks plus top links |
 | AI suggestions | ✅ Optional | Requires `OPENAI_API_KEY` |
 | Collaboration | ✅ Shipped | Email invite resolves to UID; shared boards in list |
 | Auto-save | ✅ Shipped | 2s debounce via `useAutoSave` in board editor |
@@ -235,16 +235,18 @@ Ordered by product impact and dependency. Each item is sized for one focused com
 
 ---
 
-### Milestone 7 — Dashboard analytics upgrade
+### Milestone 7 — Dashboard analytics upgrade ✅
+
+**Status:** Complete (May 2026)
 
 **User value:** Owners see trends at a glance without opening each board's analytics modal.
 
 **Acceptance criteria:**
-- Dashboard shows total views/clicks for last 7 and 30 days (from `analytics` collection)
-- Top 5 links by click count across all boards
-- Loading and empty states
+- [x] Dashboard shows total views/clicks for last 7 and 30 days (from `analytics` collection)
+- [x] Top 5 links by click count across all boards
+- [x] Loading and empty states
 
-**Implementation intent:** Query `analytics` docs in dashboard page or new hook; reuse `use-analytics.ts` patterns; simple bar list UI (no chart library required for v1).
+**Implementation note:** `useDashboardAnalytics` loads 30-day Firestore analytics for all user boards; `lib/dashboard-analytics.ts` aggregates period metrics and top link/button clicks; dashboard renders stat cards, bar list, and retryable error state.
 
 ---
 
