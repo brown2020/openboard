@@ -129,24 +129,31 @@ export function useBoards() {
       if (!userProfile || !firebaseUser) return null;
 
       try {
-        // Ensure fresh token
         await getValidToken(firebaseUser);
 
-        const boardId = `${firebaseUser.uid}_${slug}`;
-        const boardRef = doc(db, "boards", boardId);
+        let candidateSlug = slug;
+        let boardId = `${firebaseUser.uid}_${candidateSlug}`;
 
-        // Prevent silent overwrites — check if this board ID already exists
+        for (let attempt = 0; attempt < 5; attempt++) {
+          const boardRef = doc(db, "boards", boardId);
+          const existingSnap = await getDoc(boardRef);
+          if (!existingSnap.exists()) break;
+
+          const suffix = Math.random().toString(36).slice(2, 6);
+          candidateSlug = `${slug}-${suffix}`;
+          boardId = `${firebaseUser.uid}_${candidateSlug}`;
+        }
+
+        const boardRef = doc(db, "boards", boardId);
         const existingSnap = await getDoc(boardRef);
         if (existingSnap.exists()) {
-          const suffix = Math.random().toString(36).slice(2, 6);
-          const fallbackSlug = `${slug}-${suffix}`;
-          const fallbackId = `${firebaseUser.uid}_${fallbackSlug}`;
-          return createBoard(title, fallbackSlug);
+          setError("Could not generate a unique board URL. Please try again.");
+          return null;
         }
 
         const newBoard: Board = {
           id: boardId,
-          slug,
+          slug: candidateSlug,
           title,
           description: "",
           ownerId: firebaseUser.uid,

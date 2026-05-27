@@ -143,10 +143,12 @@ npx tsc --noEmit     # TypeScript check (no npm script; run directly)
 Run all of these before considering work done:
 
 ```bash
-npm run lint && npx tsc --noEmit && npm run build
+npm run lint          # ESLint
+npm run typecheck     # tsc --noEmit
+npm run test          # Vitest unit tests
+npm run build         # Production build
+npm run validate      # All of the above
 ```
-
-There is **no test suite** in this repository (no Jest/Vitest/Playwright config). Do not add tests unless explicitly requested.
 
 ## Non-interactive testing rules
 
@@ -210,7 +212,7 @@ Board persistence goes through `use-boards.ts` (`updateBoard`, `createBoard`, et
 ## Testing expectations
 
 - No automated tests exist today
-- Validation = lint + tsc + build
+- Validation = `npm run validate` (lint + typecheck + test + build)
 - Manual QA is out of scope for autonomous runs unless browser MCP is explicitly requested with credentials
 
 ## Files and systems requiring extra caution

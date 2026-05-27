@@ -75,6 +75,17 @@ export function ShareModal() {
     }
   }, [currentBoard]);
 
+  const handleCopy = useCallback((text: string, type: string) => {
+    navigator.clipboard.writeText(text);
+    setCopied(type);
+    toast.success("Copied!", `${type} copied to clipboard`);
+
+    if (copyTimeoutRef.current) {
+      clearTimeout(copyTimeoutRef.current);
+    }
+    copyTimeoutRef.current = setTimeout(() => setCopied(null), 2000);
+  }, [toast]);
+
   if (!currentBoard) return null;
 
   const boardUrl = `${
@@ -82,18 +93,6 @@ export function ShareModal() {
   }/u/${currentBoard.ownerUsername}/${currentBoard.slug}`;
 
   const embedCode = `<iframe src="${boardUrl}" width="100%" height="600" frameborder="0" style="border-radius: 12px; border: 1px solid #e5e5e5;"></iframe>`;
-
-  const handleCopy = useCallback((text: string, type: string) => {
-    navigator.clipboard.writeText(text);
-    setCopied(type);
-    toast.success("Copied!", `${type} copied to clipboard`);
-
-    // Clear previous timeout if exists
-    if (copyTimeoutRef.current) {
-      clearTimeout(copyTimeoutRef.current);
-    }
-    copyTimeoutRef.current = setTimeout(() => setCopied(null), 2000);
-  }, [toast]);
 
   const handlePrivacyChange = async (newPrivacy: BoardPrivacy) => {
     if (!currentBoard) return;

@@ -42,7 +42,7 @@ export function ThemeModal() {
     if (isOpen && currentBoard?.theme) {
       setSelectedTheme(currentBoard.theme);
     }
-  }, [isOpen, currentBoard?.id]);
+  }, [isOpen, currentBoard?.id, currentBoard?.theme]);
 
   if (!currentBoard) return null;
 

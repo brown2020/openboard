@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { useBoardStore } from "@/stores/board-store";
 import { useModal } from "@/stores/ui-store";
 import { useAnalytics } from "@/hooks/use-analytics";
@@ -47,21 +47,20 @@ export function AnalyticsModal() {
 
   const isOpen = activeModal === "analytics";
 
-  useEffect(() => {
-    if (isOpen && currentBoard) {
-      loadAnalytics();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, currentBoard, timeRange]);
-
-  const loadAnalytics = async () => {
+  const loadAnalytics = useCallback(async () => {
     if (!currentBoard) return;
 
     setIsLoading(true);
     const data = await getAnalytics(currentBoard.id, parseInt(timeRange));
     setAnalytics(data);
     setIsLoading(false);
-  };
+  }, [currentBoard, getAnalytics, timeRange]);
+
+  useEffect(() => {
+    if (isOpen && currentBoard) {
+      void loadAnalytics();
+    }
+  }, [isOpen, currentBoard, loadAnalytics]);
 
   // Computed stats
   const stats = useMemo(() => {

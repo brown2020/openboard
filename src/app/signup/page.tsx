@@ -21,6 +21,7 @@ import {
 } from "@/components/auth";
 import { setAuthCookie } from "@/lib/auth-cookie";
 import { getFirebaseErrorMessage } from "@/hooks/use-error-handler";
+import { sanitizeRedirectPath } from "@/lib/safe-redirect";
 
 export default function SignupPage() {
   return (
@@ -40,13 +41,7 @@ function SignupForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const redirectTo = (() => {
-    const raw = searchParams.get("redirect");
-    if (!raw) return "/boards";
-    if (!raw.startsWith("/")) return "/boards";
-    if (raw.startsWith("//")) return "/boards";
-    return raw;
-  })();
+  const redirectTo = sanitizeRedirectPath(searchParams.get("redirect"));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

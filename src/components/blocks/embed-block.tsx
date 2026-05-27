@@ -110,7 +110,7 @@ export function EmbedBlock({
             placeholder="https://open.spotify.com/embed/track/..."
           />
           <p className="text-xs text-muted-foreground">
-            Provide a custom embed iframe src if Spotify/Twitter defaults don't
+            Provide a custom embed iframe src if Spotify/Twitter defaults don&apos;t
             match your content.
           </p>
         </div>

@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { FIREBASE_AUTH_COOKIE } from "@/lib/auth-constants";
 import { verifyFirebaseAuthCookie } from "@/lib/firebase-admin";
 import type { DecodedIdToken } from "firebase-admin/auth";
+import { canEditBoard as checkBoardEditAccess } from "@/lib/board-access";
 
 /**
  * Simple in-memory rate limiter
@@ -64,10 +65,7 @@ export function canEditBoard(
   userId: string,
   boardData: { ownerId?: string; collaborators?: string[] }
 ): boolean {
-  return (
-    boardData.ownerId === userId ||
-    (Array.isArray(boardData.collaborators) && boardData.collaborators.includes(userId))
-  );
+  return checkBoardEditAccess(userId, boardData);
 }
 
 /**

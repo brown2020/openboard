@@ -67,9 +67,7 @@ export default async function PublicBoardPage({ params }: PageProps) {
     }
   }
 
-  // Never pass passwordHash to the client tree.
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { passwordHash, createdAt, updatedAt, ...boardPublic } = board;
+  const { passwordHash: _passwordHash, createdAt, updatedAt, ...boardPublic } = board;
 
   // Serialize Firestore Timestamps to plain objects for Client Components
   const serializedBoard = {

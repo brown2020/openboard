@@ -46,8 +46,9 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Block, BlockType } from "@/types";
+import { Block, BlockType, BoardTheme } from "@/types";
 import { cn } from "@/lib/utils";
+import { canEditBoard } from "@/lib/board-access";
 import { useToast } from "@/stores/ui-store";
 import {
   CommandPalette,
@@ -56,6 +57,39 @@ import {
 
 interface PageProps {
   params: Promise<{ id: string }>;
+}
+
+type SavedBoardSnapshot = {
+  title: string;
+  description: string;
+  blocksJson: string;
+  themeJson: string;
+};
+
+function createBoardSnapshot(
+  title: string,
+  description: string,
+  blocks: Block[],
+  theme: BoardTheme
+): SavedBoardSnapshot {
+  return {
+    title,
+    description,
+    blocksJson: JSON.stringify(blocks),
+    themeJson: JSON.stringify(theme),
+  };
+}
+
+function snapshotsEqual(
+  current: SavedBoardSnapshot,
+  saved: SavedBoardSnapshot
+): boolean {
+  return (
+    current.title === saved.title &&
+    current.description === saved.description &&
+    current.blocksJson === saved.blocksJson &&
+    current.themeJson === saved.themeJson
+  );
 }
 
 interface SortableBlockProps {
@@ -134,6 +168,7 @@ export default function BoardEditorPage({ params }: PageProps) {
   const [boardDescription, setBoardDescription] = useState("");
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const loadedBoardIdRef = useRef<string | null>(null);
+  const savedSnapshotRef = useRef<SavedBoardSnapshot | null>(null);
 
   // Refs to avoid stale closure issues in callbacks
   const currentBoardRef = useRef(currentBoard);
@@ -214,7 +249,7 @@ export default function BoardEditorPage({ params }: PageProps) {
 
       const board = await getBoard(resolvedParams.id);
       if (board) {
-        if (board.ownerId !== user.id) {
+        if (!canEditBoard(user.id, board)) {
           toast.error(
             "Access denied",
             "You don't have permission to edit this board"
@@ -222,9 +257,17 @@ export default function BoardEditorPage({ params }: PageProps) {
           router.push("/boards");
           return;
         }
-        setCurrentBoard(board);
-        setBoardTitle(board.title);
-        setBoardDescription(board.description || "");
+        // Never keep password hashes in client editor state.
+        const { passwordHash: _passwordHash, ...boardWithoutSecrets } = board;
+        setCurrentBoard(boardWithoutSecrets as typeof board);
+        setBoardTitle(boardWithoutSecrets.title);
+        setBoardDescription(boardWithoutSecrets.description || "");
+        savedSnapshotRef.current = createBoardSnapshot(
+          boardWithoutSecrets.title,
+          boardWithoutSecrets.description || "",
+          boardWithoutSecrets.blocks,
+          boardWithoutSecrets.theme
+        );
         loadedBoardIdRef.current = resolvedParams.id;
       } else {
         toast.error(
@@ -237,17 +280,30 @@ export default function BoardEditorPage({ params }: PageProps) {
     };
 
     loadBoard();
-  }, [resolvedParams.id, user, isLoaded]);
+  }, [
+    resolvedParams.id,
+    user,
+    isLoaded,
+    getBoard,
+    router,
+    setCurrentBoard,
+    toast,
+  ]);
 
-  // Track unsaved changes
+  // Track unsaved changes (title, description, blocks, theme)
   useEffect(() => {
-    if (!currentBoard) return;
+    if (!currentBoard || !savedSnapshotRef.current) return;
 
-    const hasChanges =
-      boardTitle !== currentBoard.title ||
-      boardDescription !== (currentBoard.description || "");
+    const currentSnapshot = createBoardSnapshot(
+      boardTitle,
+      boardDescription,
+      currentBoard.blocks,
+      currentBoard.theme
+    );
 
-    setHasUnsavedChanges(hasChanges);
+    setHasUnsavedChanges(
+      !snapshotsEqual(currentSnapshot, savedSnapshotRef.current)
+    );
   }, [boardTitle, boardDescription, currentBoard]);
 
   // Warn before leaving with unsaved changes
@@ -277,11 +333,18 @@ export default function BoardEditorPage({ params }: PageProps) {
       blocks: board.blocks,
       title,
       description,
+      theme: board.theme,
     });
     setSaving(false);
 
     if (success) {
       toast.success("Changes saved", "Your board has been updated");
+      savedSnapshotRef.current = createBoardSnapshot(
+        title,
+        description,
+        board.blocks,
+        board.theme
+      );
       setHasUnsavedChanges(false);
     } else {
       toast.error("Save failed", "Failed to save changes. Please try again.");
