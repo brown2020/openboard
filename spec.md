@@ -63,7 +63,7 @@ OpenBoard is a working Next.js + Firebase SaaS-style app (deployed demo at openb
 | Analytics (per board) | ✅ Shipped | Modal with views/clicks/devices |
 | Dashboard | ✅ Basic | Aggregate counts; no charts |
 | AI suggestions | ✅ Optional | Requires `OPENAI_API_KEY` |
-| Collaboration | ⚠️ Broken/partial | Email invites vs UID rules mismatch |
+| Collaboration | ✅ Shipped | Email invite resolves to UID; shared boards in list |
 | Auto-save | ✅ Shipped | 2s debounce via `useAutoSave` in board editor |
 | Custom domains | ❌ Not built | Type only |
 | QR codes | ❌ Not built | UI placeholder |
@@ -108,7 +108,7 @@ Public visitor → /u/{user}/{slug} → [password gate?] → view + track analyt
 
 - Firestore rules allow **world read** on boards — private/password enforcement is application-layer on the public route only
 - Rate limiting is in-process — not shared across serverless instances
-- Board queries filter `ownerId` only — collaborators cannot see shared boards in UI
+- Board list merges owned boards and collaborator shares via dual Firestore subscriptions
 - No CI test pipeline; quality gate is lint + TypeScript + build
 - npm lockfile — use npm exclusively
 
@@ -116,7 +116,7 @@ Public visitor → /u/{user}/{slug} → [password gate?] → view + track analyt
 
 *(Mix of code-verified and inferred)*
 
-1. **Collaboration is non-functional end-to-end** — share modal stores emails; Firestore rules check UIDs; collaborator query missing
+1. ~~**Collaboration is non-functional end-to-end**~~ — email invites resolve to UID; shared boards appear in `/boards` (legacy email entries must be re-invited)
 2. ~~**Unlisted boards are not hidden** from direct URL access~~ — unlisted boards are intentionally reachable via direct URL; they are excluded from search indexes (`noindex`)
 3. **Analytics `uniqueVisitors`** increments on every view — not deduplicated
 4. **`analytics.enabled` flag** is never checked before tracking
@@ -168,20 +168,22 @@ Ordered by product impact and dependency. Each item is sized for one focused com
 
 ---
 
-### Milestone 3 — Fix collaborator invites (email → UID)
+### Milestone 3 — Fix collaborator invites (email → UID) ✅
+
+**Status:** Complete (May 2026)
 
 **User value:** Teams can actually co-edit boards — a marketed feature today.
 
 **Acceptance criteria:**
-- Inviting by email resolves to Firebase UID via `users` collection lookup
-- `collaborators[]` stores UIDs consistently
-- Firestore rules allow collaborator updates (already written for UIDs)
-- Invited user sees shared boards in `/boards` list
-- Clear error when email is not registered
+- [x] Inviting by email resolves to Firebase UID via `users` collection lookup
+- [x] `collaborators[]` stores UIDs consistently
+- [x] Firestore rules allow collaborator updates (already written for UIDs)
+- [x] Invited user sees shared boards in `/boards` list
+- [x] Clear error when email is not registered
 
-**Implementation intent:** On invite in `share-modal.tsx`, query `users` where `email ==`; store UID; extend `use-boards.ts` subscription with `where('collaborators', 'array-contains', uid)` or composite query; merge results.
+**Implementation note:** `share-modal.tsx` resolves email via `collaborators-client.ts`; `use-boards.ts` merges owned + `array-contains` shared subscriptions; composite Firestore index added for `collaborators` + `updatedAt`.
 
-**Depends on:** Milestone 1 (optional but reduces conflict pain when two editors save).
+**Follow-up:** Legacy collaborator entries stored as raw emails are ignored until re-invited.
 
 ---
 
