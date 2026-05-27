@@ -1,9 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useCallback, useState } from "react";
-import { useBoardStore } from "@/stores/board-store";
 import { useBoards } from "@/hooks/use-boards";
-import { Block } from "@/types";
+import { useEditor } from "@/stores/ui-store";
+import {
+  serializeBoardSaveState,
+  type BoardSavePayload,
+} from "@/lib/board-save";
 
 interface UseAutoSaveOptions {
   /** Board ID to auto-save */
@@ -12,129 +15,156 @@ interface UseAutoSaveOptions {
   debounceMs?: number;
   /** Whether auto-save is enabled (default: true) */
   enabled?: boolean;
-  /** Callback when save starts */
-  onSaveStart?: () => void;
-  /** Callback when save completes */
-  onSaveComplete?: (success: boolean) => void;
+  /** Fingerprint of the current editor state (changes trigger dirty detection) */
+  stateFingerprint: string;
+  /** Returns payload to persist; null skips save */
+  getPayload: () => BoardSavePayload | null;
+  /** Reset baseline when a board finishes loading */
+  baselineFingerprint?: string | null;
+  /** Callback after a successful save */
+  onSaveSuccess?: (payload: BoardSavePayload) => void;
+}
+
+interface SaveNowOptions {
+  /** Suppress success/error toasts (auto-save uses silent mode) */
+  silent?: boolean;
 }
 
 interface UseAutoSaveReturn {
-  /** Whether a save is currently in progress */
   isSaving: boolean;
-  /** Whether there are unsaved changes */
   hasUnsavedChanges: boolean;
-  /** Last successful save timestamp */
+  saveFailed: boolean;
   lastSavedAt: number | null;
-  /** Trigger an immediate save */
-  saveNow: () => Promise<boolean>;
-  /** Mark content as having unsaved changes */
-  markDirty: () => void;
+  saveNow: (options?: SaveNowOptions) => Promise<boolean>;
 }
 
 /**
- * Hook for automatic saving with debounce.
- * Watches for changes to the current board and saves after a delay.
+ * Debounced auto-save for the board editor.
+ * Tracks blocks, title, description, and theme via `stateFingerprint` + `getPayload`.
  */
 export function useAutoSave({
   boardId,
   debounceMs = 2000,
   enabled = true,
-  onSaveStart,
-  onSaveComplete,
+  stateFingerprint,
+  getPayload,
+  baselineFingerprint = null,
+  onSaveSuccess,
 }: UseAutoSaveOptions): UseAutoSaveReturn {
-  const { currentBoard } = useBoardStore();
   const { updateBoard } = useBoards();
+  const { setSaving } = useEditor();
 
-  const [isSaving, setIsSaving] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [saveFailed, setSaveFailed] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
-  // Refs for debouncing and tracking
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const lastSavedBlocksRef = useRef<string>("");
+  const lastSavedFingerprintRef = useRef<string>("");
   const isMountedRef = useRef(true);
+  const getPayloadRef = useRef(getPayload);
+  const onSaveSuccessRef = useRef(onSaveSuccess);
 
-  // Track mounted state
+  useEffect(() => {
+    getPayloadRef.current = getPayload;
+  }, [getPayload]);
+
+  useEffect(() => {
+    onSaveSuccessRef.current = onSaveSuccess;
+  }, [onSaveSuccess]);
+
   useEffect(() => {
     isMountedRef.current = true;
     return () => {
       isMountedRef.current = false;
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
     };
   }, []);
 
-  // Save function
-  const saveNow = useCallback(async (): Promise<boolean> => {
-    if (!currentBoard || currentBoard.id !== boardId) {
-      return false;
-    }
+  useEffect(() => {
+    if (!baselineFingerprint) return;
+    lastSavedFingerprintRef.current = baselineFingerprint;
+    setHasUnsavedChanges(false);
+    setSaveFailed(false);
+  }, [baselineFingerprint]);
 
-    // Clear any pending debounced save
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-      saveTimeoutRef.current = null;
-    }
+  const saveNow = useCallback(
+    async (options: SaveNowOptions = {}): Promise<boolean> => {
+      const payload = getPayloadRef.current();
+      if (!payload) return false;
 
-    setIsSaving(true);
-    onSaveStart?.();
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+        saveTimeoutRef.current = null;
+      }
 
-    try {
-      const success = await updateBoard(boardId, {
-        blocks: currentBoard.blocks,
-        title: currentBoard.title,
-        description: currentBoard.description,
-      });
+      setIsSaving(true);
+      setSaving(true);
+      setSaveFailed(false);
 
-      if (isMountedRef.current) {
+      try {
+        const success = await updateBoard(boardId, {
+          blocks: payload.blocks,
+          title: payload.title,
+          description: payload.description,
+          theme: payload.theme,
+        });
+
+        if (!isMountedRef.current) return success;
+
         if (success) {
-          // Update tracking refs
-          lastSavedBlocksRef.current = JSON.stringify(currentBoard.blocks);
+          const fingerprint = serializeBoardSaveState(payload);
+          lastSavedFingerprintRef.current = fingerprint;
           setLastSavedAt(Date.now());
           setHasUnsavedChanges(false);
+          setSaveFailed(false);
+          onSaveSuccessRef.current?.(payload);
+        } else {
+          setSaveFailed(true);
         }
-        setIsSaving(false);
+
+        return success;
+      } catch {
+        if (isMountedRef.current) {
+          setSaveFailed(true);
+        }
+        return false;
+      } finally {
+        if (isMountedRef.current) {
+          setIsSaving(false);
+          setSaving(false);
+        }
       }
+    },
+    [boardId, updateBoard, setSaving]
+  );
 
-      onSaveComplete?.(success);
-      return success;
-    } catch (error) {
-      if (isMountedRef.current) {
-        setIsSaving(false);
-      }
-      onSaveComplete?.(false);
-      return false;
-    }
-  }, [currentBoard, boardId, updateBoard, onSaveStart, onSaveComplete]);
-
-  // Mark as dirty (has unsaved changes)
-  const markDirty = useCallback(() => {
-    setHasUnsavedChanges(true);
-  }, []);
-
-  // Debounced auto-save effect
+  const saveNowRef = useRef(saveNow);
   useEffect(() => {
-    if (!enabled || !currentBoard || currentBoard.id !== boardId) {
+    saveNowRef.current = saveNow;
+  }, [saveNow]);
+
+  useEffect(() => {
+    if (!enabled || !baselineFingerprint) {
       return;
     }
 
-    // Serialize current blocks for comparison
-    const currentBlocksJson = JSON.stringify(currentBoard.blocks);
-
-    // Check if there are actual changes
-    if (currentBlocksJson === lastSavedBlocksRef.current) {
+    if (stateFingerprint === lastSavedFingerprintRef.current) {
+      setHasUnsavedChanges(false);
       return;
     }
 
-    // Mark as having unsaved changes
     setHasUnsavedChanges(true);
+    setSaveFailed(false);
 
-    // Clear existing timeout
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
     }
 
-    // Set up new debounced save
     saveTimeoutRef.current = setTimeout(() => {
-      saveNow();
+      void saveNowRef.current({ silent: true });
     }, debounceMs);
 
     return () => {
@@ -142,88 +172,16 @@ export function useAutoSave({
         clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [currentBoard?.blocks, boardId, enabled, debounceMs, saveNow]);
-
-  // Initialize lastSavedBlocksRef when board loads
-  useEffect(() => {
-    if (currentBoard && currentBoard.id === boardId) {
-      lastSavedBlocksRef.current = JSON.stringify(currentBoard.blocks);
-    }
-  }, [boardId]); // Only on board ID change, not blocks change
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
-    };
-  }, []);
+  }, [stateFingerprint, boardId, enabled, debounceMs, baselineFingerprint]);
 
   return {
     isSaving,
     hasUnsavedChanges,
+    saveFailed,
     lastSavedAt,
     saveNow,
-    markDirty,
   };
 }
 
-/**
- * Hook for optimistic updates with rollback on failure.
- */
-export function useOptimisticUpdate() {
-  const { currentBoard } = useBoardStore();
-  const [rollbackState, setRollbackState] = useState<{
-    blocks: Block[];
-  } | null>(null);
-
-  /**
-   * Execute an optimistic update with automatic rollback on failure.
-   * @param localUpdate - Function to apply local state change
-   * @param remoteUpdate - Async function to persist to server
-   * @returns Promise<boolean> - Whether the operation succeeded
-   */
-  const executeOptimistic = useCallback(
-    async <T>(
-      localUpdate: () => T,
-      remoteUpdate: (localResult: T) => Promise<boolean>
-    ): Promise<boolean> => {
-      if (!currentBoard) return false;
-
-      // Save current state for potential rollback
-      const savedState = {
-        blocks: structuredClone(currentBoard.blocks),
-      };
-      setRollbackState(savedState);
-
-      // Apply local update immediately
-      const localResult = localUpdate();
-
-      try {
-        // Attempt remote update
-        const success = await remoteUpdate(localResult);
-
-        if (!success) {
-          // Rollback on failure
-          // Note: The calling code should handle the rollback using the store
-          setRollbackState(null);
-          return false;
-        }
-
-        setRollbackState(null);
-        return true;
-      } catch (error) {
-        // Rollback on error
-        setRollbackState(null);
-        return false;
-      }
-    },
-    [currentBoard]
-  );
-
-  return {
-    executeOptimistic,
-    rollbackState,
-  };
-}
+// Re-export optimistic helper unchanged for future use
+export { useOptimisticUpdate } from "./use-auto-save-optimistic";

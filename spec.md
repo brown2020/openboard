@@ -64,7 +64,7 @@ OpenBoard is a working Next.js + Firebase SaaS-style app (deployed demo at openb
 | Dashboard | ✅ Basic | Aggregate counts; no charts |
 | AI suggestions | ✅ Optional | Requires `OPENAI_API_KEY` |
 | Collaboration | ⚠️ Broken/partial | Email invites vs UID rules mismatch |
-| Auto-save | ⚠️ Not wired | Hook exists, editor uses manual save |
+| Auto-save | ✅ Shipped | 2s debounce via `useAutoSave` in board editor |
 | Custom domains | ❌ Not built | Type only |
 | QR codes | ❌ Not built | UI placeholder |
 | Nested blocks | ❌ Not built | Dead code paths |
@@ -123,7 +123,7 @@ Public visitor → /u/{user}/{slug} → [password gate?] → view + track analyt
 5. **Referrer analytics** typed but not written
 6. **Form webhooks** often fail due to browser CORS posting to arbitrary URLs
 7. **Marketing copy** on landing page overstates collaboration, layouts, and custom domains
-8. **Manual save required** — users can lose work if they navigate away without saving
+8. ~~**Manual save required**~~ — auto-save debounces edits; manual Save / ⌘S still available for immediate persist
 9. **Template preview images** reference `/templates/*.jpg` not present in `public/`
 10. **`passwordHash` may be readable** by authenticated owner via client Firestore path *(inferred)* — public route correctly strips it
 
@@ -135,17 +135,19 @@ Ordered by product impact and dependency. Each item is sized for one focused com
 
 ---
 
-### Milestone 1 — Wire auto-save in the board editor
+### Milestone 1 — Wire auto-save in the board editor ✅
+
+**Status:** Complete (May 2026)
 
 **User value:** Editors never lose work; matches expectations from Notion/Google Docs.
 
 **Acceptance criteria:**
-- Board changes (blocks, title, description, theme) debounce-save automatically (~2s after last change)
-- Cmd/Ctrl+S still triggers immediate save
-- Unsaved indicator reflects auto-save state accurately
-- `beforeunload` warning only when a save is in flight or failed
+- [x] Board changes (blocks, title, description, theme) debounce-save automatically (~2s after last change)
+- [x] Cmd/Ctrl+S still triggers immediate save
+- [x] Unsaved indicator reflects auto-save state accurately
+- [x] `beforeunload` warning only when a save is in flight or failed
 
-**Implementation intent:** Connect existing `use-auto-save.ts` in `board/[id]/page.tsx`; reuse `updateBoard` from `use-boards.ts`; coordinate with `ui-store` `setSaving` flag.
+**Implementation note:** `useAutoSave` in `board/[id]/page.tsx` debounces saves via `lib/board-save.ts` fingerprinting; coordinates with `ui-store` `setSaving`; toolbar shows pending/saving/error states.
 
 ---
 

@@ -103,7 +103,7 @@ Firebase
 - Drag-and-drop block reordering (dnd-kit)
 - Slash command palette (`/`) for adding blocks
 - Theme customization (presets + custom colors/gradients/fonts)
-- Manual save (Cmd/Ctrl+S) with unsaved-changes warning
+- Auto-save (2s debounce) plus manual save (Cmd/Ctrl+S)
 - Undo/redo (50-entry history in `board-store`)
 - Public boards at `/u/{username}/{slug}`
 - Privacy modes: public, private, password (unlisted stored but not enforced on public page — see spec.md)
@@ -118,7 +118,7 @@ Firebase
 
 ### Partially implemented (do not assume complete)
 - **Collaboration:** UI invites by email; Firestore rules expect UIDs; collaborator boards not listed in `use-boards.ts`; `collab-store` unused
-- **Auto-save:** `use-auto-save.ts` exists but is not wired to the editor
+- **Auto-save:** wired in board editor via `use-auto-save.ts` and `lib/board-save.ts`
 - **Nested blocks:** types + `nested-block-renderer.tsx` exist; editor uses flat list only
 - **QR codes:** "Coming Soon" placeholder in share modal
 - **Custom domains:** typed on `UserProfile` but no routing/DNS implementation
