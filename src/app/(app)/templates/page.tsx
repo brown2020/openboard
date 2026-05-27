@@ -13,9 +13,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { TemplateCardPreview } from "@/components/templates/template-card-preview";
 import { BOARD_TEMPLATES } from "@/lib/templates";
 import { BoardTemplate, Block } from "@/types";
-import { Search, Star, TrendingUp } from "lucide-react";
+import { LayoutTemplate, Search, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import { generateUniqueSlug } from "@/lib/utils";
 
@@ -26,6 +27,7 @@ export default function TemplatesPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [isCreating, setIsCreating] = useState<string | null>(null);
+  const [createError, setCreateError] = useState<string | null>(null);
 
   const filteredTemplates = BOARD_TEMPLATES.filter((template) => {
     const matchesSearch =
@@ -36,6 +38,11 @@ export default function TemplatesPage() {
     return matchesSearch && matchesCategory;
   });
 
+  const handleClearFilters = () => {
+    setSearchQuery("");
+    setCategoryFilter("all");
+  };
+
   const handleUseTemplate = async (template: BoardTemplate) => {
     if (!user) {
       router.push("/login");
@@ -43,12 +50,17 @@ export default function TemplatesPage() {
     }
 
     setIsCreating(template.id);
+    setCreateError(null);
 
-    // Generate unique slug
-    const slug = generateUniqueSlug(template.name);
-    const board = await createBoard(template.name, slug);
+    try {
+      const slug = generateUniqueSlug(template.name);
+      const board = await createBoard(template.name, slug);
 
-    if (board) {
+      if (!board) {
+        setCreateError("Could not create a board from this template. Please try again.");
+        return;
+      }
+
       const blocksWithIds = template.blocks.map((block, index) => ({
         ...block,
         id: `tmpl_${Date.now()}_${index}`,
@@ -60,14 +72,15 @@ export default function TemplatesPage() {
       });
 
       router.push(`/board/${board.id}`);
+    } catch {
+      setCreateError("Could not create a board from this template. Please try again.");
+    } finally {
+      setIsCreating(null);
     }
-
-    setIsCreating(null);
   };
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <div className="border-b bg-background/95 backdrop-blur">
         <div className="container mx-auto px-4 py-8">
           <div className="flex items-center justify-between mb-6">
@@ -82,19 +95,22 @@ export default function TemplatesPage() {
             </Button>
           </div>
 
-          {/* Filters */}
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+              <Search
+                className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground"
+                aria-hidden="true"
+              />
               <Input
                 placeholder="Search templates..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
+                aria-label="Search templates"
               />
             </div>
             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger className="w-full sm:w-[200px]">
+              <SelectTrigger className="w-full sm:w-[200px]" aria-label="Filter by category">
                 <SelectValue placeholder="Category" />
               </SelectTrigger>
               <SelectContent>
@@ -110,80 +126,40 @@ export default function TemplatesPage() {
         </div>
       </div>
 
-      {/* Templates Grid */}
       <div className="container mx-auto px-4 py-8">
+        {createError && (
+          <div
+            className="mb-6 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive"
+            role="alert"
+          >
+            {createError}
+          </div>
+        )}
+
         {filteredTemplates.length === 0 ? (
-          <div className="text-center py-16">
-            <p className="text-muted-foreground">No templates found</p>
+          <div className="text-center py-16 max-w-md mx-auto">
+            <LayoutTemplate
+              className="w-12 h-12 mx-auto text-muted-foreground mb-4"
+              aria-hidden="true"
+            />
+            <h2 className="text-xl font-semibold mb-2">No templates found</h2>
+            <p className="text-muted-foreground mb-6">
+              Try a different search term or category to browse all available
+              templates.
+            </p>
+            <Button type="button" variant="outline" onClick={handleClearFilters}>
+              Clear filters
+            </Button>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredTemplates.map((template) => (
-              <div
+              <article
                 key={template.id}
                 className="group border rounded-lg overflow-hidden hover:shadow-lg transition-all"
               >
-                {/* Preview */}
-                <div
-                  className="h-48 p-6 relative"
-                  style={{ background: template.theme.background.value }}
-                >
-                  {template.featured && (
-                    <div className="absolute top-3 right-3 bg-yellow-500 text-white px-2 py-1 rounded-full text-xs font-semibold flex items-center gap-1">
-                      <Star className="w-3 h-3 fill-current" />
-                      Featured
-                    </div>
-                  )}
-                  <h3
-                    className="text-xl font-bold"
-                    style={{ color: template.theme.textColor }}
-                  >
-                    Sample Board
-                  </h3>
-                  <div className="mt-4 space-y-2">
-                    {template.blocks.slice(0, 2).map((block, idx) => {
-                      const getBlockLabel = () => {
-                        if (
-                          block.type === "link" &&
-                          "title" in block.settings
-                        ) {
-                          return block.settings.title as string;
-                        }
-                        if (
-                          block.type === "button" &&
-                          "text" in block.settings
-                        ) {
-                          return block.settings.text as string;
-                        }
-                        if (
-                          block.type === "text" &&
-                          "content" in block.settings
-                        ) {
-                          return (block.settings.content as string).slice(
-                            0,
-                            30
-                          );
-                        }
-                        return `${block.type} block`;
-                      };
+                <TemplateCardPreview template={template} />
 
-                      return (
-                        <div
-                          key={idx}
-                          className="p-2 rounded text-sm"
-                          style={{
-                            backgroundColor: template.theme.cardBackground,
-                            color: template.theme.textColor,
-                          }}
-                        >
-                          {getBlockLabel()}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Info */}
                 <div className="p-4 bg-card">
                   <div className="mb-3">
                     <h3 className="font-bold text-lg mb-1">{template.name}</h3>
@@ -197,7 +173,7 @@ export default function TemplatesPage() {
                       {template.category}
                     </span>
                     <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                      <TrendingUp className="w-3 h-3" />
+                      <TrendingUp className="w-3 h-3" aria-hidden="true" />
                       {template.usageCount.toLocaleString()} uses
                     </div>
                   </div>
@@ -212,7 +188,7 @@ export default function TemplatesPage() {
                       : "Use This Template"}
                   </Button>
                 </div>
-              </div>
+              </article>
             ))}
           </div>
         )}

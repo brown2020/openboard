@@ -54,7 +54,7 @@ OpenBoard is a working Next.js + Firebase SaaS-style app (deployed demo at openb
 | Board editor | ✅ Shipped | DnD, slash palette, undo/redo, manual save |
 | 12 block types | ✅ Shipped | All registered in `block-renderer.tsx` |
 | Themes | ✅ Shipped | Presets + custom modal |
-| Templates | ✅ Partial | 5 static templates; thumbnails may 404 |
+| Templates | ✅ Shipped | 5 templates with SVG previews in `/templates` |
 | Public pages | ✅ Shipped | RSC fetch + client render |
 | Privacy: private | ✅ Shipped | Blocks public view |
 | Privacy: password | ✅ Shipped | Server hash + unlock API + access cookie |
@@ -124,7 +124,7 @@ Public visitor → /u/{user}/{slug} → [password gate?] → view + track analyt
 6. **Form webhooks** often fail due to browser CORS posting to arbitrary URLs
 7. **Marketing copy** on landing page overstates collaboration, layouts, and custom domains
 8. ~~**Manual save required**~~ — auto-save debounces edits; manual Save / ⌘S still available for immediate persist
-9. **Template preview images** reference `/templates/*.jpg` not present in `public/`
+9. ~~**Template preview images** reference `/templates/*.jpg` not present in `public/`~~ — SVG previews shipped for all five templates
 10. **`passwordHash` may be readable** by authenticated owner via client Firestore path *(inferred)* — public route correctly strips it
 
 ---
@@ -202,16 +202,18 @@ Ordered by product impact and dependency. Each item is sized for one focused com
 
 ---
 
-### Milestone 5 — Template gallery polish (thumbnails + empty states)
+### Milestone 5 — Template gallery polish (thumbnails + empty states) ✅
+
+**Status:** Complete (May 2026)
 
 **User value:** Templates drive activation — first board should look professional immediately.
 
 **Acceptance criteria:**
-- Each of 5 templates has a preview image in `public/templates/`
-- Template cards show thumbnail without broken image
-- Creating from template lands in editor with blocks and theme applied (already works)
+- [x] Each of 5 templates has a preview image in `public/templates/`
+- [x] Template cards show thumbnail without broken image
+- [x] Creating from template lands in editor with blocks and theme applied (already works)
 
-**Implementation intent:** Add static preview assets or generate placeholder thumbnails; verify `templates/page.tsx` create flow.
+**Implementation note:** Static SVG previews added under `public/templates/`; `TemplateCardPreview` renders thumbnails with theme-based fallback on load failure; search empty state includes clear-filters action and create-flow error alert.
 
 ---
 

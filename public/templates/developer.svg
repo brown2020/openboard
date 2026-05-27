@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="480" viewBox="0 0 800 480" role="img" aria-label="Developer Portfolio template preview">
+  <rect width="800" height="480" fill="#0a0a0a"/>
+  <text x="400" y="88" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif" font-size="22" font-weight="600">Full-Stack Developer " Open Source Enthusiast</text>
+  <line x1="220" y1="110" x2="580" y2="110" stroke="#00ff88" stroke-width="2"/>
+  <rect x="220" y="140" width="360" height="58" rx="8" fill="#1a1a1a" stroke="#00ff88" stroke-width="1.5"/>
+  <text x="240" y="175" fill="#ffffff" font-family="system-ui, sans-serif" font-size="18" font-weight="600">=» GitHub</text>
+  <rect x="220" y="212" width="360" height="58" rx="8" fill="#1a1a1a" stroke="#00ff88" stroke-width="1.5"/>
+  <text x="240" y="247" fill="#ffffff" font-family="system-ui, sans-serif" font-size="18" font-weight="600">< Portfolio Website</text>
+  <rect x="220" y="284" width="360" height="58" rx="8" fill="#1a1a1a" stroke="#00ff88" stroke-width="1.5"/>
+  <text x="240" y="319" fill="#ffffff" font-family="system-ui, sans-serif" font-size="18" font-weight="600"> Blog</text>
+  <rect x="280" y="365" width="240" height="48" rx="8" fill="transparent" stroke="#00ff88" stroke-width="2"/>
+  <text x="400" y="396" text-anchor="middle" fill="#00ff88" font-family="system-ui, sans-serif" font-size="17" font-weight="700">Contact Me</text>
+</svg>

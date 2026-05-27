@@ -6,7 +6,7 @@ export const BOARD_TEMPLATES: BoardTemplate[] = [
     name: "Creator Starter",
     description: "Perfect for content creators getting started",
     category: "creator",
-    thumbnail: "/templates/creator-basic.jpg",
+    thumbnail: "/templates/creator-basic.svg",
     featured: true,
     usageCount: 1250,
     theme: {
@@ -84,7 +84,7 @@ export const BOARD_TEMPLATES: BoardTemplate[] = [
     name: "Developer Portfolio",
     description: "Showcase your projects and skills",
     category: "developer",
-    thumbnail: "/templates/developer.jpg",
+    thumbnail: "/templates/developer.svg",
     featured: true,
     usageCount: 890,
     theme: {
@@ -174,7 +174,7 @@ export const BOARD_TEMPLATES: BoardTemplate[] = [
     name: "Business Minimal",
     description: "Clean and professional for businesses",
     category: "business",
-    thumbnail: "/templates/business.jpg",
+    thumbnail: "/templates/business.svg",
     featured: true,
     usageCount: 650,
     theme: {
@@ -270,7 +270,7 @@ export const BOARD_TEMPLATES: BoardTemplate[] = [
     name: "Student Links",
     description: "Perfect for students and academics",
     category: "student",
-    thumbnail: "/templates/student.jpg",
+    thumbnail: "/templates/student.svg",
     featured: false,
     usageCount: 420,
     theme: {
@@ -348,7 +348,7 @@ export const BOARD_TEMPLATES: BoardTemplate[] = [
     name: "Team Resources",
     description: "Centralized hub for team links",
     category: "team",
-    thumbnail: "/templates/team.jpg",
+    thumbnail: "/templates/team.svg",
     featured: false,
     usageCount: 310,
     theme: {
