@@ -40,11 +40,9 @@ export function ThemeModal() {
   // Sync with current board theme when modal opens
   useEffect(() => {
     if (isOpen && currentBoard?.theme) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelectedTheme(currentBoard.theme);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, currentBoard?.id]);
+  }, [isOpen, currentBoard?.id, currentBoard?.theme]);
 
   if (!currentBoard) return null;
 

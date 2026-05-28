@@ -1,5 +1,8 @@
 # Competitor Analysis: Notion
 
+> **Archival UX research.** Product direction and roadmap live in **[spec.md](./spec.md)**.  
+> This document informs editor UX goals (inline editing, slash commands) but is not the product spec.
+
 ## Context
 
 OpenBoard is a shareable page/link-in-bio builder. Notion is a workspace tool that includes published pages (Notion Sites). We're not trying to become Notion — we're studying what makes Notion's page editor world-class and applying those lessons to make OpenBoard's editor feel just as good, while staying focused on our niche: beautiful, shareable public pages.

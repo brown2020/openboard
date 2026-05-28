@@ -23,13 +23,14 @@ export interface BlockComponentProps<T extends Block = Block> {
   block: T;
   isEditing?: boolean;
   onClick?: () => void;
+  boardId?: string;
 }
 
 /**
  * Block component registry - maps block types to their components
  * Makes it easy to add new block types without modifying the renderer
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 const BLOCK_REGISTRY: Record<BlockType, ComponentType<BlockComponentProps<any>>> = {
   link: LinkBlock,
   text: TextBlock,
@@ -50,6 +51,7 @@ interface BlockRendererProps {
   isEditing?: boolean;
   onClick?: () => void;
   onBlockClick?: (blockId: string) => void;
+  boardId?: string;
 }
 
 export function BlockRenderer({
@@ -57,6 +59,7 @@ export function BlockRenderer({
   isEditing = false,
   onClick,
   onBlockClick,
+  boardId,
 }: BlockRendererProps) {
   if (!block.visible && !isEditing) {
     return null;
@@ -79,7 +82,12 @@ export function BlockRenderer({
 
   return (
     <BlockErrorBoundary>
-      <Component block={block} isEditing={isEditing} onClick={handleClick} />
+      <Component
+        block={block}
+        isEditing={isEditing}
+        onClick={handleClick}
+        boardId={boardId}
+      />
     </BlockErrorBoundary>
   );
 }

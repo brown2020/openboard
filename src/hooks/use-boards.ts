@@ -23,7 +23,17 @@ import { useAuthContext } from "@/lib/auth-context";
 import { useUserStore } from "@/stores/user-store";
 import { DEFAULT_THEME } from "@/lib/constants";
 import { getValidToken } from "@/lib/auth-utils";
+import { mergeBoardLists } from "@/lib/collaborators";
 import { useErrorHandler, getFirebaseErrorMessage } from "./use-error-handler";
+
+function mapBoardDocs(
+  docs: { id: string; data: () => Record<string, unknown> }[]
+): Board[] {
+  return docs.map((entry) => ({
+    id: entry.id,
+    ...entry.data(),
+  })) as Board[];
+}
 
 export function useBoards() {
   // Get Firebase user directly from auth context
@@ -34,6 +44,13 @@ export function useBoards() {
   const { boards, setBoards, setStatus, setError } = useBoardStore();
   const { handleError } = useErrorHandler();
   const unsubscribeRef = useRef<(() => void) | null>(null);
+  const ownedBoardsRef = useRef<Board[]>([]);
+  const sharedBoardsRef = useRef<Board[]>([]);
+
+  const publishMergedBoards = useCallback(() => {
+    setBoards(mergeBoardLists(ownedBoardsRef.current, sharedBoardsRef.current));
+    setStatus("success");
+  }, [setBoards, setStatus]);
 
   // Single effect with AbortController to prevent race conditions
   useEffect(() => {
@@ -74,30 +91,33 @@ export function useBoards() {
         setStatus("loading");
 
         const boardsRef = collection(db, "boards");
-        const q = query(
+        const ownedQuery = query(
           boardsRef,
           where("ownerId", "==", firebaseUser.uid),
           orderBy("updatedAt", "desc")
         );
+        const sharedQuery = query(
+          boardsRef,
+          where("collaborators", "array-contains", firebaseUser.uid),
+          orderBy("updatedAt", "desc")
+        );
 
-        // Check again before setting up listener
+        // Check again before setting up listeners
         if (controller.signal.aborted) return;
 
-        unsubscribeRef.current = onSnapshot(
-          q,
+        ownedBoardsRef.current = [];
+        sharedBoardsRef.current = [];
+
+        const unsubscribeOwned = onSnapshot(
+          ownedQuery,
           (snapshot) => {
             if (controller.signal.aborted) return;
-            const boardsData = snapshot.docs.map((doc) => ({
-              id: doc.id,
-              ...doc.data(),
-            })) as Board[];
-            setBoards(boardsData);
-            setStatus("success");
+            ownedBoardsRef.current = mapBoardDocs(snapshot.docs);
+            publishMergedBoards();
           },
           (error) => {
             if (controller.signal.aborted) return;
-            handleError(error, "Failed to load boards");
-            // Check if it's an index error
+            handleError(error, "Failed to load owned boards");
             if (error.message.includes("index")) {
               setError("Database index required. Please check Firebase console.");
             } else {
@@ -105,6 +125,29 @@ export function useBoards() {
             }
           }
         );
+
+        const unsubscribeShared = onSnapshot(
+          sharedQuery,
+          (snapshot) => {
+            if (controller.signal.aborted) return;
+            sharedBoardsRef.current = mapBoardDocs(snapshot.docs);
+            publishMergedBoards();
+          },
+          (error) => {
+            if (controller.signal.aborted) return;
+            handleError(error, "Failed to load shared boards");
+            if (error.message.includes("index")) {
+              setError("Database index required. Please check Firebase console.");
+            } else {
+              setError(getFirebaseErrorMessage(error));
+            }
+          }
+        );
+
+        unsubscribeRef.current = () => {
+          unsubscribeOwned();
+          unsubscribeShared();
+        };
       } catch (error) {
         if (controller.signal.aborted) return;
         handleError(error, "Failed to refresh authentication token");
@@ -121,7 +164,17 @@ export function useBoards() {
         unsubscribeRef.current = null;
       }
     };
-  }, [firebaseUser, authLoading, isHydrated, userProfile?.id, setBoards, setStatus, setError, handleError]);
+  }, [
+    firebaseUser,
+    authLoading,
+    isHydrated,
+    userProfile?.id,
+    setBoards,
+    setStatus,
+    setError,
+    handleError,
+    publishMergedBoards,
+  ]);
 
   // Create a new board
   const createBoard = useCallback(
@@ -129,24 +182,31 @@ export function useBoards() {
       if (!userProfile || !firebaseUser) return null;
 
       try {
-        // Ensure fresh token
         await getValidToken(firebaseUser);
 
-        const boardId = `${firebaseUser.uid}_${slug}`;
-        const boardRef = doc(db, "boards", boardId);
+        let candidateSlug = slug;
+        let boardId = `${firebaseUser.uid}_${candidateSlug}`;
 
-        // Prevent silent overwrites — check if this board ID already exists
+        for (let attempt = 0; attempt < 5; attempt++) {
+          const boardRef = doc(db, "boards", boardId);
+          const existingSnap = await getDoc(boardRef);
+          if (!existingSnap.exists()) break;
+
+          const suffix = Math.random().toString(36).slice(2, 6);
+          candidateSlug = `${slug}-${suffix}`;
+          boardId = `${firebaseUser.uid}_${candidateSlug}`;
+        }
+
+        const boardRef = doc(db, "boards", boardId);
         const existingSnap = await getDoc(boardRef);
         if (existingSnap.exists()) {
-          const suffix = Math.random().toString(36).slice(2, 6);
-          const fallbackSlug = `${slug}-${suffix}`;
-          // eslint-disable-next-line react-hooks/immutability
-          return createBoard(title, fallbackSlug);
+          setError("Could not generate a unique board URL. Please try again.");
+          return null;
         }
 
         const newBoard: Board = {
           id: boardId,
-          slug,
+          slug: candidateSlug,
           title,
           description: "",
           ownerId: firebaseUser.uid,

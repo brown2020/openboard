@@ -64,7 +64,7 @@ export const BLOCK_TYPE_OPTIONS: BlockTypeOption[] = [
     type: "image",
     label: "Image",
     description: "Add an image",
-    icon: <ImageIcon className="w-5 h-5" />,
+    icon: <ImageIcon className="w-5 h-5" aria-hidden="true" />,
     category: "media",
   },
   {

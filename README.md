@@ -273,16 +273,9 @@ npm run lint     # Run ESLint
 - Use **functional components** with hooks
 - Keep components small and focused
 
-### Priority Areas
+### Product roadmap
 
-We're looking for help with:
-
-- [ ] QR code generation for boards
-- [ ] Advanced analytics charts
-- [ ] Internationalization (i18n)
-- [ ] Accessibility improvements (WCAG 2.1)
-- [ ] More embed providers
-- [ ] Custom domain support
+See **[spec.md](./spec.md)** for the current feature inventory and prioritized roadmap.
 
 ---
 

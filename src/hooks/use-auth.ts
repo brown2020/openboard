@@ -75,7 +75,7 @@ export function useAuth() {
           } = {
             id: firebaseUser.uid,
             username,
-            email: firebaseUser.email || "",
+            email: (firebaseUser.email || "").toLowerCase(),
             displayName: firebaseUser.displayName || username,
             avatar: firebaseUser.photoURL || undefined,
             bio: "",

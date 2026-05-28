@@ -4,6 +4,13 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { useBoardStore } from "@/stores/board-store";
 import { useModal } from "@/stores/ui-store";
 import { useBoards } from "@/hooks/use-boards";
+import { useAuth } from "@/hooks/use-auth";
+import { useCollaboratorProfiles } from "@/hooks/use-collaborator-profiles";
+import { resolveUserIdByEmail } from "@/lib/collaborators-client";
+import {
+  filterCollaboratorUserIds,
+  isValidCollaboratorEmail,
+} from "@/lib/collaborators";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -34,17 +41,20 @@ import {
   Code,
   QrCode,
   ExternalLink,
-  X as TwitterIcon,
-  Share as Facebook,
-  Link as Linkedin,
+  Twitter,
+  Facebook,
+  Linkedin,
 } from "lucide-react";
 import { BoardPrivacy } from "@/types";
+import { cn } from "@/lib/utils";
 import { useToast } from "@/stores/ui-store";
+import { BoardQrCode } from "@/components/modals/board-qr-code";
 
 export function ShareModal() {
   const { currentBoard } = useBoardStore();
   const { activeModal, closeModal } = useModal();
   const { updateBoard } = useBoards();
+  const { user } = useAuth();
   const toast = useToast();
 
   const [privacy, setPrivacy] = useState<BoardPrivacy>("public");
@@ -53,9 +63,13 @@ export function ShareModal() {
   const [collaborators, setCollaborators] = useState<string[]>([]);
   const [newCollaborator, setNewCollaborator] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [isInviting, setIsInviting] = useState(false);
   const copyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isOpen = activeModal === "share";
+  const collaboratorIds = filterCollaboratorUserIds(collaborators);
+  const { profiles: collaboratorProfiles, isLoading: isLoadingProfiles } =
+    useCollaboratorProfiles(isOpen ? collaboratorIds : []);
 
   // Cleanup copy timeout on unmount
   useEffect(() => {
@@ -68,10 +82,9 @@ export function ShareModal() {
 
   useEffect(() => {
     if (currentBoard) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setPrivacy(currentBoard.privacy);
       setPassword("");
-      setCollaborators(currentBoard.collaborators || []);
+      setCollaborators(filterCollaboratorUserIds(currentBoard.collaborators || []));
     }
   }, [currentBoard]);
 
@@ -80,7 +93,6 @@ export function ShareModal() {
     setCopied(type);
     toast.success("Copied!", `${type} copied to clipboard`);
 
-    // Clear previous timeout if exists
     if (copyTimeoutRef.current) {
       clearTimeout(copyTimeoutRef.current);
     }
@@ -122,7 +134,7 @@ export function ShareModal() {
         await updateBoard(currentBoard.id, { privacy: newPrivacy });
         toast.success("Privacy updated", `Board is now ${newPrivacy}`);
       }
-    } catch {
+    } catch (error) {
       toast.error("Save failed", "An error occurred while updating privacy");
     } finally {
       setIsSaving(false);
@@ -159,32 +171,77 @@ export function ShareModal() {
   const handleAddCollaborator = async () => {
     if (!currentBoard) return;
 
-    const email = newCollaborator.trim().toLowerCase();
-    if (!email || collaborators.includes(email)) {
-      setNewCollaborator("");
-      return;
-    }
+    const email = newCollaborator.trim();
+    if (!email) return;
 
-    // Basic email validation
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    if (!isValidCollaboratorEmail(email)) {
       toast.error("Invalid email", "Please enter a valid email address");
       return;
     }
 
-    const next = [...collaborators, email];
-    setCollaborators(next);
-    setNewCollaborator("");
-    await updateBoard(currentBoard.id, { collaborators: next });
-    toast.success("Collaborator added", `${email} can now edit this board`);
+    setIsInviting(true);
+    try {
+      const userId = await resolveUserIdByEmail(email);
+      if (!userId) {
+        toast.error(
+          "User not found",
+          "No OpenBoard account exists for that email address"
+        );
+        return;
+      }
+
+      if (userId === currentBoard.ownerId) {
+        toast.error("Already has access", "The board owner can already edit this board");
+        return;
+      }
+
+      if (userId === user?.id) {
+        toast.error("Already has access", "You already own this board");
+        return;
+      }
+
+      if (collaborators.includes(userId)) {
+        toast.info("Already invited", "This collaborator already has access");
+        setNewCollaborator("");
+        return;
+      }
+
+      const next = [...collaborators, userId];
+      const success = await updateBoard(currentBoard.id, { collaborators: next });
+      if (!success) {
+        toast.error("Invite failed", "Could not add collaborator. Please try again.");
+        return;
+      }
+
+      setCollaborators(next);
+      setNewCollaborator("");
+      toast.success("Collaborator added", `${email} can now edit this board`);
+    } catch {
+      toast.error("Invite failed", "An error occurred while inviting the collaborator");
+    } finally {
+      setIsInviting(false);
+    }
   };
 
-  const handleRemoveCollaborator = async (email: string) => {
+  const handleRemoveCollaborator = async (userId: string) => {
     if (!currentBoard) return;
 
-    const next = collaborators.filter((c) => c !== email);
+    const next = collaborators.filter((id) => id !== userId);
+    const success = await updateBoard(currentBoard.id, { collaborators: next });
+    if (!success) {
+      toast.error("Remove failed", "Could not remove collaborator. Please try again.");
+      return;
+    }
+
     setCollaborators(next);
-    await updateBoard(currentBoard.id, { collaborators: next });
     toast.info("Collaborator removed");
+  };
+
+  const getCollaboratorLabel = (userId: string) => {
+    const profile = collaboratorProfiles.get(userId);
+    if (profile?.email) return profile.email;
+    if (profile?.displayName) return profile.displayName;
+    return userId;
   };
 
   const handleClose = () => closeModal();
@@ -248,7 +305,7 @@ export function ShareModal() {
                     <div className="text-left">
                       <p className="font-medium">Unlisted</p>
                       <p className="text-xs text-muted-foreground">
-                        Only with link
+                        Direct link only, hidden from search
                       </p>
                     </div>
                   </div>
@@ -339,7 +396,7 @@ export function ShareModal() {
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                <TwitterIcon className="w-4 h-4 mr-2" />
+                <Twitter className="w-4 h-4 mr-2" />
                 Twitter
               </a>
             </Button>
@@ -410,36 +467,46 @@ export function ShareModal() {
                 onChange={(e) => setNewCollaborator(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleAddCollaborator()}
               />
-              <Button onClick={handleAddCollaborator}>Invite</Button>
+              <Button onClick={handleAddCollaborator} disabled={isInviting}>
+                {isInviting ? "Inviting..." : "Invite"}
+              </Button>
             </div>
 
-            {collaborators.length === 0 ? (
+            {collaboratorIds.length === 0 ? (
               <p className="text-sm text-muted-foreground py-2">
-                No collaborators yet. Add team members by email.
+                No collaborators yet. Invite team members by their OpenBoard email.
               </p>
             ) : (
               <div className="space-y-2 max-h-[150px] overflow-y-auto">
-                {collaborators.map((email) => (
+                {collaboratorIds.map((userId) => {
+                  const label = getCollaboratorLabel(userId);
+                  return (
                   <div
-                    key={email}
+                    key={userId}
                     className="flex items-center justify-between rounded-lg border px-3 py-2 bg-muted/50"
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-sm font-medium">
-                        {email[0].toUpperCase()}
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-sm font-medium shrink-0">
+                        {label[0]?.toUpperCase() ?? "?"}
                       </div>
-                      <span className="text-sm">{email}</span>
+                      <span className="text-sm truncate">
+                        {isLoadingProfiles && !collaboratorProfiles.has(userId)
+                          ? "Loading…"
+                          : label}
+                      </span>
                     </div>
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8"
-                      onClick={() => handleRemoveCollaborator(email)}
+                      className="h-8 w-8 shrink-0"
+                      onClick={() => handleRemoveCollaborator(userId)}
+                      aria-label={`Remove ${label}`}
                     >
                       <X className="w-4 h-4" />
                     </Button>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
@@ -450,11 +517,7 @@ export function ShareModal() {
               <QrCode className="w-4 h-4" />
               QR Code
             </Label>
-            <div className="w-full h-48 border-2 border-dashed rounded-xl flex flex-col items-center justify-center text-muted-foreground bg-muted/30">
-              <QrCode className="w-12 h-12 mb-2 opacity-30" />
-              <p className="font-medium">QR Code</p>
-              <p className="text-sm">Coming Soon</p>
-            </div>
+            <BoardQrCode url={boardUrl} boardSlug={currentBoard.slug} />
           </div>
         </div>
       </SheetContent>

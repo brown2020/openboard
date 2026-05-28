@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="480" viewBox="0 0 800 480" role="img" aria-label="Business Minimal template preview">
+  <rect width="800" height="480" fill="#fafafa"/>
+  <text x="400" y="78" text-anchor="middle" fill="#171717" font-family="system-ui, sans-serif" font-size="30" font-weight="700">Welcome to Our Company</text>
+  <text x="400" y="112" text-anchor="middle" fill="#525252" font-family="system-ui, sans-serif" font-size="18">Quality products and services since 2020</text>
+  <rect x="220" y="150" width="360" height="54" rx="6" fill="#ffffff" stroke="#e5e5e5" stroke-width="1"/>
+  <text x="240" y="183" fill="#171717" font-family="system-ui, sans-serif" font-size="17" font-weight="600">Our Products</text>
+  <rect x="220" y="218" width="360" height="54" rx="6" fill="#ffffff" stroke="#e5e5e5" stroke-width="1"/>
+  <text x="240" y="251" fill="#171717" font-family="system-ui, sans-serif" font-size="17" font-weight="600">About Us</text>
+  <rect x="220" y="286" width="360" height="54" rx="6" fill="#ffffff" stroke="#e5e5e5" stroke-width="1"/>
+  <text x="240" y="319" fill="#171717" font-family="system-ui, sans-serif" font-size="17" font-weight="600">Contact</text>
+  <rect x="250" y="360" width="300" height="50" rx="6" fill="#171717"/>
+  <text x="400" y="392" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif" font-size="17" font-weight="700">Book a Consultation</text>
+</svg>

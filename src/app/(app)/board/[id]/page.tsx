@@ -1,8 +1,9 @@
 "use client";
 
-import { use, useEffect, useState, useCallback, useRef } from "react";
+import { use, useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useBoards } from "@/hooks/use-boards";
+import { useAutoSave } from "@/hooks/use-auto-save";
 import { useBoardStore, useHistory } from "@/stores/board-store";
 import { useModal, useEditor } from "@/stores/ui-store";
 import { useRouter } from "next/navigation";
@@ -48,6 +49,12 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { Block, BlockType } from "@/types";
 import { cn } from "@/lib/utils";
+import { canEditBoard } from "@/lib/board-access";
+import {
+  getAutoSaveStatus,
+  serializeBoardSaveState,
+  shouldWarnBeforeUnload,
+} from "@/lib/board-save";
 import { useToast } from "@/stores/ui-store";
 import {
   CommandPalette,
@@ -116,10 +123,10 @@ function SortableBlock({ block }: SortableBlockProps) {
 export default function BoardEditorPage({ params }: PageProps) {
   const resolvedParams = use(params);
   const { user, isLoaded } = useAuth();
-  const { getBoard, updateBoard: updateBoardDB } = useBoards();
+  const { getBoard } = useBoards();
   const { currentBoard, setCurrentBoard, reorderBlocks, addBlock } =
     useBoardStore();
-  const { setEditorMode, isSaving, setSaving, selectedBlockId, setSelectedBlock } =
+  const { setEditorMode, isSaving, selectedBlockId, setSelectedBlock } =
     useEditor();
   const { openModal } = useModal();
   const { canUndo, canRedo, undo, redo } = useHistory();
@@ -132,7 +139,9 @@ export default function BoardEditorPage({ params }: PageProps) {
   const [editingHeader, setEditingHeader] = useState(false);
   const [boardTitle, setBoardTitle] = useState("");
   const [boardDescription, setBoardDescription] = useState("");
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [baselineFingerprint, setBaselineFingerprint] = useState<string | null>(
+    null
+  );
   const loadedBoardIdRef = useRef<string | null>(null);
 
   // Refs to avoid stale closure issues in callbacks
@@ -178,10 +187,49 @@ export default function BoardEditorPage({ params }: PageProps) {
 
       addBlock(newBlock);
       setSelectedBlock(newBlockId);
-      setHasUnsavedChanges(true);
     },
     [selectedBlockId, addBlock, setSelectedBlock]
   );
+
+  const getSavePayload = useCallback(() => {
+    const board = currentBoardRef.current;
+    if (!board) return null;
+    return {
+      blocks: board.blocks,
+      title: boardTitleRef.current,
+      description: boardDescriptionRef.current,
+      theme: board.theme,
+    };
+  }, []);
+
+  const stateFingerprint = useMemo(() => {
+    if (!currentBoard) return "";
+    return serializeBoardSaveState({
+      title: boardTitle,
+      description: boardDescription,
+      blocks: currentBoard.blocks,
+      theme: currentBoard.theme,
+    });
+  }, [boardTitle, boardDescription, currentBoard]);
+
+  const {
+    hasUnsavedChanges,
+    isSaving: isAutoSaving,
+    saveFailed,
+    saveNow,
+  } = useAutoSave({
+    boardId: resolvedParams.id,
+    stateFingerprint,
+    getPayload: getSavePayload,
+    baselineFingerprint,
+    enabled: !isLoading && !!baselineFingerprint,
+  });
+
+  const saveStatus = getAutoSaveStatus({
+    hasUnsavedChanges,
+    isSaving: isAutoSaving || isSaving,
+    saveFailed,
+  });
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -200,6 +248,12 @@ export default function BoardEditorPage({ params }: PageProps) {
     return () => setEditorMode(false);
   }, [setEditorMode]);
 
+  // Reset auto-save baseline when navigating to a different board
+  useEffect(() => {
+    setBaselineFingerprint(null);
+    loadedBoardIdRef.current = null;
+  }, [resolvedParams.id]);
+
   // Load board - only once per board ID
   useEffect(() => {
     const loadBoard = async () => {
@@ -214,7 +268,7 @@ export default function BoardEditorPage({ params }: PageProps) {
 
       const board = await getBoard(resolvedParams.id);
       if (board) {
-        if (board.ownerId !== user.id) {
+        if (!canEditBoard(user.id, board)) {
           toast.error(
             "Access denied",
             "You don't have permission to edit this board"
@@ -222,9 +276,19 @@ export default function BoardEditorPage({ params }: PageProps) {
           router.push("/boards");
           return;
         }
-        setCurrentBoard(board);
-        setBoardTitle(board.title);
-        setBoardDescription(board.description || "");
+        // Never keep password hashes in client editor state.
+        const { passwordHash: _passwordHash, ...boardWithoutSecrets } = board;
+        setCurrentBoard(boardWithoutSecrets as typeof board);
+        setBoardTitle(boardWithoutSecrets.title);
+        setBoardDescription(boardWithoutSecrets.description || "");
+        setBaselineFingerprint(
+          serializeBoardSaveState({
+            title: boardWithoutSecrets.title,
+            description: boardWithoutSecrets.description || "",
+            blocks: boardWithoutSecrets.blocks,
+            theme: boardWithoutSecrets.theme,
+          })
+        );
         loadedBoardIdRef.current = resolvedParams.id;
       } else {
         toast.error(
@@ -237,25 +301,25 @@ export default function BoardEditorPage({ params }: PageProps) {
     };
 
     loadBoard();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [resolvedParams.id, user, isLoaded]);
+  }, [
+    resolvedParams.id,
+    user,
+    isLoaded,
+    getBoard,
+    router,
+    setCurrentBoard,
+    toast,
+  ]);
 
-  // Track unsaved changes
-  useEffect(() => {
-    if (!currentBoard) return;
-
-    const hasChanges =
-      boardTitle !== currentBoard.title ||
-      boardDescription !== (currentBoard.description || "");
-
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setHasUnsavedChanges(hasChanges);
-  }, [boardTitle, boardDescription, currentBoard]);
-
-  // Warn before leaving with unsaved changes
+  // Warn before leaving only while saving or after a failed save
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (hasUnsavedChanges) {
+      if (
+        shouldWarnBeforeUnload({
+          isSaving: isAutoSaving || isSaving,
+          saveFailed,
+        })
+      ) {
         e.preventDefault();
         e.returnValue = "";
       }
@@ -263,32 +327,16 @@ export default function BoardEditorPage({ params }: PageProps) {
 
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
-  }, [hasUnsavedChanges]);
+  }, [isAutoSaving, isSaving, saveFailed]);
 
-  // Save handler - defined before keyboard shortcuts that use it
   const handleSave = useCallback(async () => {
-    // Use refs to get latest values and avoid stale closure
-    const board = currentBoardRef.current;
-    const title = boardTitleRef.current;
-    const description = boardDescriptionRef.current;
-
-    if (!board) return;
-
-    setSaving(true);
-    const success = await updateBoardDB(board.id, {
-      blocks: board.blocks,
-      title,
-      description,
-    });
-    setSaving(false);
-
+    const success = await saveNow();
     if (success) {
       toast.success("Changes saved", "Your board has been updated");
-      setHasUnsavedChanges(false);
     } else {
       toast.error("Save failed", "Failed to save changes. Please try again.");
     }
-  }, [updateBoardDB, setSaving, toast]);
+  }, [saveNow, toast]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -393,7 +441,6 @@ export default function BoardEditorPage({ params }: PageProps) {
         order: index,
       }));
       reorderBlocks(blocksWithUpdatedOrder);
-      setHasUnsavedChanges(true);
     }
   };
 
@@ -453,9 +500,20 @@ export default function BoardEditorPage({ params }: PageProps) {
                 </p>
               </div>
 
-              {hasUnsavedChanges && (
+              {saveStatus === "pending" && (
                 <span className="text-xs text-amber-600 dark:text-amber-400 font-medium">
                   • Unsaved changes
+                </span>
+              )}
+              {saveStatus === "saving" && (
+                <span className="text-xs text-muted-foreground font-medium flex items-center gap-1">
+                  <Loader2 className="w-3 h-3 animate-spin" aria-hidden="true" />
+                  Saving…
+                </span>
+              )}
+              {saveStatus === "error" && (
+                <span className="text-xs text-destructive font-medium">
+                  • Save failed — retry with Save or ⌘S
                 </span>
               )}
             </div>
@@ -521,17 +579,18 @@ export default function BoardEditorPage({ params }: PageProps) {
               <Button
                 size="sm"
                 onClick={handleSave}
-                disabled={isSaving}
+                disabled={isAutoSaving || isSaving}
                 className={cn(
-                  hasUnsavedChanges && "bg-emerald-600 hover:bg-emerald-700"
+                  (saveStatus === "pending" || saveStatus === "error") &&
+                    "bg-emerald-600 hover:bg-emerald-700"
                 )}
               >
-                {isSaving ? (
+                {isAutoSaving || isSaving ? (
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                 ) : (
                   <Save className="w-4 h-4 mr-2" />
                 )}
-                {isSaving ? "Saving..." : "Save"}
+                {isAutoSaving || isSaving ? "Saving..." : "Save"}
               </Button>
             </div>
           </div>

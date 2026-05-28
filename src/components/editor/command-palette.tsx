@@ -148,14 +148,14 @@ export function CommandPalette({
 
   // Reset selected index when options change
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+     
     setSelectedIndex(0);
   }, [filteredOptions]);
 
   // Reset state when closed
   useEffect(() => {
     if (!isOpen) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+       
       setSearch("");
       setSelectedIndex(0);
     }

@@ -58,6 +58,7 @@ export function PublicBoardClient({ board }: { board: PublicBoard }) {
                 <BlockRenderer
                   key={block.id}
                   block={block}
+                  boardId={board.id}
                   isEditing={false}
                   onBlockClick={handleBlockClick}
                 />

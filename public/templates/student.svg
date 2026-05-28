@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="480" viewBox="0 0 800 480" role="img" aria-label="Student Links template preview">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f093fb"/>
+      <stop offset="100%" stop-color="#f5576c"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="480" fill="url(#bg)"/>
+  <text x="400" y="88" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif" font-size="22" font-weight="600">=Ú Computer Science Student | Class of 2025</text>
+  <rect x="220" y="130" width="360" height="54" rx="16" fill="rgba(255,255,255,0.2)"/>
+  <text x="240" y="165" fill="#ffffff" font-family="system-ui, sans-serif" font-size="18" font-weight="600">=Ä Resume</text>
+  <rect x="220" y="198" width="360" height="54" rx="16" fill="rgba(255,255,255,0.2)"/>
+  <text x="240" y="233" fill="#ffffff" font-family="system-ui, sans-serif" font-size="18" font-weight="600">=¼ LinkedIn</text>
+  <rect x="220" y="266" width="360" height="54" rx="16" fill="rgba(255,255,255,0.2)"/>
+  <text x="240" y="301" fill="#ffffff" font-family="system-ui, sans-serif" font-size="18" font-weight="600">=€ Projects</text>
+  <rect x="220" y="334" width="360" height="54" rx="16" fill="rgba(255,255,255,0.2)"/>
+  <text x="240" y="369" fill="#ffffff" font-family="system-ui, sans-serif" font-size="18" font-weight="600">=, Research Paper</text>
+</svg>
