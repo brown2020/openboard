@@ -12,15 +12,15 @@
 
 ## Current State
 
-- Phase: Findings Backlog
-- Task: T-004
+- Phase: Execute Fixes and Improvements
+- Task: T-005
 - Status: Checkpointing
-- Last command: `nl -ba src/app/(app)/board/[id]/page.tsx | sed -n '168,190p'`
-- Last result: Confirmed slash-palette insertion uses selected array index as order and `addBlock` appends without shifting existing orders.
-- Last pushed commit: `43681b6`
-- Branch sync: local `dev` matches `origin/dev` after baseline push.
-- Working tree: only findings run-report changes are expected.
-- Next action: Checkpoint findings backlog, then execute F-001 with a focused store/page fix and unit test.
+- Last command: `npm run build`
+- Last result: Passed after F-001 fix.
+- Last pushed commit: `2adcee3`
+- Branch sync: local `dev` matches `origin/dev` after findings push.
+- Working tree: F-001 source/test/report changes are present.
+- Next action: Checkpoint F-001, then execute F-002 analytics-enabled guard.
 
 ## Dirty File Classification
 
@@ -59,4 +59,9 @@ npm outdated
 rg -n "TODO|FIXME|Coming Soon|passwordHash|analytics\\.enabled|uniqueVisitors|nested-block|collab-store|useAutoSave|setTimeout|setInterval|onSnapshot|array-contains|dangerouslySetInnerHTML" src firestore.rules storage.rules package.json
 rg -n "useCollabStore|Collab|Operation|nested-block-renderer|NestedBlockRenderer|parentId|children|depth" src
 rg -n "addBlock\\(|order:.*blocks|order:.*length|currentIndex|arrayMove" src/app src/components src/stores src/lib
+npx vitest run src/stores/board-store.test.ts
+npm run lint
+npm run typecheck
+npm run test
+npm run build
 ```

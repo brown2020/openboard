@@ -172,15 +172,17 @@ export default function BoardEditorPage({ params }: PageProps) {
         .toString(36)
         .slice(2)}`;
 
-      // Find insert position (after selected block or at end)
-      const currentIndex = selectedBlockId
-        ? board.blocks.findIndex((b) => b.id === selectedBlockId)
-        : board.blocks.length - 1;
+      const sortedBlocks = [...board.blocks].sort((a, b) => a.order - b.order);
+      const selectedIndex = selectedBlockId
+        ? sortedBlocks.findIndex((b) => b.id === selectedBlockId)
+        : -1;
+      const insertIndex =
+        selectedIndex >= 0 ? selectedIndex + 1 : sortedBlocks.length;
 
       const newBlock: Block = {
         id: newBlockId,
         type,
-        order: currentIndex + 1,
+        order: insertIndex,
         visible: true,
         settings: getDefaultBlockSettings(type),
       } as Block;

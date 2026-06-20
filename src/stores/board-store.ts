@@ -95,6 +95,22 @@ const initialState: BoardState = {
   maxHistorySize: 50,
 };
 
+function insertBlockByOrder(blocks: Block[], block: Block): Block[] {
+  const sortedBlocks = [...blocks].sort((a, b) => a.order - b.order);
+  const insertIndex = Math.max(0, Math.min(block.order, sortedBlocks.length));
+  const nextBlocks = [...sortedBlocks];
+
+  nextBlocks.splice(insertIndex, 0, block);
+
+  return nextBlocks.map(
+    (nextBlock, index) =>
+      ({
+        ...nextBlock,
+        order: index,
+      }) as Block
+  );
+}
+
 /**
  * Board Store - Manages all board and block-related state
  *
@@ -160,7 +176,7 @@ export const useBoardStore = create<BoardStore>()(
           {
             currentBoard: {
               ...state.currentBoard,
-              blocks: [...state.currentBoard.blocks, block],
+              blocks: insertBlockByOrder(state.currentBoard.blocks, block),
             },
           },
           false,
