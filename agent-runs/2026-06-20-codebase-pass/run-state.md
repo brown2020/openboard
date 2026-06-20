@@ -11,15 +11,15 @@
 
 ## Current State
 
-- Phase: Execute Fixes and Improvements
-- Task: T-008
+- Phase: Package and Dead-Code Cleanup
+- Task: T-006
 - Status: Checkpointing
-- Last command: `npm run build`
-- Last result: Passed after F-002 fix.
-- Last pushed commit: `ad99214`
-- Branch sync: local `dev` matches `origin/dev` after F-001 push.
-- Working tree: F-002 source/report changes are present.
-- Next action: Checkpoint F-002, then run package/dead-code cleanup for F-003/F-004.
+- Last command: `npm run validate`
+- Last result: Passed after package cleanup and build-script stabilization.
+- Last pushed commit: `fa40a20`
+- Branch sync: local `dev` matches `origin/dev` after F-002 push.
+- Working tree: package cleanup, build stabilization, docs, and report changes are present.
+- Next action: Checkpoint package/dead-code cleanup, then run review/stabilization.
 
 ## Dirty File Classification
 
@@ -66,4 +66,13 @@ npm run build
 npm run lint
 npm run typecheck
 npm run build
+npm update
+npm audit fix
+npm install js-cookie@3.0.8
+npm install next@16.2.6 eslint-config-next@16.2.6
+npm install
+npx next build --webpack
+npm run validate
+npm audit --audit-level=moderate
+npm outdated
 ```

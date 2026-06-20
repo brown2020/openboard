@@ -132,7 +132,7 @@ Firebase
 ```bash
 npm install          # Install dependencies (use npm only)
 npm run dev          # Dev server (Turbopack)
-npm run build        # Production build
+npm run build        # Production build (webpack; avoids sandbox-sensitive Turbopack build worker)
 npm run start        # Production server
 npm run lint         # ESLint (next lint)
 npm run typecheck    # TypeScript check (tsc --noEmit)
