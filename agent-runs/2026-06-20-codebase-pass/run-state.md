@@ -12,15 +12,15 @@
 
 ## Current State
 
-- Phase: Preflight and Repo Docs
-- Task: T-001
+- Phase: Baseline Validation
+- Task: T-003
 - Status: Checkpointing
-- Last command: `npm run lint`
-- Last result: Passed
-- Last pushed commit: `db80791`
-- Branch sync: local `dev` matches `origin/dev`; dry-run push succeeded.
-- Working tree: only preflight docs/report changes are present.
-- Next action: Stage preflight docs/report files, commit, dry-run push, push, fetch, and confirm sync.
+- Last command: `npm outdated`
+- Last result: Completed with package drift listed (exit 1 is expected when packages are outdated).
+- Last pushed commit: `51d586d`
+- Branch sync: local `dev` matches `origin/dev` after preflight push.
+- Working tree: only baseline run-report changes are expected.
+- Next action: Checkpoint baseline report, then build findings backlog from audit/outdated/source evidence.
 
 ## Dirty File Classification
 
@@ -51,4 +51,9 @@ python3 /Users/stephenbrown/.agents/skills/codebase-improvement/scripts/start_ru
 python3 /Users/stephenbrown/.agents/skills/codebase-improvement/scripts/validate_skill.py --skill-dir /Users/stephenbrown/.agents/skills/codebase-improvement --run-dir /Users/stephenbrown/Code/OPENSOURCE/openboard/agent-runs/2026-06-20-codebase-pass
 npm run lint
 git diff --check
+npm run typecheck
+npm run test
+npm run build
+npm audit --audit-level=moderate
+npm outdated
 ```
