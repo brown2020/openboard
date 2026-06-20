@@ -6,7 +6,7 @@ Name: Codex
 
 ## Scope
 
-Execute fixes phase for the full `$sb-cbi` workflow. Fixed F-001, the editor slash-palette insertion bug that could create duplicate block order values and render the new block after the wrong sibling.
+Execute fixes phase for the full `$sb-cbi` workflow. Fixed F-001, the editor slash-palette insertion bug that could create duplicate block order values and render the new block after the wrong sibling. Also fixed F-002 so public analytics respects the board analytics toggle before tracking views or clicks.
 
 ## Inputs
 
@@ -14,6 +14,7 @@ Execute fixes phase for the full `$sb-cbi` workflow. Fixed F-001, the editor sla
 - `src/app/(app)/board/[id]/page.tsx`
 - `src/stores/board-store.ts`
 - `src/stores/board-store.test.ts`
+- `src/components/public-board/public-board-client.tsx`
 - `npx vitest run src/stores/board-store.test.ts`
 - `npm run lint`
 - `npm run typecheck`
@@ -24,25 +25,25 @@ Execute fixes phase for the full `$sb-cbi` workflow. Fixed F-001, the editor sla
 
 - Branch: `dev`
 - Upstream: `origin/dev`
-- Commit: pending F-001 checkpoint
-- Pushed to: pending F-001 checkpoint
-- Sync status: local `dev` matched `origin/dev` before source edits
+- Commit: pending F-002 checkpoint
+- Pushed to: pending F-002 checkpoint
+- Sync status: local `dev` matched `origin/dev` before each source task
 
 ## Loop
 
 - Name: Task Queue Loop and Fix Validation Loop
-- Goal: Fix confirmed F-001 without changing unrelated editor behavior.
+- Goal: Fix confirmed F-001 and F-002 without changing unrelated behavior.
 - Verify gate: targeted test passes; lint, typecheck, full tests, and build pass.
-- Stop condition: F-001 is done and checkpointed, or blocker recorded.
-- Attempt: 1/3
+- Stop condition: each task is done and checkpointed, or blocker recorded.
+- Attempt: F-001 1/3; F-002 1/3
 - Result: Passed; checkpoint in progress.
 
 ## Run State
 
 - Current phase: Execute Fixes and Improvements
-- Current task: T-005
-- Last pushed commit: `2adcee3`
-- Next action: Stage F-001 source/test/report files, commit, dry-run push, push, fetch, and confirm sync.
+- Current task: T-008
+- Last pushed commit: `ad99214`
+- Next action: Stage F-002 source/report files, commit, dry-run push, push, fetch, and confirm sync.
 - Blockers: None.
 
 ## Commands Run
@@ -57,13 +58,16 @@ npm run build
 
 ## Findings
 
-- F-001 is fixed. The remaining open execution finding is F-002 (`analytics.enabled` ignored before public tracking).
+- F-001 is fixed.
+- F-002 is fixed.
+- F-003 package audit/drift remains open for the cleanup phase.
 
 ## Changes Made
 
 - `src/stores/board-store.ts`: added store-level insertion normalization so `addBlock` inserts at the requested order and renumbers siblings.
 - `src/app/(app)/board/[id]/page.tsx`: computes slash-palette insertion index from sorted block order, then passes that index to the store.
 - `src/stores/board-store.test.ts`: added a unit test that inserts a block into the middle of a board and verifies sibling order is sequential.
+- `src/components/public-board/public-board-client.tsx`: skips view/click analytics writes when `board.analytics.enabled` is false.
 
 ## Verification
 
@@ -74,6 +78,9 @@ npm run build
 | `npm run typecheck` | Passed | `tsc --noEmit` clean. |
 | `npm run test` | Passed | 12 test files, 43 tests passed. |
 | `npm run build` | Passed | Next.js production build passed. |
+| `npm run lint` | Passed | Re-run after F-002. |
+| `npm run typecheck` | Passed | Re-run after F-002. |
+| `npm run build` | Passed | Re-run after F-002. |
 
 ## Architecture and Lean Code Scorecard
 
@@ -82,7 +89,7 @@ npm run build
 | Dependency direction | Pass | Editor computes requested insertion index; store owns block insertion invariant | No further F-001 action |
 | Module cohesion | Pass | Block order normalization moved to `board-store` where block mutation happens | No further F-001 action |
 | Public surface area | Pass | No public API changes | None |
-| Data and side-effect flow | Pass | Store mutation now produces ordered block list before auto-save persists | None |
+| Data and side-effect flow | Pass | Store mutation now produces ordered block list before auto-save persists; public analytics now checks `analytics.enabled` before writing | None |
 | Async/cache/resource lifecycle | Pass | No async lifecycle changes | None |
 | Duplication and dead code | Watch | F-004 remains deferred | Revisit cleanup phase |
 | Dependency lean-ness | Fail | F-003 package audit remains open | Package cleanup phase |
@@ -92,7 +99,7 @@ npm run build
 
 - Command: `npm run lint`
 - Result: Passed
-- Notes: Full typecheck/test/build also passed for source change.
+- Notes: Full typecheck/test/build passed for F-001; lint/typecheck/build passed for F-002.
 
 ## Commit-Push Checkpoint
 
@@ -107,12 +114,12 @@ npm run build
 
 - Cycle: 0
 - Completion criteria status: Not started
-- Remaining blockers: F-002 and F-003 remain open.
+- Remaining blockers: F-003 remains open.
 
 ## Risks
 
 - No browser/manual DnD QA was performed; verification is unit/static/build only.
-- F-002 and F-003 still need separate tasks or deferral.
+- F-003 still needs package cleanup or deferral.
 
 ## Open Questions
 
@@ -120,4 +127,4 @@ npm run build
 
 ## Recommended Next Step
 
-Checkpoint F-001, then fix F-002 in a separate focused task.
+Checkpoint F-002, then run Package and Dead-Code Cleanup for F-003/F-004.

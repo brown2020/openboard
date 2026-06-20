@@ -14,12 +14,15 @@ type PublicBoard = Omit<Board, "passwordHash" | "createdAt" | "updatedAt"> & {
 
 export function PublicBoardClient({ board }: { board: PublicBoard }) {
   const { trackView, trackClick } = useAnalytics();
+  const analyticsEnabled = board.analytics?.enabled ?? true;
 
   useEffect(() => {
+    if (!analyticsEnabled) return;
     trackView(board.id, navigator.userAgent);
-  }, [board.id, trackView]);
+  }, [analyticsEnabled, board.id, trackView]);
 
   const handleBlockClick = (blockId: string) => {
+    if (!analyticsEnabled) return;
     trackClick(board.id, blockId, document.referrer, navigator.userAgent);
   };
 
@@ -80,5 +83,4 @@ export function PublicBoardClient({ board }: { board: PublicBoard }) {
     </PublicBoardErrorBoundary>
   );
 }
-
 

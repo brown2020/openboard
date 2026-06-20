@@ -7,20 +7,19 @@
 - Mode: full
 - Run folder: /Users/stephenbrown/Code/OPENSOURCE/openboard/agent-runs/2026-06-20-codebase-pass
 - Created: 2026-06-20T12:34:22-07:00
-- Upstream:
 - Upstream: origin/dev
 
 ## Current State
 
 - Phase: Execute Fixes and Improvements
-- Task: T-005
+- Task: T-008
 - Status: Checkpointing
 - Last command: `npm run build`
-- Last result: Passed after F-001 fix.
-- Last pushed commit: `2adcee3`
-- Branch sync: local `dev` matches `origin/dev` after findings push.
-- Working tree: F-001 source/test/report changes are present.
-- Next action: Checkpoint F-001, then execute F-002 analytics-enabled guard.
+- Last result: Passed after F-002 fix.
+- Last pushed commit: `ad99214`
+- Branch sync: local `dev` matches `origin/dev` after F-001 push.
+- Working tree: F-002 source/report changes are present.
+- Next action: Checkpoint F-002, then run package/dead-code cleanup for F-003/F-004.
 
 ## Dirty File Classification
 
@@ -63,5 +62,8 @@ npx vitest run src/stores/board-store.test.ts
 npm run lint
 npm run typecheck
 npm run test
+npm run build
+npm run lint
+npm run typecheck
 npm run build
 ```
