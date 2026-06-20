@@ -135,7 +135,8 @@ npm run dev          # Dev server (Turbopack)
 npm run build        # Production build
 npm run start        # Production server
 npm run lint         # ESLint (next lint)
-npx tsc --noEmit     # TypeScript check (no npm script; run directly)
+npm run typecheck    # TypeScript check (tsc --noEmit)
+npm run test         # Vitest unit tests
 ```
 
 ## Canonical validation command
@@ -211,8 +212,9 @@ Board persistence goes through `use-boards.ts` (`updateBoard`, `createBoard`, et
 
 ## Testing expectations
 
-- No automated tests exist today
-- Validation = `npm run validate` (lint + typecheck + test + build)
+- Vitest unit tests exist under `src/lib/*.test.ts` for core library helpers.
+- No browser/E2E test suite is currently present.
+- Validation = `npm run validate` (lint + typecheck + test + build).
 - Manual QA is out of scope for autonomous runs unless browser MCP is explicitly requested with credentials
 
 ## Files and systems requiring extra caution

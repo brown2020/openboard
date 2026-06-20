@@ -70,7 +70,7 @@ OpenBoard is a working Next.js + Firebase SaaS-style app (deployed demo at openb
 | Nested blocks | ❌ Not built | Dead code paths |
 | Form server relay | ✅ Shipped | Public forms POST to `/api/forms/submit` |
 | i18n | ❌ Not built | English only |
-| Automated tests | ❌ None | Lint + tsc + build only |
+| Automated tests | Partial | Vitest unit tests cover core `src/lib` helpers; no browser/E2E suite observed |
 
 ### Current user flows
 
@@ -109,7 +109,7 @@ Public visitor → /u/{user}/{slug} → [password gate?] → view + track analyt
 - Firestore rules allow **world read** on boards — private/password enforcement is application-layer on the public route only
 - Rate limiting is in-process — not shared across serverless instances
 - Board list merges owned boards and collaborator shares via dual Firestore subscriptions
-- No CI test pipeline; quality gate is lint + TypeScript + build
+- No CI test pipeline observed; local quality gate is lint + TypeScript + Vitest + build
 - npm lockfile — use npm exclusively
 
 ### Known limitations

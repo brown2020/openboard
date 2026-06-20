@@ -1,0 +1,11 @@
+# Task Queue
+
+| ID | Phase | Priority | Type | Status | Owned Files | Evidence | Done-Check | Attempts | Stop Condition | Verification | Next Action |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| T-001 | Preflight | P1 | Setup | Done | 00-orchestration-plan.md, run-state.md, task-queue.md | Clean synced `dev`; Git remote read and dry-run push succeeded | Plan, state, and queue have verifiable gates | 1/1 | First executable task is clear or blocked | `npm run lint` passed | Checkpoint preflight phase |
+| T-002 | Preflight | P2 | Documentation | Done | AGENTS.md, spec.md, 01-preflight-and-repo-docs.md | `package.json` has `typecheck`, `test`, and `validate`; `src/lib/*.test.ts` exists | Docs reflect current validation/test state | 1/2 | Docs match code evidence or stale facts are recorded | `npm run lint` passed | Checkpoint preflight phase |
+| T-003 | Baseline | P1 | Validation | Open | 02-baseline-validation.md, run-state.md, task-queue.md | Package scripts define lint, typecheck, test, build, validate | Baseline commands run and failures classified | 0/2 | Baseline clean or exact blockers recorded | `npm run lint`, `npm run typecheck`, `npm run test`, `npm run build` | Run baseline validation |
+| T-004 | Findings | P1 | Architecture | Open | 03-findings-backlog.md, task-queue.md | Architecture map and source search | Scorecard has evidence or deferrals | 0/2 | Scorecard complete or blocked by non-local decision | Architecture Fitness Loop | Build architecture scorecard |
+| T-005 | Execute | P1 | Fix | Pending | TBD from F-IDs | Baseline/finding evidence | Highest-priority confirmed task fixed with targeted checks | 0/3 | Task done, deferred, or blocked | Targeted test plus `npm run lint` | Select after findings |
+| T-006 | Cleanup | P2 | Package/dead code | Pending | package.json, package-lock.json, confirmed unused files only | Outdated/audit/search evidence | Safe cleanup batch verified | 0/2 | Cleanup done or deferred with evidence | `npm run lint`, tests/build as relevant | Run after fixes |
+| T-007 | Review/Stabilize | P1 | Review | Pending | 06-review.md, 07-stabilization-loop.md, 08-integrator.md, final-report.md | Diff, reports, command results | Judge/final gates pass | 0/3 | PASS or blocker recorded | Final quality gate | Review and integrate |
