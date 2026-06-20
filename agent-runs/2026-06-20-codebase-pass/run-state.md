@@ -12,15 +12,15 @@
 
 ## Current State
 
-- Phase: Baseline Validation
-- Task: T-003
+- Phase: Findings Backlog
+- Task: T-004
 - Status: Checkpointing
-- Last command: `npm outdated`
-- Last result: Completed with package drift listed (exit 1 is expected when packages are outdated).
-- Last pushed commit: `51d586d`
-- Branch sync: local `dev` matches `origin/dev` after preflight push.
-- Working tree: only baseline run-report changes are expected.
-- Next action: Checkpoint baseline report, then build findings backlog from audit/outdated/source evidence.
+- Last command: `nl -ba src/app/(app)/board/[id]/page.tsx | sed -n '168,190p'`
+- Last result: Confirmed slash-palette insertion uses selected array index as order and `addBlock` appends without shifting existing orders.
+- Last pushed commit: `43681b6`
+- Branch sync: local `dev` matches `origin/dev` after baseline push.
+- Working tree: only findings run-report changes are expected.
+- Next action: Checkpoint findings backlog, then execute F-001 with a focused store/page fix and unit test.
 
 ## Dirty File Classification
 
@@ -56,4 +56,7 @@ npm run test
 npm run build
 npm audit --audit-level=moderate
 npm outdated
+rg -n "TODO|FIXME|Coming Soon|passwordHash|analytics\\.enabled|uniqueVisitors|nested-block|collab-store|useAutoSave|setTimeout|setInterval|onSnapshot|array-contains|dangerouslySetInnerHTML" src firestore.rules storage.rules package.json
+rg -n "useCollabStore|Collab|Operation|nested-block-renderer|NestedBlockRenderer|parentId|children|depth" src
+rg -n "addBlock\\(|order:.*blocks|order:.*length|currentIndex|arrayMove" src/app src/components src/stores src/lib
 ```
