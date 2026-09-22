@@ -23,19 +23,24 @@ async function loadOrCreateProfile(
   }
 
   const username = email?.split("@")[0] || uid.slice(0, 8);
-  const newUser = {
+  const newUser: Record<string, unknown> = {
     id: uid,
     username,
     email: (email || "").toLowerCase(),
     displayName: displayName || username,
-    avatar: photoURL || undefined,
     bio: "",
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   };
+  if (photoURL) {
+    newUser.avatar = photoURL;
+  }
 
   await setDoc(userRef, newUser);
   const createdUserSnap = await getDoc(userRef);
+  if (!createdUserSnap.exists()) {
+    throw new Error("Failed to create user profile");
+  }
   return createdUserSnap.data() as UserProfile;
 }
 
@@ -80,6 +85,13 @@ export function useAuth() {
     setLoading(true);
     setSyncError(null);
 
+    const timeout = window.setTimeout(() => {
+      if (ignore) return;
+      setSyncError("Timed out syncing your profile. Please refresh.");
+      clearUser();
+      setHydrated(true);
+    }, 15000);
+
     void getValidToken(firebaseUser)
       .then(() =>
         loadOrCreateProfile(
@@ -91,19 +103,24 @@ export function useAuth() {
       )
       .then((profile) => {
         if (ignore) return;
+        window.clearTimeout(timeout);
         setUser(profile);
         setHydrated(true);
+        setLoading(false);
       })
       .catch((error) => {
         if (ignore) return;
+        window.clearTimeout(timeout);
         handleError(error, "Failed to sync user profile");
         setSyncError(getFirebaseErrorMessage(error));
         clearUser();
         setHydrated(true);
+        setLoading(false);
       });
 
     return () => {
       ignore = true;
+      window.clearTimeout(timeout);
     };
   }, [
     firebaseUser,

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useBoards } from "@/hooks/use-boards";
-import { useRouter } from "next/navigation";
+import { useRouter, redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,7 +21,7 @@ import Link from "next/link";
 import { generateSlug } from "@/lib/utils";
 
 export default function BoardsPage() {
-  const { user, isLoaded } = useAuth();
+  const { user, isLoaded, syncError } = useAuth();
   const { boards, createBoard } = useBoards();
   const router = useRouter();
   const [isCreating, setIsCreating] = useState(false);
@@ -51,10 +51,19 @@ export default function BoardsPage() {
     }
   };
 
+  if (isLoaded && !user) {
+    redirect("/login");
+  }
+
   if (!isLoaded || !user) {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="space-y-4">
+          {syncError ? (
+            <p className="text-sm text-destructive" role="alert">
+              {syncError}
+            </p>
+          ) : null}
           <Skeleton className="h-12 w-[200px]" />
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[1, 2, 3].map((i) => (
@@ -65,6 +74,7 @@ export default function BoardsPage() {
       </div>
     );
   }
+
 
   return (
     <div className="container mx-auto px-4 py-8">

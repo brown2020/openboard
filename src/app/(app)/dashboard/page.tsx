@@ -1,6 +1,7 @@
 "use client";
 
 import { useAuth } from "@/hooks/use-auth";
+import { redirect } from "next/navigation";
 import { useBoards } from "@/hooks/use-boards";
 import { useDashboardAnalytics } from "@/hooks/use-dashboard-analytics";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -31,6 +32,10 @@ export default function DashboardPage() {
   const { user, isLoaded } = useAuth();
   const { boards } = useBoards();
   const { summary, isLoading, error, reload } = useDashboardAnalytics(boards);
+
+  if (isLoaded && !user) {
+    redirect("/login");
+  }
 
   if (!isLoaded || !user || isLoading) {
     return <DashboardSkeleton />;
