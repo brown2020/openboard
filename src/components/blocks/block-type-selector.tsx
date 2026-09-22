@@ -20,7 +20,7 @@ import {
 /**
  * Block type configuration
  */
-export interface BlockTypeOption {
+interface BlockTypeOption {
   type: BlockType;
   label: string;
   description: string;
@@ -31,7 +31,7 @@ export interface BlockTypeOption {
 /**
  * All available block types with their metadata
  */
-export const BLOCK_TYPE_OPTIONS: BlockTypeOption[] = [
+const BLOCK_TYPE_OPTIONS: BlockTypeOption[] = [
   {
     type: "richtext",
     label: "Rich Text",

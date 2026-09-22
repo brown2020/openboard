@@ -9,6 +9,36 @@ import { UserProfile } from "@/types";
 import { getValidToken } from "@/lib/auth-utils";
 import { useErrorHandler, getFirebaseErrorMessage } from "./use-error-handler";
 
+async function loadOrCreateProfile(
+  uid: string,
+  email: string | null,
+  displayName: string | null,
+  photoURL: string | null
+): Promise<UserProfile> {
+  const userRef = doc(getClientDb(), "users", uid);
+  const userSnap = await getDoc(userRef);
+
+  if (userSnap.exists()) {
+    return userSnap.data() as UserProfile;
+  }
+
+  const username = email?.split("@")[0] || uid.slice(0, 8);
+  const newUser = {
+    id: uid,
+    username,
+    email: (email || "").toLowerCase(),
+    displayName: displayName || username,
+    avatar: photoURL || undefined,
+    bio: "",
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  };
+
+  await setDoc(userRef, newUser);
+  const createdUserSnap = await getDoc(userRef);
+  return createdUserSnap.data() as UserProfile;
+}
+
 export function useAuth() {
   const { user: firebaseUser, loading: authLoading } = useAuthContext();
   const {
@@ -24,90 +54,56 @@ export function useAuth() {
   const [syncError, setSyncError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Use AbortController to prevent race conditions
-    const controller = new AbortController();
+    let ignore = false;
 
-    const syncUser = async () => {
-      // If auth is still loading, wait
-      if (authLoading) {
-        return;
-      }
+    if (authLoading) {
+      return () => {
+        ignore = true;
+      };
+    }
 
-      // If no Firebase user, clear everything and mark as hydrated
-      if (!firebaseUser) {
-        clearUser();
+    if (!firebaseUser) {
+      clearUser();
+      setHydrated(true);
+      return () => {
+        ignore = true;
+      };
+    }
+
+    if (user && user.id === firebaseUser.uid && isHydrated) {
+      setLoading(false);
+      return () => {
+        ignore = true;
+      };
+    }
+
+    setLoading(true);
+    setSyncError(null);
+
+    void getValidToken(firebaseUser)
+      .then(() =>
+        loadOrCreateProfile(
+          firebaseUser.uid,
+          firebaseUser.email,
+          firebaseUser.displayName,
+          firebaseUser.photoURL
+        )
+      )
+      .then((profile) => {
+        if (ignore) return;
+        setUser(profile);
         setHydrated(true);
-        return;
-      }
-
-      // If we already have the correct user loaded, skip
-      if (user && user.id === firebaseUser.uid && isHydrated) {
-        setLoading(false);
-        return;
-      }
-
-      setLoading(true);
-      setSyncError(null);
-
-      try {
-        // Force refresh the ID token to ensure Firestore has the latest auth state
-        await getValidToken(firebaseUser);
-
-        // Check if aborted before proceeding
-        if (controller.signal.aborted) return;
-
-        const userRef = doc(getClientDb(), "users", firebaseUser.uid);
-        const userSnap = await getDoc(userRef);
-
-        if (controller.signal.aborted) return;
-
-        if (userSnap.exists()) {
-          const userData = userSnap.data() as UserProfile;
-          setUser(userData);
-          setHydrated(true);
-        } else {
-          // New user, create profile
-          const username =
-            firebaseUser.email?.split("@")[0] || firebaseUser.uid.slice(0, 8);
-          const newUser: Omit<UserProfile, "createdAt" | "updatedAt"> & {
-            createdAt: ReturnType<typeof serverTimestamp>;
-            updatedAt: ReturnType<typeof serverTimestamp>;
-          } = {
-            id: firebaseUser.uid,
-            username,
-            email: (firebaseUser.email || "").toLowerCase(),
-            displayName: firebaseUser.displayName || username,
-            avatar: firebaseUser.photoURL || undefined,
-            bio: "",
-            createdAt: serverTimestamp(),
-            updatedAt: serverTimestamp(),
-          };
-
-          await setDoc(userRef, newUser);
-
-          if (controller.signal.aborted) return;
-
-          // Fetch to get actual timestamps
-          const createdUserSnap = await getDoc(userRef);
-          if (createdUserSnap.exists()) {
-            setUser(createdUserSnap.data() as UserProfile);
-            setHydrated(true);
-          }
-        }
-      } catch (error) {
-        if (controller.signal.aborted) return;
+      })
+      .catch((error) => {
+        if (ignore) return;
         handleError(error, "Failed to sync user profile");
         setSyncError(getFirebaseErrorMessage(error));
-        // On error, clear stale data but still mark as hydrated
         clearUser();
         setHydrated(true);
-      }
-    };
-
-    syncUser();
+      });
 
     return () => {
-      controller.abort();
+      ignore = true;
     };
   }, [
     firebaseUser,

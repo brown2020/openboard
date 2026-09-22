@@ -106,6 +106,7 @@ export function useBoardEditorHotkeys({
     redo,
     handleSave,
     showCommandPalette,
+    setShowCommandPalette,
     selectedBlockId,
     currentBoard,
     setSelectedBlock,

@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useCallback, useMemo, useEffect } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { Block } from "@/types";
 
- 
 export interface UseBlockEditorOptions<T extends Record<string, any>> {
   block: Block;
   isEditing: boolean;
@@ -30,33 +29,32 @@ export interface UseBlockEditorReturn<T> {
  * Shared hook for block editing patterns.
  * Centralizes edit mode state, validation, save/cancel logic.
  */
- 
 export function useBlockEditor<T extends Record<string, any>>({
   block,
-  isEditing: _isEditing,  
+  isEditing: _isEditing,
   initialSettings,
   onSave,
   validate,
   transformBeforeSave,
 }: UseBlockEditorOptions<T>): UseBlockEditorReturn<T> {
+  const [trackedBlockId, setTrackedBlockId] = useState(block.id);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editSettings, setEditSettings] = useState<T>(initialSettings);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Reset edit settings when block ID changes
-  useEffect(() => {
-     
+  // Reset editable draft when the block identity changes (render-time, not effect).
+  if (block.id !== trackedBlockId) {
+    setTrackedBlockId(block.id);
     setEditSettings(initialSettings);
     setIsEditMode(false);
-     
-  }, [block.id]);
+  }
 
   const updateField = useCallback(<K extends keyof T>(field: K, value: T[K]) => {
     setEditSettings((prev) => ({ ...prev, [field]: value }));
   }, []);
 
   const validationResult = useMemo(() => {
-    if (!validate) return { isValid: true };
+    if (!validate) return { isValid: true as const };
     const result = validate(editSettings);
     if (typeof result === "boolean") {
       return { isValid: result };
@@ -86,8 +84,9 @@ export function useBlockEditor<T extends Record<string, any>>({
   }, []);
 
   const startEdit = useCallback(() => {
+    setEditSettings(initialSettings);
     setIsEditMode(true);
-  }, []);
+  }, [initialSettings]);
 
   return {
     isEditMode,

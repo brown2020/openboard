@@ -85,6 +85,7 @@ export function RichTextBlock({
         ) : (
           <button
             type="button"
+            aria-label="Edit rich text content"
             className="prose prose-neutral dark:prose-invert max-w-none min-h-[40px] px-4 py-2 rounded-lg hover:bg-muted/30 transition-colors cursor-pointer text-left w-full"
             onClick={() => setIsEditMode(true)}
             dangerouslySetInnerHTML={{ __html: sanitizeHtml(content) }}

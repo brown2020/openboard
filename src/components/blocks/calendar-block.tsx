@@ -127,7 +127,7 @@ export function CalendarBlock({
         </div>
         {embedUrl ? (
           <div className="min-h-[450px] bg-muted">
-            <iframe sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+            <iframe sandbox="allow-scripts allow-popups allow-forms allow-popups-to-escape-sandbox"
               src={embedUrl}
               title={title || "Calendar booking widget"}
               className="w-full h-full min-h-[450px]"

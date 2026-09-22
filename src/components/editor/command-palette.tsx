@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
-import { BlockType, Block } from "@/types";
+import { useState, useCallback, useMemo } from "react";
+import { BlockType } from "@/types";
 import { cn } from "@/lib/utils";
 import {
   Link,
@@ -146,21 +146,6 @@ export function CommandPalette({
     );
   }, [search]);
 
-  // Reset selected index when options change
-  useEffect(() => {
-     
-    setSelectedIndex(0);
-  }, [filteredOptions]);
-
-  // Reset state when closed
-  useEffect(() => {
-    if (!isOpen) {
-       
-      setSearch("");
-      setSelectedIndex(0);
-    }
-  }, [isOpen]);
-
   // Handle keyboard navigation
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -212,14 +197,20 @@ export function CommandPalette({
     >
       {/* Search Input */}
       <div className="p-2 border-b">
+        <label className="sr-only" htmlFor="command-palette-search">
+          Search blocks
+        </label>
         <input
+          id="command-palette-search"
           type="text"
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setSelectedIndex(0);
+          }}
           onKeyDown={handleKeyDown}
-          placeholder="Search blocks..."
+          placeholder="Type to filter…"
           className="w-full px-3 py-2 text-sm bg-transparent outline-none placeholder:text-muted-foreground"
-          autoFocus
         />
       </div>
 
@@ -278,41 +269,4 @@ export function CommandPalette({
       </div>
     </div>
   );
-}
-
-/**
- * Default block settings for each block type
- */
-export function getDefaultBlockSettings(type: BlockType): Block["settings"] {
-  switch (type) {
-    case "text":
-      return { content: "", alignment: "left", fontSize: "md" };
-    case "richtext":
-      return { content: "", alignment: "left" };
-    case "link":
-      return { url: "", title: "New Link", description: "" };
-    case "button":
-      return { text: "Click me", url: "", style: "primary", size: "md" };
-    case "image":
-      return { url: "", alt: "", aspectRatio: "auto" };
-    case "video":
-      return { url: "", platform: "youtube" };
-    case "embed":
-      return { url: "", platform: "custom" };
-    case "social-links":
-      return { links: [], layout: "horizontal" };
-    case "calendar":
-      return { provider: "cal", url: "" };
-    case "form":
-      return { fields: [], submitText: "Submit" };
-    case "divider":
-      return { style: "solid", width: "full" };
-    case "spacer":
-      return { height: "md" };
-    default: {
-      // Exhaustive check - this should never be reached
-      void (type as never);
-      return { content: "" } as Block["settings"];
-    }
-  }
 }

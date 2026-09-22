@@ -60,6 +60,7 @@ export function useAutoSave({
   const [isSaving, setIsSaving] = useState(false);
 
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [lastSavedFingerprint, setLastSavedFingerprint] = useState("");
   const lastSavedFingerprintRef = useRef<string>("");
   const isMountedRef = useRef(true);
   const getPayloadRef = useRef(getPayload);
@@ -83,12 +84,20 @@ export function useAutoSave({
     };
   }, []);
 
+  // Align dirty flags when a new baseline arrives (render-time reset, no refs).
+  const [appliedBaseline, setAppliedBaseline] = useState<string | null>(null);
+  if (baselineFingerprint !== appliedBaseline) {
+    setAppliedBaseline(baselineFingerprint);
+    if (baselineFingerprint) {
+      setLastSavedFingerprint(baselineFingerprint);
+      setHasUnsavedChanges(false);
+      setSaveFailed(false);
+    }
+  }
+
   useEffect(() => {
-    if (!baselineFingerprint) return;
-    lastSavedFingerprintRef.current = baselineFingerprint;
-    setHasUnsavedChanges(false);
-    setSaveFailed(false);
-  }, [baselineFingerprint]);
+    lastSavedFingerprintRef.current = lastSavedFingerprint;
+  }, [lastSavedFingerprint]);
 
   const saveNow = useCallback(
     async (options: SaveNowOptions = {}): Promise<boolean> => {
@@ -117,6 +126,7 @@ export function useAutoSave({
         if (success) {
           const fingerprint = serializeBoardSaveState(payload);
           lastSavedFingerprintRef.current = fingerprint;
+          setLastSavedFingerprint(fingerprint);
           setLastSavedAt(Date.now());
           setHasUnsavedChanges(false);
           setSaveFailed(false);

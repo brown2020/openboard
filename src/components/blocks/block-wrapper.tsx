@@ -14,11 +14,7 @@ interface BlockWrapperProps {
 }
 
 /**
- * Wrapper component for blocks that provides:
- * - Visual selection indicator (blue left border like Notion)
- * - Keyboard navigation support
- * - Focus management
- * - Accessibility attributes
+ * Wrapper for blocks: selection indicator, keyboard nav, focus management.
  */
 export const BlockWrapper = forwardRef<HTMLLIElement, BlockWrapperProps>(
   (
@@ -41,9 +37,7 @@ export const BlockWrapper = forwardRef<HTMLLIElement, BlockWrapperProps>(
       blockRef,
     } = useBlockFocus({ blockId, onEnterEdit });
 
-    // Combine refs
-    const setRef = (el: HTMLLIElement | null) => {
-      blockRef.current = el;
+    const setLiRef = (el: HTMLLIElement | null) => {
       if (typeof forwardedRef === "function") {
         forwardedRef(el);
       } else if (forwardedRef) {
@@ -51,34 +45,35 @@ export const BlockWrapper = forwardRef<HTMLLIElement, BlockWrapperProps>(
       }
     };
 
+    const setButtonRef = (el: HTMLButtonElement | null) => {
+      blockRef.current = el;
+    };
+
     if (!isEditing) {
-      // In view mode, just render children without wrapper
       return <>{children}</>;
     }
 
     return (
-      <li
-        ref={setRef}
-        data-block-id={blockId}
-        tabIndex={0}
-        data-selected={isSelected || undefined}
-        onClick={handleFocus}
-        onFocus={handleFocus}
-        onBlur={handleBlur}
-        onKeyDown={handleKeyDown}
-        className={cn(
-          "relative outline-none list-none transition-[box-shadow,opacity] duration-150",
-          // Selection indicator - blue left border like Notion
-          isSelected &&
-            "before:absolute before:-left-3 before:top-0 before:bottom-0 before:w-0.5 before:bg-blue-500 before:rounded-full",
-          // Focus ring for accessibility
-          isFocused && "ring-2 ring-blue-500/20 ring-offset-2 rounded-lg",
-          // Dim hidden blocks in editor
-          !isVisible && "opacity-50",
-          className
-        )}
-      >
-        {children}
+      <li ref={setLiRef} className={cn("relative list-none", className)}>
+        <button
+          ref={setButtonRef}
+          type="button"
+          data-block-id={blockId}
+          data-selected={isSelected || undefined}
+          onClick={handleFocus}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
+          onKeyDown={handleKeyDown}
+          className={cn(
+            "relative w-full text-left outline-none transition-[box-shadow,opacity] duration-150",
+            isSelected &&
+              "before:absolute before:-left-3 before:top-0 before:bottom-0 before:w-0.5 before:bg-blue-500 before:rounded-full",
+            isFocused && "ring-2 ring-blue-500/20 ring-offset-2 rounded-lg",
+            !isVisible && "opacity-50"
+          )}
+        >
+          {children}
+        </button>
       </li>
     );
   }

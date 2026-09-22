@@ -37,7 +37,7 @@ const FIELD_OPTIONS: Array<{ type: Field["type"]; label: string }> = [
 export function FormBlock({
   block,
   isEditing = false,
-  onClick,
+  
   boardId,
 }: FormBlockProps) {
   const { updateBlock } = useBoardStore();
@@ -141,11 +141,10 @@ export function FormBlock({
           }),
         });
 
-        const body = (await response.json().catch(() => null)) as {
-          error?: string;
-        } | null;
-
         if (!response.ok) {
+          const body = (await response.json().catch(() => null)) as {
+            error?: string;
+          } | null;
           setSubmitStatus({
             state: "error",
             message:
@@ -153,6 +152,9 @@ export function FormBlock({
           });
           return;
         }
+
+        // Status already verified; safe to consume the success body if present.
+        await response.json().catch(() => null);
 
         event.currentTarget.reset();
         setSubmitStatus({
@@ -210,7 +212,7 @@ export function FormBlock({
 
 
   return (
-    <div className="group relative" onClick={onClick} onKeyDown={(e) => { if (onClick && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); (onClick as (ev: unknown) => void)(e); } }} role="button" tabIndex={0}>
+    <div className="group relative">
       {isEditing && (
         <BlockControls
           blockId={block.id}

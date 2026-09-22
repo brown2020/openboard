@@ -107,11 +107,12 @@ export function getParentBlock(
  * Get all ancestors of a block (parent, grandparent, etc.)
  */
 export function getAncestors(blocks: Block[], blockId: string): Block[] {
+  const byId = new Map(blocks.map((b) => [b.id, b]));
   const ancestors: Block[] = [];
-  let currentBlock = blocks.find((b) => b.id === blockId);
+  let currentBlock = byId.get(blockId);
 
   while (currentBlock?.parentId) {
-    const parent = blocks.find((b) => b.id === currentBlock!.parentId);
+    const parent = byId.get(currentBlock.parentId);
     if (parent) {
       ancestors.push(parent);
       currentBlock = parent;

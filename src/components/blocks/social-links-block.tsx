@@ -23,7 +23,6 @@ type Layout = SocialLinksBlockType["settings"]["layout"];
 interface SocialLinksBlockProps {
   block: SocialLinksBlockType;
   isEditing?: boolean;
-  onClick?: () => void;
 }
 
 const DEFAULT_LINK = {
@@ -35,13 +34,45 @@ const DEFAULT_LINK = {
 export function SocialLinksBlock({
   block,
   isEditing = false,
-  onClick,
 }: SocialLinksBlockProps) {
   const { updateBlock } = useBoardStore();
   const toast = useToast();
-  const [isEditMode, setIsEditMode] = useState(false);
-  const [links, setLinks] = useState(block.settings.links);
-  const [layout, setLayout] = useState<Layout>(block.settings.layout);
+  const [draft, setDraft] = useState<{
+    links: SocialLinksBlockType["settings"]["links"];
+    layout: Layout;
+  } | null>(null);
+
+  const isEditMode = draft !== null;
+  const links = draft?.links ?? block.settings.links;
+  const layout = draft?.layout ?? block.settings.layout;
+
+  const setLinks = (
+    updater:
+      | SocialLinksBlockType["settings"]["links"]
+      | ((
+          prev: SocialLinksBlockType["settings"]["links"]
+        ) => SocialLinksBlockType["settings"]["links"])
+  ) => {
+    setDraft((prev) => {
+      const base = prev ?? {
+        links: block.settings.links,
+        layout: block.settings.layout,
+      };
+      const nextLinks =
+        typeof updater === "function" ? updater(base.links) : updater;
+      return { ...base, links: nextLinks };
+    });
+  };
+
+  const setLayout = (value: Layout) => {
+    setDraft((prev) => {
+      const base = prev ?? {
+        links: block.settings.links,
+        layout: block.settings.layout,
+      };
+      return { ...base, layout: value };
+    });
+  };
 
   const handleSave = () => {
     const sanitized = links
@@ -63,7 +94,7 @@ export function SocialLinksBlock({
         layout,
       },
     });
-    setIsEditMode(false);
+    setDraft(null);
   };
 
   const handleLinkChange = (
@@ -170,7 +201,7 @@ export function SocialLinksBlock({
 
         <div className="flex gap-2">
           <Button onClick={handleSave}>Save</Button>
-          <Button variant="outline" onClick={() => setIsEditMode(false)}>
+          <Button variant="outline" onClick={() => setDraft(null)}>
             Cancel
           </Button>
         </div>
@@ -179,12 +210,17 @@ export function SocialLinksBlock({
   }
 
   return (
-    <div className="group relative" onClick={onClick} onKeyDown={(e) => { if (onClick && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); (onClick as (ev: unknown) => void)(e); } }} role="button" tabIndex={0}>
+    <div className="group relative">
       {isEditing && (
         <BlockControls
           blockId={block.id}
           isVisible={block.visible}
-          onEdit={() => setIsEditMode(true)}
+          onEdit={() =>
+          setDraft({
+            links: block.settings.links,
+            layout: block.settings.layout,
+          })
+        }
         />
       )}
 
@@ -217,21 +253,36 @@ export function SocialLinksBlock({
               : "flex flex-wrap"
           )}
         >
-          {block.settings.links.map((link, index) => (
-            <a
-              key={`${link.platform}-${link.url}`}
-              href={isEditing ? undefined : link.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={cn(
-                "flex items-center gap-2 px-3 py-2 rounded-md border text-sm font-medium transition-colors",
-                !isEditing && "hover:bg-accent"
-              )}
-            >
-              <span className="text-lg">{link.icon || "🔗"}</span>
-              <span className="truncate">{link.platform}</span>
-            </a>
-          ))}
+          {block.settings.links.map((link) => {
+            const className = cn(
+              "flex items-center gap-2 px-3 py-2 rounded-md border text-sm font-medium transition-colors",
+              !isEditing && "hover:bg-accent"
+            );
+            const body = (
+              <>
+                <span className="text-lg">{link.icon || "🔗"}</span>
+                <span className="truncate">{link.platform}</span>
+              </>
+            );
+            if (isEditing) {
+              return (
+                <div key={`${link.platform}-${link.url}`} className={className}>
+                  {body}
+                </div>
+              );
+            }
+            return (
+              <a
+                key={`${link.platform}-${link.url}`}
+                href={link.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={className}
+              >
+                {body}
+              </a>
+            );
+          })}
         </div>
       </div>
     </div>

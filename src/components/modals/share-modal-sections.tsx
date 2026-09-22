@@ -218,6 +218,7 @@ export function ShareModalSections({
             </Label>
             <div className="relative">
               <textarea
+                aria-label="Embed code"
                 value={embedCode}
                 readOnly
                 className="w-full h-24 px-3 py-2 text-sm border rounded-lg resize-none font-mono bg-muted"
@@ -226,6 +227,7 @@ export function ShareModalSections({
                 variant="outline"
                 size="sm"
                 className="absolute top-2 right-2"
+                aria-label="Copy embed code"
                 onClick={() => handleCopy(embedCode, "Embed code")}
               >
                 {copied === "Embed code" ? (

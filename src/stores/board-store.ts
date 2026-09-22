@@ -299,12 +299,13 @@ export const useBoardStore = create<BoardStore>()(
         if (!state.currentBoard) return;
 
         get().saveToHistory(`Deleted ${blockIds.length} blocks`);
+        const deleteIds = new Set(blockIds);
         set(
           {
             currentBoard: {
               ...state.currentBoard,
               blocks: state.currentBoard.blocks.filter(
-                (b) => !blockIds.includes(b.id)
+                (b) => !deleteIds.has(b.id)
               ),
             },
           },

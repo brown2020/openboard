@@ -74,6 +74,7 @@ export function FormBlockEditPanel(props: Props) {
                 <span>Field {index + 1}</span>
                 <div className="flex items-center gap-2">
                   <select
+                    aria-label={`Field ${index + 1} type`}
                     className="border rounded-md px-2 py-1 text-xs"
                     value={field.type}
                     onChange={(e) =>

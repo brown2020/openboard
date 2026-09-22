@@ -51,9 +51,12 @@ export function AnalyticsModal() {
     if (!currentBoard) return;
 
     setIsLoading(true);
-    const data = await getAnalytics(currentBoard.id, parseInt(timeRange));
-    setAnalytics(data);
-    setIsLoading(false);
+    try {
+      const data = await getAnalytics(currentBoard.id, parseInt(timeRange));
+      setAnalytics(data);
+    } finally {
+      setIsLoading(false);
+    }
   }, [currentBoard, getAnalytics, timeRange]);
 
   useEffect(() => {

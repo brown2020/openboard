@@ -11,30 +11,36 @@ export function useCollaboratorProfiles(collaboratorIds: string[]) {
   );
   const [isLoading, setIsLoading] = useState(false);
 
-  const userIds = filterCollaboratorUserIds(collaboratorIds);
-  const userIdsKey = userIds.join(",");
+  const userIdsKey = filterCollaboratorUserIds(collaboratorIds).join(",");
 
   useEffect(() => {
+    const userIds = userIdsKey ? userIdsKey.split(",") : [];
+    let cancelled = false;
+
     if (userIds.length === 0) {
       setProfiles(new Map());
       setIsLoading(false);
       return;
     }
 
-    let cancelled = false;
     setIsLoading(true);
 
-    void fetchCollaboratorProfiles(userIds).then((next) => {
-      if (!cancelled) {
-        setProfiles(next);
-        setIsLoading(false);
-      }
-    });
+    void fetchCollaboratorProfiles(userIds)
+      .then((next) => {
+        if (!cancelled) {
+          setProfiles(next);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
+      });
 
     return () => {
       cancelled = true;
     };
-  }, [userIdsKey, userIds.length]);
+  }, [userIdsKey]);
 
   return { profiles, isLoading };
 }

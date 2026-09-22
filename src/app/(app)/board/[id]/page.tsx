@@ -5,73 +5,46 @@ import { useAuth } from "@/hooks/use-auth";
 import { useBoards } from "@/hooks/use-boards";
 import { useAutoSave } from "@/hooks/use-auto-save";
 import { useBoardStore, useHistory } from "@/stores/board-store";
-import { useModal, useEditor } from "@/stores/ui-store";
-import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { BoardEditorErrorBoundary } from "@/components/error-boundary";
+import { useModal, useEditor, useToast } from "@/stores/ui-store";
+import { redirect } from "next/navigation";
 import {
-  Save,
-  Eye,
-  Plus,
-  Palette,
-  BarChart3,
-  Share2,
-  ArrowLeft,
-  GripVertical,
-  Undo2,
-  Redo2,
-  Loader2,
-} from "lucide-react";
-import { BlockRenderer } from "@/components/blocks/block-renderer";
-import { AddBlockSheet } from "@/components/blocks/add-block-sheet";
-import Link from "next/link";
-import { Skeleton } from "@/components/ui/skeleton";
-import { ThemeModal } from "@/components/modals/theme-modal";
-import { AnalyticsModal } from "@/components/modals/analytics-modal";
-import { ShareModal } from "@/components/modals/share-modal";
-import {
-  DndContext,
-  closestCenter,
   KeyboardSensor,
   PointerSensor,
   useSensor,
   useSensors,
-  DragEndEvent,
+  type DragEndEvent,
 } from "@dnd-kit/core";
 import {
   arrayMove,
-  SortableContext,
   sortableKeyboardCoordinates,
-  useSortable,
-  verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
 import { Block, BlockType } from "@/types";
-import { cn } from "@/lib/utils";
 import { canEditBoard } from "@/lib/board-access";
 import {
   getAutoSaveStatus,
   serializeBoardSaveState,
   shouldWarnBeforeUnload,
 } from "@/lib/board-save";
-import { useToast } from "@/stores/ui-store";
-import {
-  CommandPalette,
-  getDefaultBlockSettings,
-} from "@/components/editor/command-palette";
+import { getDefaultBlockSettings } from "@/lib/default-block-settings";
+import { useBoardEditorHotkeys } from "./use-board-editor-hotkeys";
+import { BoardEditorLoading } from "./board-editor-loading";
+import { BoardEditorMain } from "./board-editor-main";
 
 interface PageProps {
   params: Promise<{ id: string }>;
 }
 
-import { SortableBlock } from "./sortable-block";
-
-import { useBoardEditorHotkeys } from "./use-board-editor-hotkeys";
-import { BoardEditorLoading } from "./board-editor-loading";
-import { BoardEditorMain } from "./board-editor-main";
 export default function BoardEditorPage({ params }: PageProps) {
   const resolvedParams = use(params);
+  return (
+    <BoardEditorSession
+      key={resolvedParams.id}
+      boardId={resolvedParams.id}
+    />
+  );
+}
+
+function BoardEditorSession({ boardId }: { boardId: string }) {
   const { user, isLoaded } = useAuth();
   const { getBoard } = useBoards();
   const { currentBoard, setCurrentBoard, reorderBlocks, addBlock } =
@@ -80,7 +53,6 @@ export default function BoardEditorPage({ params }: PageProps) {
     useEditor();
   const { openModal } = useModal();
   const { canUndo, canRedo, undo, redo } = useHistory();
-  const router = useRouter();
   const toast = useToast();
 
   const [isLoading, setIsLoading] = useState(true);
@@ -94,12 +66,10 @@ export default function BoardEditorPage({ params }: PageProps) {
   );
   const loadedBoardIdRef = useRef<string | null>(null);
 
-  // Refs to avoid stale closure issues in callbacks
   const currentBoardRef = useRef(currentBoard);
   const boardTitleRef = useRef(boardTitle);
   const boardDescriptionRef = useRef(boardDescription);
 
-  // Keep refs in sync
   useEffect(() => {
     currentBoardRef.current = currentBoard;
   }, [currentBoard]);
@@ -112,7 +82,6 @@ export default function BoardEditorPage({ params }: PageProps) {
     boardDescriptionRef.current = boardDescription;
   }, [boardDescription]);
 
-  // Handle adding a new block from command palette
   const handleAddBlockFromPalette = useCallback(
     (type: BlockType) => {
       const board = currentBoardRef.current;
@@ -170,7 +139,7 @@ export default function BoardEditorPage({ params }: PageProps) {
     saveFailed,
     saveNow,
   } = useAutoSave({
-    boardId: resolvedParams.id,
+    boardId,
     stateFingerprint,
     getPayload: getSavePayload,
     baselineFingerprint,
@@ -194,41 +163,34 @@ export default function BoardEditorPage({ params }: PageProps) {
     })
   );
 
-  // Enable editor mode
   useEffect(() => {
     setEditorMode(true);
     return () => setEditorMode(false);
   }, [setEditorMode]);
 
-  // Reset auto-save baseline when navigating to a different board
   useEffect(() => {
-    setBaselineFingerprint(null);
-    loadedBoardIdRef.current = null;
-  }, [resolvedParams.id]);
+    let cancelled = false;
 
-  // Load board - only once per board ID
-  useEffect(() => {
     const loadBoard = async () => {
-      // Skip if already loaded this board
-      if (loadedBoardIdRef.current === resolvedParams.id) return;
-      
       if (!isLoaded) return;
       if (!user) {
-        router.push("/login");
         return;
       }
 
-      const board = await getBoard(resolvedParams.id);
+      const board = await getBoard(boardId);
+      if (cancelled) return;
+
       if (board) {
         if (!canEditBoard(user.id, board)) {
           toast.error(
             "Access denied",
             "You don't have permission to edit this board"
           );
-          router.push("/boards");
+          if (!cancelled) {
+            window.location.replace("/boards");
+          }
           return;
         }
-        // Never keep password hashes in client editor state.
         const { passwordHash: _passwordHash, ...boardWithoutSecrets } = board;
         setCurrentBoard(boardWithoutSecrets as typeof board);
         setBoardTitle(boardWithoutSecrets.title);
@@ -241,29 +203,27 @@ export default function BoardEditorPage({ params }: PageProps) {
             theme: boardWithoutSecrets.theme,
           })
         );
-        loadedBoardIdRef.current = resolvedParams.id;
+        loadedBoardIdRef.current = boardId;
       } else {
         toast.error(
           "Board not found",
           "This board doesn't exist or has been deleted"
         );
-        router.push("/boards");
+        if (!cancelled) {
+          window.location.replace("/boards");
+        }
       }
-      setIsLoading(false);
+      if (!cancelled) {
+        setIsLoading(false);
+      }
     };
 
-    loadBoard();
-  }, [
-    resolvedParams.id,
-    user,
-    isLoaded,
-    getBoard,
-    router,
-    setCurrentBoard,
-    toast,
-  ]);
+    void loadBoard();
+    return () => {
+      cancelled = true;
+    };
+  }, [boardId, user, isLoaded, getBoard, setCurrentBoard, toast]);
 
-  // Warn before leaving only while saving or after a failed save
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (
@@ -290,7 +250,6 @@ export default function BoardEditorPage({ params }: PageProps) {
     }
   }, [saveNow, toast]);
 
-
   useBoardEditorHotkeys({
     canUndo,
     canRedo,
@@ -303,7 +262,6 @@ export default function BoardEditorPage({ params }: PageProps) {
     setSelectedBlock,
     currentBoard,
   });
-
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -327,6 +285,9 @@ export default function BoardEditorPage({ params }: PageProps) {
     }
   };
 
+  if (isLoaded && !user) {
+    redirect("/login");
+  }
 
   if (isLoading || !currentBoard) {
     return <BoardEditorLoading />;

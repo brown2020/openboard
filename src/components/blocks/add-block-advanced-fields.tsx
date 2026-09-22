@@ -232,6 +232,7 @@ export function AddBlockAdvancedFields({
                   <div className="space-y-2">
                     <Label>Type</Label>
                     <select
+                      aria-label={`Field ${index + 1} type`}
                       className="w-full rounded-md border px-2 py-1 text-sm"
                       value={field.type}
                       onChange={(e) =>

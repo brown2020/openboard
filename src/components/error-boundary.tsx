@@ -13,6 +13,7 @@ interface Props {
 interface State {
   hasError: boolean;
   error: Error | null;
+  resetKeyFingerprint: string;
 }
 
 /**
@@ -28,31 +29,31 @@ interface State {
 export class ErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
     super(props);
-    this.state = { hasError: false, error: null };
+    this.state = { hasError: false, error: null, resetKeyFingerprint: "" };
   }
 
-  static getDerivedStateFromError(error: Error): State {
+  static getDerivedStateFromError(error: Error): Partial<State> {
     return { hasError: true, error };
+  }
+
+  static getDerivedStateFromProps(props: Props, state: State): Partial<State> | null {
+    if (!state.hasError || !props.resetKeys) {
+      return null;
+    }
+    const keyFingerprint = props.resetKeys.join("|");
+    if (state.resetKeyFingerprint === keyFingerprint) {
+      return null;
+    }
+    return {
+      hasError: false,
+      error: null,
+      resetKeyFingerprint: keyFingerprint,
+    };
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error("Error boundary caught error:", error, errorInfo);
     this.props.onError?.(error, errorInfo);
-  }
-
-  componentDidUpdate(prevProps: Props) {
-    // Reset error boundary when resetKeys change
-    if (this.state.hasError && this.props.resetKeys) {
-      const prevKeys = prevProps.resetKeys || [];
-      const currentKeys = this.props.resetKeys || [];
-
-      if (
-        prevKeys.length !== currentKeys.length ||
-        prevKeys.some((key, i) => key !== currentKeys[i])
-      ) {
-        this.setState({ hasError: false, error: null });
-      }
-    }
   }
 
   render() {
@@ -64,7 +65,7 @@ export class ErrorBoundary extends Component<Props, State> {
       return (
         <DefaultErrorFallback
           error={this.state.error}
-          reset={() => this.setState({ hasError: false, error: null })}
+          reset={() => this.setState({ hasError: false, error: null, resetKeyFingerprint: (this.props.resetKeys || []).join("|") })}
         />
       );
     }
