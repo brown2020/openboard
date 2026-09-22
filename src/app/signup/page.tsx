@@ -18,6 +18,7 @@ import {
   AuthDivider,
   AuthError,
   GoogleSignInButton,
+  PasswordInput,
 } from "@/components/auth";
 import { setAuthCookie } from "@/lib/auth-cookie";
 import { getFirebaseErrorMessage } from "@/hooks/use-error-handler";
@@ -124,32 +125,26 @@ function SignupForm() {
           />
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="password">Password</Label>
-          <Input
-            id="password"
-            type="password"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="••••••••"
-          />
-          <p className="text-xs text-muted-foreground">
-            Must be at least 6 characters
-          </p>
-        </div>
+        <PasswordInput
+          id="password"
+          label="Password"
+          value={password}
+          onChange={setPassword}
+          required
+          autoComplete="new-password"
+        />
+        <p className="text-xs text-muted-foreground -mt-4">
+          Must be at least 6 characters
+        </p>
 
-        <div className="space-y-2">
-          <Label htmlFor="confirm-password">Confirm Password</Label>
-          <Input
-            id="confirm-password"
-            type="password"
-            required
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            placeholder="••••••••"
-          />
-        </div>
+        <PasswordInput
+          id="confirm-password"
+          label="Confirm Password"
+          value={confirmPassword}
+          onChange={setConfirmPassword}
+          required
+          autoComplete="new-password"
+        />
 
         <Button type="submit" className="w-full" disabled={isLoading}>
           {isLoading ? "Creating account..." : "Sign up"}

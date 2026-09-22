@@ -7,7 +7,7 @@ import {
   getDownloadURL,
   StorageError,
 } from "firebase/storage";
-import { storage } from "@/lib/firebase";
+import { getClientStorage } from "@/lib/firebase";
 import { useAuth } from "./use-auth";
 
 interface UseStorageResult {
@@ -52,7 +52,7 @@ export function useStorage(): UseStorageResult {
       // Default path: uploads/{userId}/{timestamp}_{filename}
       const filePath =
         path || `uploads/${user.id}/${Date.now()}_${file.name}`;
-      const storageRef = ref(storage, filePath);
+      const storageRef = ref(getClientStorage(), filePath);
       const uploadTask = uploadBytesResumable(storageRef, file);
 
       return new Promise<string | null>((resolve) => {

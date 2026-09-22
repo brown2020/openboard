@@ -21,7 +21,7 @@ function ThemeFallbackPreview({ template }: TemplateCardPreviewProps) {
         Sample Board
       </h3>
       <div className="mt-4 space-y-2">
-        {template.blocks.slice(0, 2).map((block, idx) => {
+        {template.blocks.slice(0, 2).map((block) => {
           const getBlockLabel = () => {
             if (block.type === "link" && "title" in block.settings) {
               return block.settings.title as string;
@@ -37,7 +37,7 @@ function ThemeFallbackPreview({ template }: TemplateCardPreviewProps) {
 
           return (
             <div
-              key={idx}
+              key={`${block.type}-${block.order}`}
               className="p-2 rounded text-sm"
               style={{
                 backgroundColor: template.theme.cardBackground,

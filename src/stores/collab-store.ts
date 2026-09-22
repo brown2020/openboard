@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { useShallow } from "zustand/react/shallow";
 import { devtools } from "zustand/middleware";
 import { Operation } from "@/lib/operations";
 
@@ -266,10 +267,9 @@ export const useCollabStore = create<CollabStore>()(
  * Convenience hook for active collaborators list
  */
 export const useActiveCollaborators = () => {
-  const { collaborators } = useCollabStore();
+  const collaborators = useCollabStore((s) => s.collaborators);
 
   // Filter to only collaborators seen in last 30 seconds
-   
   const cutoff = Date.now() - 30000;
   return Array.from(collaborators.values()).filter(
     (c) => c.lastSeen > cutoff
@@ -280,7 +280,9 @@ export const useActiveCollaborators = () => {
  * Convenience hook for sync status
  */
 export const useSyncStatus = () => {
-  const { syncStatus, isConnected, pendingOperations } = useCollabStore();
+  const syncStatus = useCollabStore((s) => s.syncStatus);
+  const isConnected = useCollabStore((s) => s.isConnected);
+  const pendingOperations = useCollabStore((s) => s.pendingOperations);
   return {
     syncStatus,
     isConnected,

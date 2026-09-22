@@ -2,23 +2,26 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    // Helper function to check if user is authenticated
     function isAuthenticated() {
       return request.auth != null;
     }
 
-    // Allow public read access to all files
-    match /{allPaths=**} {
-      allow read: if true;
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
     }
 
-    // User uploads (avatars, board images)
-    // Structure: /uploads/{userId}/{fileName}
+    // Default deny
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+
+    // User uploads (avatars, board images): /uploads/{userId}/{fileName}
+    // Public pages use Firebase download URLs (tokenized); rules bind write/read to owner.
     match /uploads/{userId}/{fileName} {
-      allow write: if isAuthenticated() && request.auth.uid == userId &&
-                   request.resource.size < 5 * 1024 * 1024 && // Max 5MB
-                   request.resource.contentType.matches('image/.*'); // Only images
+      allow read: if isOwner(userId);
+      allow write: if isOwner(userId) &&
+                   request.resource.size < 5 * 1024 * 1024 &&
+                   request.resource.contentType.matches('image/.*');
     }
   }
 }
-

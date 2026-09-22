@@ -2,19 +2,31 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Helper function to check if user is authenticated
     function isAuthenticated() {
       return request.auth != null;
     }
-    
-    // Helper function to check if user is the owner of the resource
+
     function isOwner(userId) {
       return isAuthenticated() && request.auth.uid == userId;
     }
 
-    // User profiles
+    function isBoardOwner() {
+      return isAuthenticated() && resource.data.ownerId == request.auth.uid;
+    }
+
+    function isBoardCollaborator() {
+      return isAuthenticated()
+        && resource.data.collaborators != null
+        && request.auth.uid in resource.data.collaborators;
+    }
+
+    function isPublicBoard() {
+      return resource.data.privacy in ['public', 'unlisted'];
+    }
+
+    // User profiles — authenticated reads (public pages use Admin SDK)
     match /users/{userId} {
-      allow read: if true; // Public profiles
+      allow read: if isAuthenticated();
       allow create: if isOwner(userId)
         && request.resource.data.keys().hasAll(['id', 'username', 'email'])
         && request.resource.data.id == userId
@@ -25,9 +37,9 @@ service cloud.firestore {
       allow delete: if isOwner(userId);
     }
 
-    // Boards
+    // Boards — public/unlisted readable; private/password via owner/collaborator or Admin SDK
     match /boards/{boardId} {
-      allow read: if true; // Boards are public by default (privacy handled in app logic)
+      allow read: if isPublicBoard() || isBoardOwner() || isBoardCollaborator();
       allow create: if isAuthenticated()
         && request.resource.data.ownerId == request.auth.uid
         && request.resource.data.keys().hasAll(['ownerId', 'title', 'slug', 'blocks', 'theme', 'privacy'])
@@ -35,32 +47,30 @@ service cloud.firestore {
         && request.resource.data.slug is string
         && request.resource.data.blocks is list
         && request.resource.data.privacy is string;
-      allow update: if isAuthenticated() && (
-        resource.data.ownerId == request.auth.uid || 
-        (resource.data.collaborators != null && request.auth.uid in resource.data.collaborators)
-      )
-        // Prevent changing the owner
+      allow update: if (isBoardOwner() || isBoardCollaborator())
         && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['ownerId']));
-      allow delete: if isAuthenticated() && resource.data.ownerId == request.auth.uid;
+      allow delete: if isBoardOwner();
     }
 
-    // Analytics events - allow public creates for tracking, reads for authenticated users
+    // Analytics — owners read; anonymous create for public page tracking with schema checks
     match /analytics/{eventId} {
-      allow create: if true
-        && request.resource.data.keys().hasAll(['boardId', 'date'])
+      allow create: if request.resource.data.keys().hasAll(['boardId', 'date'])
         && request.resource.data.boardId is string
-        && request.resource.data.date is string;
-      allow update: if true
-        && request.resource.data.boardId is string;
+        && request.resource.data.date is string
+        && request.resource.data.boardId.size() > 0
+        && request.resource.data.date.size() == 10;
+      allow update: if request.resource.data.boardId is string
+        && request.resource.data.boardId == resource.data.boardId;
       allow read: if isAuthenticated();
     }
 
-    // Click events
+    // Click events — schema-validated creates; owners read via auth
     match /clicks/{clickId} {
-      allow create: if true
-        && request.resource.data.keys().hasAll(['boardId', 'blockId'])
+      allow create: if request.resource.data.keys().hasAll(['boardId', 'blockId'])
         && request.resource.data.boardId is string
-        && request.resource.data.blockId is string;
+        && request.resource.data.blockId is string
+        && request.resource.data.boardId.size() > 0
+        && request.resource.data.blockId.size() > 0;
       allow read: if isAuthenticated();
     }
   }

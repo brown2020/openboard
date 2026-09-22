@@ -20,6 +20,7 @@ import {
   AuthDivider,
   AuthError,
   GoogleSignInButton,
+  PasswordInput,
 } from "@/components/auth";
 import { setAuthCookie } from "@/lib/auth-cookie";
 import { getFirebaseErrorMessage } from "@/hooks/use-error-handler";
@@ -96,17 +97,14 @@ function LoginForm() {
           />
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="password">Password</Label>
-          <Input
-            id="password"
-            type="password"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="••••••••"
-          />
-        </div>
+        <PasswordInput
+          id="password"
+          label="Password"
+          value={password}
+          onChange={setPassword}
+          required
+          autoComplete="current-password"
+        />
 
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">

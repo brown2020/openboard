@@ -106,7 +106,7 @@ export function SocialLinksBlock({
         <div className="space-y-4 max-h-[360px] overflow-y-auto pr-2">
           {links.map((link, index) => (
             <div
-              key={`${link.platform}-${index}`}
+              key={`${link.platform}-${link.url}`}
               className="rounded-lg border p-3 space-y-3"
             >
               <div className="flex items-center justify-between">
@@ -179,7 +179,7 @@ export function SocialLinksBlock({
   }
 
   return (
-    <div className="group relative" onClick={onClick}>
+    <div className="group relative" onClick={onClick} onKeyDown={(e) => { if (onClick && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); (onClick as (ev: unknown) => void)(e); } }} role="button" tabIndex={0}>
       {isEditing && (
         <BlockControls
           blockId={block.id}
@@ -219,7 +219,7 @@ export function SocialLinksBlock({
         >
           {block.settings.links.map((link, index) => (
             <a
-              key={`${link.platform}-${index}`}
+              key={`${link.platform}-${link.url}`}
               href={isEditing ? undefined : link.url}
               target="_blank"
               rel="noopener noreferrer"

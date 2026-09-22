@@ -9,7 +9,7 @@ import {
   query,
   where,
 } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { getClientDb } from "@/lib/firebase";
 import { normalizeCollaboratorEmail } from "@/lib/collaborators";
 import type { UserProfile } from "@/types";
 
@@ -17,7 +17,7 @@ export async function resolveUserIdByEmail(
   email: string
 ): Promise<string | null> {
   const normalized = normalizeCollaboratorEmail(email);
-  const usersRef = collection(db, "users");
+  const usersRef = collection(getClientDb(), "users");
   const q = query(usersRef, where("email", "==", normalized), limit(1));
   const snapshot = await getDocs(q);
 
@@ -33,7 +33,7 @@ export async function resolveUserIdByEmail(
 export async function fetchUserProfileById(
   userId: string
 ): Promise<UserProfile | null> {
-  const userRef = doc(db, "users", userId);
+  const userRef = doc(getClientDb(), "users", userId);
   const snap = await getDoc(userRef);
   if (!snap.exists()) return null;
   return snap.data() as UserProfile;

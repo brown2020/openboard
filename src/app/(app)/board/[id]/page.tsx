@@ -65,61 +65,11 @@ interface PageProps {
   params: Promise<{ id: string }>;
 }
 
-interface SortableBlockProps {
-  block: Block;
-}
+import { SortableBlock } from "./sortable-block";
 
-function SortableBlock({ block }: SortableBlockProps) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: block.id });
-  const { selectedBlockId } = useEditor();
-  const isSelected = selectedBlockId === block.id;
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  };
-
-  return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      data-block-id={block.id}
-      className={cn(
-        "relative group",
-        isDragging && "opacity-50 z-50 scale-[1.02]",
-        // Selection indicator - blue left border like Notion
-        isSelected &&
-          "before:absolute before:-left-3 before:top-0 before:bottom-0 before:w-0.5 before:bg-blue-500 before:rounded-full"
-      )}
-    >
-      {/* Drag Handle - Always slightly visible, fully visible on hover */}
-      <div
-        {...attributes}
-        {...listeners}
-        className={cn(
-          "absolute -left-10 top-1/2 -translate-y-1/2",
-          "opacity-30 group-hover:opacity-100 transition-all duration-200",
-          "cursor-grab active:cursor-grabbing",
-          "p-1.5 rounded-md hover:bg-muted",
-          isSelected && "opacity-60"
-        )}
-        aria-label="Drag to reorder"
-      >
-        <GripVertical className="w-5 h-5 text-muted-foreground" />
-      </div>
-
-      <BlockRenderer block={block} isEditing={true} />
-    </div>
-  );
-}
-
+import { useBoardEditorHotkeys } from "./use-board-editor-hotkeys";
+import { BoardEditorLoading } from "./board-editor-loading";
+import { BoardEditorMain } from "./board-editor-main";
 export default function BoardEditorPage({ params }: PageProps) {
   const resolvedParams = use(params);
   const { user, isLoaded } = useAuth();
@@ -340,89 +290,20 @@ export default function BoardEditorPage({ params }: PageProps) {
     }
   }, [saveNow, toast]);
 
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't trigger shortcuts when typing in inputs
-      const target = e.target as HTMLElement;
-      const isTyping =
-        target.tagName === "INPUT" ||
-        target.tagName === "TEXTAREA" ||
-        target.isContentEditable;
 
-      // Cmd/Ctrl shortcuts
-      if (e.metaKey || e.ctrlKey) {
-        if (e.key === "s") {
-          e.preventDefault();
-          handleSave();
-        } else if (e.key === "z" && !e.shiftKey) {
-          if (canUndo) {
-            e.preventDefault();
-            undo();
-          }
-        } else if ((e.key === "z" && e.shiftKey) || e.key === "y") {
-          if (canRedo) {
-            e.preventDefault();
-            redo();
-          }
-        } else if (e.key === "Enter" && !isTyping) {
-          // Cmd+Enter to add new block after selected
-          e.preventDefault();
-          setShowCommandPalette(true);
-        }
-      }
-
-      // Slash command (/) to open command palette
-      if (e.key === "/" && !isTyping && !showCommandPalette) {
-        e.preventDefault();
-        setShowCommandPalette(true);
-      }
-
-      // Escape to close command palette or deselect block
-      if (e.key === "Escape") {
-        if (showCommandPalette) {
-          setShowCommandPalette(false);
-        } else if (selectedBlockId) {
-          setSelectedBlock(null);
-        }
-      }
-
-      // Arrow key navigation between blocks (when not typing)
-      if (!isTyping && currentBoard) {
-        if (e.key === "ArrowUp" || e.key === "ArrowDown") {
-          e.preventDefault();
-          const currentIndex = selectedBlockId
-            ? currentBoard.blocks.findIndex((b) => b.id === selectedBlockId)
-            : -1;
-
-          if (e.key === "ArrowUp" && currentIndex > 0) {
-            setSelectedBlock(currentBoard.blocks[currentIndex - 1].id);
-          } else if (
-            e.key === "ArrowDown" &&
-            currentIndex < currentBoard.blocks.length - 1
-          ) {
-            setSelectedBlock(currentBoard.blocks[currentIndex + 1].id);
-          } else if (e.key === "ArrowDown" && currentIndex === -1 && currentBoard.blocks.length > 0) {
-            // If no block selected, select the first one
-            setSelectedBlock(currentBoard.blocks[0].id);
-          }
-        }
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [
+  useBoardEditorHotkeys({
     canUndo,
     canRedo,
     undo,
     redo,
     handleSave,
     showCommandPalette,
+    setShowCommandPalette,
     selectedBlockId,
-    currentBoard,
     setSelectedBlock,
-  ]);
+    currentBoard,
+  });
+
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -446,282 +327,39 @@ export default function BoardEditorPage({ params }: PageProps) {
     }
   };
 
+
   if (isLoading || !currentBoard) {
-    return (
-      <div className="min-h-screen bg-background">
-        <div className="sticky top-0 z-50 border-b bg-background">
-          <div className="container mx-auto px-4 py-3 flex items-center justify-between">
-            <Skeleton className="h-10 w-32" />
-            <div className="flex gap-2">
-              <Skeleton className="h-9 w-24" />
-              <Skeleton className="h-9 w-24" />
-              <Skeleton className="h-9 w-20" />
-            </div>
-          </div>
-        </div>
-        <div className="container mx-auto px-4 py-8">
-          <div className="max-w-2xl mx-auto">
-            <Skeleton className="h-[600px] rounded-xl" />
-          </div>
-        </div>
-      </div>
-    );
+    return <BoardEditorLoading />;
   }
 
   return (
-    <BoardEditorErrorBoundary>
-      {/* Command Palette */}
-      <CommandPalette
-        isOpen={showCommandPalette}
-        onClose={() => setShowCommandPalette(false)}
-        onSelectBlock={handleAddBlockFromPalette}
-      />
-      <ThemeModal />
-      <AnalyticsModal />
-      <ShareModal />
-      <AddBlockSheet open={showAddBlock} onOpenChange={setShowAddBlock} />
-
-      <div className="min-h-screen bg-muted/30">
-        {/* Editor Toolbar */}
-        <div className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-          <div className="container mx-auto px-4 py-3 flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Button variant="ghost" size="sm" asChild>
-                <Link href="/boards">
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                  Back
-                </Link>
-              </Button>
-
-              <div className="h-6 w-px bg-border" />
-
-              <div>
-                <h2 className="font-semibold text-sm">{boardTitle}</h2>
-                <p className="text-xs text-muted-foreground">
-                  /{user?.username}/{currentBoard.slug}
-                </p>
-              </div>
-
-              {saveStatus === "pending" && (
-                <span className="text-xs text-amber-600 dark:text-amber-400 font-medium">
-                  • Unsaved changes
-                </span>
-              )}
-              {saveStatus === "saving" && (
-                <span className="text-xs text-muted-foreground font-medium flex items-center gap-1">
-                  <Loader2 className="w-3 h-3 animate-spin" aria-hidden="true" />
-                  Saving…
-                </span>
-              )}
-              {saveStatus === "error" && (
-                <span className="text-xs text-destructive font-medium">
-                  • Save failed — retry with Save or ⌘S
-                </span>
-              )}
-            </div>
-
-            <div className="flex items-center gap-2">
-              {/* Undo/Redo */}
-              <div className="flex items-center gap-1 mr-2">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={undo}
-                  disabled={!canUndo}
-                  title="Undo (⌘Z)"
-                >
-                  <Undo2 className="w-4 h-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={redo}
-                  disabled={!canRedo}
-                  title="Redo (⌘⇧Z)"
-                >
-                  <Redo2 className="w-4 h-4" />
-                </Button>
-              </div>
-
-              <Button variant="outline" size="sm" asChild>
-                <Link
-                  href={`/u/${currentBoard.ownerUsername}/${currentBoard.slug}`}
-                  target="_blank"
-                >
-                  <Eye className="w-4 h-4 mr-2" />
-                  Preview
-                </Link>
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => openModal("theme")}
-              >
-                <Palette className="w-4 h-4 mr-2" />
-                Theme
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => openModal("analytics")}
-              >
-                <BarChart3 className="w-4 h-4 mr-2" />
-                Analytics
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => openModal("share")}
-              >
-                <Share2 className="w-4 h-4 mr-2" />
-                Share
-              </Button>
-              <Button
-                size="sm"
-                onClick={handleSave}
-                disabled={isAutoSaving || isSaving}
-                className={cn(
-                  (saveStatus === "pending" || saveStatus === "error") &&
-                    "bg-emerald-600 hover:bg-emerald-700"
-                )}
-              >
-                {isAutoSaving || isSaving ? (
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                ) : (
-                  <Save className="w-4 h-4 mr-2" />
-                )}
-                {isAutoSaving || isSaving ? "Saving..." : "Save"}
-              </Button>
-            </div>
-          </div>
-        </div>
-
-        {/* Editor Content */}
-        <div className="container mx-auto px-4 py-8">
-          <div className="max-w-2xl mx-auto">
-            {/* Board Preview */}
-            <div
-              className="rounded-2xl p-8 min-h-[600px] shadow-xl"
-              style={{
-                background: currentBoard.theme.background.value,
-              }}
-            >
-              {/* Header - Editable */}
-              <div className="text-center mb-10 space-y-4">
-                {editingHeader ? (
-                  <div className="space-y-3">
-                    <Input
-                      value={boardTitle}
-                      onChange={(e) => setBoardTitle(e.target.value)}
-                      className="text-3xl font-bold text-center bg-white/10 border-white/20"
-                      style={{ color: currentBoard.theme.textColor }}
-                      placeholder="Board Title"
-                      onBlur={() => setEditingHeader(false)}
-                      onKeyDown={(e) =>
-                        e.key === "Enter" && setEditingHeader(false)
-                      }
-                      autoFocus
-                    />
-                    <Input
-                      value={boardDescription}
-                      onChange={(e) => setBoardDescription(e.target.value)}
-                      className="text-lg text-center bg-white/10 border-white/20"
-                      style={{
-                        color: currentBoard.theme.textColor,
-                        opacity: 0.8,
-                      }}
-                      placeholder="Add a description..."
-                    />
-                  </div>
-                ) : (
-                  <div
-                    onClick={() => setEditingHeader(true)}
-                    className="cursor-pointer hover:opacity-80 transition-opacity p-4 -m-4 rounded-xl hover:bg-white/5"
-                  >
-                    <h1
-                      className="text-3xl md:text-4xl font-bold mb-2"
-                      style={{ color: currentBoard.theme.textColor }}
-                    >
-                      {boardTitle || "Click to add title"}
-                    </h1>
-                    <p
-                      className="text-lg"
-                      style={{
-                        color: currentBoard.theme.textColor,
-                        opacity: 0.8,
-                      }}
-                    >
-                      {boardDescription || "Click to add description"}
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              {/* Blocks with Drag and Drop */}
-              <div className="space-y-4 pl-10">
-                <DndContext
-                  sensors={sensors}
-                  collisionDetection={closestCenter}
-                  onDragEnd={handleDragEnd}
-                >
-                  <SortableContext
-                    items={currentBoard.blocks.map((b) => b.id)}
-                    strategy={verticalListSortingStrategy}
-                  >
-                    {[...currentBoard.blocks]
-                      .sort((a, b) => a.order - b.order)
-                      .map((block) => (
-                        <SortableBlock key={block.id} block={block} />
-                      ))}
-                  </SortableContext>
-                </DndContext>
-
-                {/* Add Block Button */}
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "w-full py-6 border-2 border-dashed",
-                    "hover:border-primary hover:bg-primary/5",
-                    "transition-all duration-200"
-                  )}
-                  onClick={() => setShowAddBlock(true)}
-                >
-                  <Plus className="w-5 h-5 mr-2" />
-                  Add Block
-                </Button>
-
-                {currentBoard.blocks.length === 0 && (
-                  <p
-                    className="text-center text-sm mt-4"
-                    style={{
-                      color: currentBoard.theme.textColor,
-                      opacity: 0.6,
-                    }}
-                  >
-                    Your board is empty. Add your first block to get started!
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {/* Tips */}
-            <div className="mt-6 text-center text-sm text-muted-foreground">
-              <p>
-                <kbd className="px-1.5 py-0.5 bg-muted rounded text-xs">/</kbd>{" "}
-                Add block •{" "}
-                <kbd className="px-1.5 py-0.5 bg-muted rounded text-xs">↑↓</kbd>{" "}
-                Navigate •{" "}
-                <kbd className="px-1.5 py-0.5 bg-muted rounded text-xs">⌘S</kbd>{" "}
-                Save •{" "}
-                <kbd className="px-1.5 py-0.5 bg-muted rounded text-xs">⌘Z</kbd>{" "}
-                Undo • Drag to reorder
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </BoardEditorErrorBoundary>
+    <BoardEditorMain
+      showCommandPalette={showCommandPalette}
+      setShowCommandPalette={setShowCommandPalette}
+      handleAddBlockFromPalette={handleAddBlockFromPalette}
+      showAddBlock={showAddBlock}
+      setShowAddBlock={setShowAddBlock}
+      boardTitle={boardTitle}
+      setBoardTitle={setBoardTitle}
+      boardDescription={boardDescription}
+      setBoardDescription={setBoardDescription}
+      editingHeader={editingHeader}
+      setEditingHeader={setEditingHeader}
+      currentBoard={currentBoard}
+      user={user}
+      saveStatus={saveStatus}
+      isAutoSaving={isAutoSaving}
+      isSaving={isSaving}
+      handleSave={handleSave}
+      handleDragEnd={handleDragEnd}
+      sensors={sensors}
+      canUndo={canUndo}
+      canRedo={canRedo}
+      undo={undo}
+      redo={redo}
+      selectedBlockId={selectedBlockId}
+      setSelectedBlock={setSelectedBlock}
+      openModal={openModal}
+    />
   );
 }

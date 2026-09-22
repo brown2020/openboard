@@ -12,7 +12,7 @@ import {
   getDocs,
   Timestamp,
 } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { getClientDb } from "@/lib/firebase";
 import { BoardAnalytics, ClickEvent } from "@/types";
 
 export function useAnalytics() {
@@ -20,7 +20,7 @@ export function useAnalytics() {
   const trackView = useCallback(async (boardId: string, userAgent?: string) => {
     try {
       const today = new Date().toISOString().split("T")[0];
-      const analyticsRef = doc(db, "analytics", `${boardId}_${today}`);
+      const analyticsRef = doc(getClientDb(), "analytics", `${boardId}_${today}`);
 
       await setDoc(
         analyticsRef,
@@ -57,7 +57,7 @@ export function useAnalytics() {
         const today = new Date().toISOString().split("T")[0];
 
         // Update analytics
-        const analyticsRef = doc(db, "analytics", `${boardId}_${today}`);
+        const analyticsRef = doc(getClientDb(), "analytics", `${boardId}_${today}`);
         await setDoc(
           analyticsRef,
           {
@@ -71,7 +71,7 @@ export function useAnalytics() {
         );
 
         // Store individual click event
-        const clickRef = doc(collection(db, "clicks"));
+        const clickRef = doc(collection(getClientDb(), "clicks"));
         const clickEvent: ClickEvent = {
           id: clickRef.id,
           boardId,
@@ -96,7 +96,7 @@ export function useAnalytics() {
         const startDate = new Date();
         startDate.setDate(startDate.getDate() - days);
 
-        const analyticsRef = collection(db, "analytics");
+        const analyticsRef = collection(getClientDb(), "analytics");
         const q = query(
           analyticsRef,
           where("boardId", "==", boardId),

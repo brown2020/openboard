@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { useShallow } from "zustand/react/shallow";
 import { devtools } from "zustand/middleware";
 
 /**
@@ -232,13 +233,21 @@ export const useUIStore = create<UIStore>()(
 /**
  * Convenience hooks for common UI patterns
  */
-export const useModal = () => {
-  const { activeModal, modalData, openModal, closeModal } = useUIStore();
-  return { activeModal, modalData, openModal, closeModal };
-};
+export const useModal = () =>
+  useUIStore(
+    useShallow((s) => ({
+      activeModal: s.activeModal,
+      modalData: s.modalData,
+      openModal: s.openModal,
+      closeModal: s.closeModal,
+    }))
+  );
 
 export const useToast = () => {
-  const { toasts, showToast, dismissToast, clearToasts } = useUIStore();
+  const toasts = useUIStore((s) => s.toasts);
+  const showToast = useUIStore((s) => s.showToast);
+  const dismissToast = useUIStore((s) => s.dismissToast);
+  const clearToasts = useUIStore((s) => s.clearToasts);
 
   return {
     toasts,
@@ -255,30 +264,18 @@ export const useToast = () => {
   };
 };
 
-export const useEditor = () => {
-  const {
-    isEditorMode,
-    selectedBlockId,
-    isDragging,
-    isPreviewMode,
-    isSaving,
-    setEditorMode,
-    setSelectedBlock,
-    setDragging,
-    setPreviewMode,
-    setSaving,
-  } = useUIStore();
-
-  return {
-    isEditorMode,
-    selectedBlockId,
-    isDragging,
-    isPreviewMode,
-    isSaving,
-    setEditorMode,
-    setSelectedBlock,
-    setDragging,
-    setPreviewMode,
-    setSaving,
-  };
-};
+export const useEditor = () =>
+  useUIStore(
+    useShallow((s) => ({
+      isEditorMode: s.isEditorMode,
+      selectedBlockId: s.selectedBlockId,
+      isDragging: s.isDragging,
+      isPreviewMode: s.isPreviewMode,
+      isSaving: s.isSaving,
+      setEditorMode: s.setEditorMode,
+      setSelectedBlock: s.setSelectedBlock,
+      setDragging: s.setDragging,
+      setPreviewMode: s.setPreviewMode,
+      setSaving: s.setSaving,
+    }))
+  );

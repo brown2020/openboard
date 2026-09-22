@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useAuthContext } from "@/lib/auth-context";
 import { useUserStore } from "@/stores/user-store";
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { getClientDb } from "@/lib/firebase";
 import { UserProfile } from "@/types";
 import { getValidToken } from "@/lib/auth-utils";
 import { useErrorHandler, getFirebaseErrorMessage } from "./use-error-handler";
@@ -56,7 +56,7 @@ export function useAuth() {
         // Check if aborted before proceeding
         if (controller.signal.aborted) return;
 
-        const userRef = doc(db, "users", firebaseUser.uid);
+        const userRef = doc(getClientDb(), "users", firebaseUser.uid);
         const userSnap = await getDoc(userRef);
 
         if (controller.signal.aborted) return;

@@ -111,7 +111,7 @@ export function CalendarBlock({
   }
 
   return (
-    <div className="group relative" onClick={onClick}>
+    <div className="group relative" onClick={onClick} onKeyDown={(e) => { if (onClick && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); onClick(); } }} role="button" tabIndex={0}>
       {isEditing && (
         <BlockControls
           blockId={block.id}
@@ -127,7 +127,7 @@ export function CalendarBlock({
         </div>
         {embedUrl ? (
           <div className="min-h-[450px] bg-muted">
-            <iframe
+            <iframe sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
               src={embedUrl}
               title={title || "Calendar booking widget"}
               className="w-full h-full min-h-[450px]"

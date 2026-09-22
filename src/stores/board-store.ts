@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { useShallow } from "zustand/react/shallow";
 import { devtools } from "zustand/middleware";
 import { Board, Block, BlockType, BoardTheme } from "@/types";
 import { DEFAULT_THEME } from "@/lib/constants";
@@ -471,24 +472,29 @@ export const useBoardStore = create<BoardStore>()(
  * Convenience hooks
  */
 export const useCurrentBoard = () => {
-  const { currentBoard, status, error } = useBoardStore();
+  const currentBoard = useBoardStore((s) => s.currentBoard);
+  const status = useBoardStore((s) => s.status);
+  const error = useBoardStore((s) => s.error);
   return { board: currentBoard, status, error };
 };
 
-export const useBlocks = () => {
-  const { currentBoard, addBlock, updateBlock, deleteBlock, reorderBlocks } =
-    useBoardStore();
-  return {
-    blocks: currentBoard?.blocks ?? [],
-    addBlock,
-    updateBlock,
-    deleteBlock,
-    reorderBlocks,
-  };
-};
+export const useBlocks = () =>
+  useBoardStore(
+    useShallow((s) => ({
+      blocks: s.currentBoard?.blocks ?? [],
+      addBlock: s.addBlock,
+      updateBlock: s.updateBlock,
+      deleteBlock: s.deleteBlock,
+      reorderBlocks: s.reorderBlocks,
+    }))
+  );
 
 export const useHistory = () => {
-  const { history, historyIndex, undo, redo, clearHistory } = useBoardStore();
+  const history = useBoardStore((s) => s.history);
+  const historyIndex = useBoardStore((s) => s.historyIndex);
+  const undo = useBoardStore((s) => s.undo);
+  const redo = useBoardStore((s) => s.redo);
+  const clearHistory = useBoardStore((s) => s.clearHistory);
   return {
     canUndo: historyIndex > 0,
     canRedo: historyIndex < history.length - 1,

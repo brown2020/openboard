@@ -6,3 +6,4 @@ export { AuthDivider } from "./auth-divider";
 export { AuthError } from "./auth-error";
 export { GoogleIcon } from "./google-icon";
 export { GoogleSignInButton } from "./google-sign-in-button";
+export { PasswordInput } from "./password-input";

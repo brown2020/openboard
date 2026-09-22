@@ -156,7 +156,7 @@ export default function TemplatesPage() {
             {filteredTemplates.map((template) => (
               <article
                 key={template.id}
-                className="group border rounded-lg overflow-hidden hover:shadow-lg transition-all"
+                className="group border rounded-lg overflow-hidden hover:shadow-lg transition-shadow"
               >
                 <TemplateCardPreview template={template} />
 

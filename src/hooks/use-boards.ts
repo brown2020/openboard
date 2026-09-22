@@ -16,7 +16,7 @@ import {
   serverTimestamp,
   Timestamp,
 } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { getClientDb } from "@/lib/firebase";
 import { useBoardStore } from "@/stores/board-store";
 import { Board } from "@/types";
 import { useAuthContext } from "@/lib/auth-context";
@@ -90,7 +90,7 @@ export function useBoards() {
 
         setStatus("loading");
 
-        const boardsRef = collection(db, "boards");
+        const boardsRef = collection(getClientDb(), "boards");
         const ownedQuery = query(
           boardsRef,
           where("ownerId", "==", firebaseUser.uid),
@@ -188,7 +188,7 @@ export function useBoards() {
         let boardId = `${firebaseUser.uid}_${candidateSlug}`;
 
         for (let attempt = 0; attempt < 5; attempt++) {
-          const boardRef = doc(db, "boards", boardId);
+          const boardRef = doc(getClientDb(), "boards", boardId);
           const existingSnap = await getDoc(boardRef);
           if (!existingSnap.exists()) break;
 
@@ -197,7 +197,7 @@ export function useBoards() {
           boardId = `${firebaseUser.uid}_${candidateSlug}`;
         }
 
-        const boardRef = doc(db, "boards", boardId);
+        const boardRef = doc(getClientDb(), "boards", boardId);
         const existingSnap = await getDoc(boardRef);
         if (existingSnap.exists()) {
           setError("Could not generate a unique board URL. Please try again.");
@@ -241,7 +241,7 @@ export function useBoards() {
   const getBoard = useCallback(
     async (boardId: string): Promise<Board | null> => {
       try {
-        const boardRef = doc(db, "boards", boardId);
+        const boardRef = doc(getClientDb(), "boards", boardId);
         const boardSnap = await getDoc(boardRef);
 
         if (boardSnap.exists()) {
@@ -260,7 +260,7 @@ export function useBoards() {
   const getBoardBySlug = useCallback(
     async (username: string, slug: string): Promise<Board | null> => {
       try {
-        const boardsRef = collection(db, "boards");
+        const boardsRef = collection(getClientDb(), "boards");
         const q = query(
           boardsRef,
           where("ownerUsername", "==", username),
@@ -286,7 +286,7 @@ export function useBoards() {
   const updateBoard = useCallback(
     async (boardId: string, updates: Partial<Board>): Promise<boolean> => {
       try {
-        const boardRef = doc(db, "boards", boardId);
+        const boardRef = doc(getClientDb(), "boards", boardId);
         await updateDoc(boardRef, {
           ...updates,
           updatedAt: serverTimestamp(),
@@ -305,7 +305,7 @@ export function useBoards() {
   const deleteBoard = useCallback(
     async (boardId: string): Promise<boolean> => {
       try {
-        const boardRef = doc(db, "boards", boardId);
+        const boardRef = doc(getClientDb(), "boards", boardId);
         await deleteDoc(boardRef);
         return true;
       } catch (error) {

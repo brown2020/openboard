@@ -128,7 +128,7 @@ export function EmbedBlock({
       : Globe;
 
   return (
-    <div className="group relative" onClick={onClick}>
+    <div className="group relative" onClick={onClick} onKeyDown={(e) => { if (onClick && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); onClick(); } }} role="button" tabIndex={0}>
       {isEditing && (
         <BlockControls
           blockId={block.id}

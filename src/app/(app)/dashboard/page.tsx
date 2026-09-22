@@ -174,7 +174,7 @@ export default function DashboardPage() {
                       aria-hidden="true"
                     >
                       <div
-                        className="h-full rounded-full bg-primary transition-all"
+                        className="h-full rounded-full bg-primary transition-[width]"
                         style={{ width: `${width}%` }}
                       />
                     </div>

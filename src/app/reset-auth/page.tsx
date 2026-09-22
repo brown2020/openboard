@@ -139,8 +139,8 @@ export default function ResetAuthPage() {
           {status === "clearing" && (
             <p className="text-yellow-600">Clearing auth state...</p>
           )}
-          {details.map((detail, i) => (
-            <p key={i} className="text-gray-700 dark:text-gray-300">
+          {details.map((detail) => (
+            <p key={detail} className="text-gray-700 dark:text-gray-300">
               {detail}
             </p>
           ))}
