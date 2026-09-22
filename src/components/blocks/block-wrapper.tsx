@@ -20,7 +20,7 @@ interface BlockWrapperProps {
  * - Focus management
  * - Accessibility attributes
  */
-export const BlockWrapper = forwardRef<HTMLDivElement, BlockWrapperProps>(
+export const BlockWrapper = forwardRef<HTMLLIElement, BlockWrapperProps>(
   (
     {
       blockId,
@@ -42,7 +42,7 @@ export const BlockWrapper = forwardRef<HTMLDivElement, BlockWrapperProps>(
     } = useBlockFocus({ blockId, onEnterEdit });
 
     // Combine refs
-    const setRef = (el: HTMLDivElement | null) => {
+    const setRef = (el: HTMLLIElement | null) => {
       blockRef.current = el;
       if (typeof forwardedRef === "function") {
         forwardedRef(el);
@@ -57,18 +57,17 @@ export const BlockWrapper = forwardRef<HTMLDivElement, BlockWrapperProps>(
     }
 
     return (
-      <div
+      <li
         ref={setRef}
         data-block-id={blockId}
         tabIndex={0}
-        role="listitem"
         data-selected={isSelected || undefined}
         onClick={handleFocus}
         onFocus={handleFocus}
         onBlur={handleBlur}
         onKeyDown={handleKeyDown}
         className={cn(
-          "relative outline-none transition-all duration-150",
+          "relative outline-none list-none transition-[box-shadow,opacity] duration-150",
           // Selection indicator - blue left border like Notion
           isSelected &&
             "before:absolute before:-left-3 before:top-0 before:bottom-0 before:w-0.5 before:bg-blue-500 before:rounded-full",
@@ -80,7 +79,7 @@ export const BlockWrapper = forwardRef<HTMLDivElement, BlockWrapperProps>(
         )}
       >
         {children}
-      </div>
+      </li>
     );
   }
 );

@@ -38,7 +38,7 @@ export function NestedBlockRenderer({
   const tree = useMemo(() => buildBlockTree(blocks), [blocks]);
 
   return (
-    <div className="space-y-2" role="list">
+    <ul className="space-y-2 list-none p-0 m-0">
       {tree.map((node) => (
         <NestedBlockNode
           key={node.block.id}
@@ -52,7 +52,7 @@ export function NestedBlockRenderer({
           depth={0}
         />
       ))}
-    </div>
+    </ul>
   );
 }
 
@@ -180,7 +180,7 @@ export function FlatBlockRenderer({
   );
 
   return (
-    <div className="space-y-4" role="list">
+    <ul className="space-y-4 list-none p-0 m-0">
       {sortedBlocks.map((block) => {
         const content = (
           <BlockRenderer
@@ -198,6 +198,6 @@ export function FlatBlockRenderer({
           <div key={block.id}>{content}</div>
         );
       })}
-    </div>
+    </ul>
   );
 }

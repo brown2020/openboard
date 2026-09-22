@@ -15,7 +15,7 @@ interface UseBlockFocusReturn {
   handleFocus: () => void;
   handleBlur: () => void;
   handleKeyDown: (e: React.KeyboardEvent) => void;
-  blockRef: React.RefObject<HTMLDivElement | null>;
+  blockRef: React.RefObject<HTMLElement | null>;
 }
 
 /**
@@ -28,7 +28,7 @@ export function useBlockFocus({
 }: UseBlockFocusOptions): UseBlockFocusReturn {
   const { selectedBlockId, setSelectedBlock, isEditorMode } = useEditor();
   const { currentBoard, deleteBlock } = useBoardStore();
-  const blockRef = useRef<HTMLDivElement | null>(null);
+  const blockRef = useRef<HTMLElement | null>(null);
 
   const isSelected = selectedBlockId === blockId;
   const isFocused = isSelected && isEditorMode;
