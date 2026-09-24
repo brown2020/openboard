@@ -119,4 +119,4 @@ Branch from `dev`. Keep client Firebase / Zustand out of server components and A
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+[GNU Affero General Public License v3.0](LICENSE.md) (AGPL-3.0).
