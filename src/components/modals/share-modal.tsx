@@ -41,9 +41,6 @@ import {
   Code,
   QrCode,
   ExternalLink,
-  Twitter,
-  Facebook,
-  Linkedin,
 } from "lucide-react";
 import { BoardPrivacy } from "@/types";
 import { cn } from "@/lib/utils";

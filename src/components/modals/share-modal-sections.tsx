@@ -41,10 +41,8 @@ import {
   Code,
   QrCode,
   ExternalLink,
-  Twitter,
-  Facebook,
-  Linkedin,
 } from "lucide-react";
+import { FaTwitter, FaFacebook, FaLinkedin } from "react-icons/fa";
 import { BoardPrivacy } from "@/types";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/stores/ui-store";
@@ -184,7 +182,7 @@ export function ShareModalSections({
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                <Twitter className="w-4 h-4 mr-2" />
+                <FaTwitter className="w-4 h-4 mr-2" />
                 Twitter
               </a>
             </Button>
@@ -194,7 +192,7 @@ export function ShareModalSections({
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                <Facebook className="w-4 h-4 mr-2" />
+                <FaFacebook className="w-4 h-4 mr-2" />
                 Facebook
               </a>
             </Button>
@@ -204,7 +202,7 @@ export function ShareModalSections({
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                <Linkedin className="w-4 h-4 mr-2" />
+                <FaLinkedin className="w-4 h-4 mr-2" />
                 LinkedIn
               </a>
             </Button>
