@@ -108,7 +108,7 @@ export function VideoBlock({
       )}
 
       <div
-        className="border rounded-lg bg-card overflow-hidden"
+        className="border rounded-lg bg-card overflow-hidden min-h-24"
         aria-label={title || "Embedded video"}
       >
         {title && (

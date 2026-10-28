@@ -42,6 +42,7 @@ import {
   QrCode,
   ExternalLink,
 } from "lucide-react";
+import { shareSettingsSyncKey } from "@/lib/share-settings";
 import { BoardPrivacy } from "@/types";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/stores/ui-store";
@@ -79,13 +80,17 @@ export function ShareModal() {
     };
   }, []);
 
+  const shareSyncKey = currentBoard ? shareSettingsSyncKey(currentBoard) : "";
+  const shareSyncRef = useRef<string | null>(null);
+
   useEffect(() => {
-    if (currentBoard) {
-      setPrivacy(currentBoard.privacy);
-      setPassword("");
-      setCollaborators(filterCollaboratorUserIds(currentBoard.collaborators || []));
-    }
-  }, [currentBoard]);
+    if (!currentBoard || !shareSyncKey) return;
+    if (shareSyncRef.current === shareSyncKey) return;
+    shareSyncRef.current = shareSyncKey;
+    setPrivacy(currentBoard.privacy);
+    setPassword("");
+    setCollaborators(filterCollaboratorUserIds(currentBoard.collaborators || []));
+  }, [currentBoard, shareSyncKey]);
 
   const handleCopy = useCallback((text: string, type: string) => {
     navigator.clipboard.writeText(text);

@@ -28,6 +28,7 @@ const ALIGNMENT_CLASSES = {
 
 export function TextBlock({ block, isEditing = false }: TextBlockProps) {
   const { updateBlock } = useBoardStore();
+  const textColor = useBoardStore((state) => state.currentBoard?.theme.textColor);
   const [isEditMode, setIsEditMode] = useState(false);
   const { content, alignment = "left", fontSize = "md" } = block.settings;
   const [editContent, setEditContent] = useState(content);
@@ -108,14 +109,17 @@ export function TextBlock({ block, isEditing = false }: TextBlockProps) {
       )}
       <div
         className={cn(
-          "prose prose-neutral dark:prose-invert max-w-none",
+          "max-w-none",
           FONT_SIZE_CLASSES[fontSize],
           ALIGNMENT_CLASSES[alignment],
-          "text-foreground",
+          !content && isEditing && "opacity-70",
           !block.visible && isEditing && "opacity-50"
         )}
+        style={{ color: textColor }}
       >
-        <p className="whitespace-pre-wrap">{content}</p>
+        <p className="whitespace-pre-wrap min-h-[1.5em]">
+          {content || (isEditing ? "Empty text block" : "\u00a0")}
+        </p>
       </div>
     </div>
   );

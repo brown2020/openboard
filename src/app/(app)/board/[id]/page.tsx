@@ -20,6 +20,7 @@ import {
 } from "@dnd-kit/sortable";
 import { Block, BlockType } from "@/types";
 import { canEditBoard } from "@/lib/board-access";
+import { shouldFetchEditorBoard } from "@/lib/editor-load";
 import {
   getAutoSaveStatus,
   serializeBoardSaveState,
@@ -65,6 +66,7 @@ function BoardEditorSession({ boardId }: { boardId: string }) {
     null
   );
   const loadedBoardIdRef = useRef<string | null>(null);
+  const toastRef = useRef(toast);
 
   const currentBoardRef = useRef(currentBoard);
   const boardTitleRef = useRef(boardTitle);
@@ -169,20 +171,23 @@ function BoardEditorSession({ boardId }: { boardId: string }) {
   }, [setEditorMode]);
 
   useEffect(() => {
+    toastRef.current = toast;
+  }, [toast]);
+
+  useEffect(() => {
+    if (!isLoaded || !user) return;
+    if (!shouldFetchEditorBoard(loadedBoardIdRef.current, boardId)) return;
+
     let cancelled = false;
+    const activeUser = user;
 
     const loadBoard = async () => {
-      if (!isLoaded) return;
-      if (!user) {
-        return;
-      }
-
       const board = await getBoard(boardId);
       if (cancelled) return;
 
       if (board) {
-        if (!canEditBoard(user.id, board)) {
-          toast.error(
+        if (!canEditBoard(activeUser.id, board)) {
+          toastRef.current.error(
             "Access denied",
             "You don't have permission to edit this board"
           );
@@ -205,7 +210,7 @@ function BoardEditorSession({ boardId }: { boardId: string }) {
         );
         loadedBoardIdRef.current = boardId;
       } else {
-        toast.error(
+        toastRef.current.error(
           "Board not found",
           "This board doesn't exist or has been deleted"
         );
@@ -222,7 +227,7 @@ function BoardEditorSession({ boardId }: { boardId: string }) {
     return () => {
       cancelled = true;
     };
-  }, [boardId, user, isLoaded, getBoard, setCurrentBoard, toast]);
+  }, [boardId, user, isLoaded, getBoard, setCurrentBoard]);
 
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {

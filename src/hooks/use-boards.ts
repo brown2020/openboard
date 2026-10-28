@@ -22,6 +22,10 @@ import {
   mergeFormSubmitUrls,
   stripFormSubmitUrls,
 } from "@/lib/form-webhooks";
+import {
+  isFirestorePermissionDenied,
+  omitUndefinedDeep,
+} from "@/lib/firestore-data";
 import { useBoardStore } from "@/stores/board-store";
 import { Board } from "@/types";
 import { useAuthContext } from "@/lib/auth-context";
@@ -304,23 +308,24 @@ export function useBoards() {
     async (boardId: string, updates: Partial<Board>): Promise<boolean> => {
       try {
         const boardRef = doc(getClientDb(), "boards", boardId);
-        let nextUpdates = updates;
-        if (updates.blocks) {
-          const boardSnap = await getDoc(boardRef);
-          const ownerId = boardSnap.data()?.ownerId;
-          if (typeof ownerId !== "string") {
-            setError("Failed to save form settings");
-            return false;
+        let nextUpdates = omitUndefinedDeep(updates);
+        if (nextUpdates.blocks) {
+          let blocks = nextUpdates.blocks;
+          try {
+            const boardSnap = await getDoc(boardRef);
+            const ownerId = boardSnap.data()?.ownerId;
+            if (typeof ownerId === "string") {
+              await setDoc(
+                doc(getClientDb(), "boardFormWebhooks", boardId),
+                { ownerId, urls: extractFormSubmitUrls(blocks) },
+                { merge: true }
+              );
+              blocks = stripFormSubmitUrls(blocks);
+            }
+          } catch (error) {
+            if (!isFirestorePermissionDenied(error)) throw error;
           }
-          await setDoc(
-            doc(getClientDb(), "boardFormWebhooks", boardId),
-            { ownerId, urls: extractFormSubmitUrls(updates.blocks) },
-            { merge: true }
-          );
-          nextUpdates = {
-            ...updates,
-            blocks: stripFormSubmitUrls(updates.blocks),
-          };
+          nextUpdates = { ...nextUpdates, blocks };
         }
         await updateDoc(boardRef, {
           ...nextUpdates,

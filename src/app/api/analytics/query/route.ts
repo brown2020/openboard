@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { consumeRateLimit, errorResponse, requireAuth } from "@/lib/api-utils";
 import { canEditBoard } from "@/lib/board-access";
+import { isAnalyticsDateWithinDays } from "@/lib/dashboard-analytics";
 import { getAdminDb } from "@/lib/firebase-admin";
 import type { BoardAnalytics } from "@/types";
 
@@ -24,12 +25,6 @@ export async function POST(req: Request) {
 
     const { boardIds, days } = parsed.data;
     const adminDb = getAdminDb();
-    const endDate = new Date();
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - days);
-    const start = startDate.toISOString().split("T")[0]!;
-    const end = endDate.toISOString().split("T")[0]!;
-
     const analytics: BoardAnalytics[] = [];
 
     for (const boardId of boardIds) {
@@ -38,15 +33,17 @@ export async function POST(req: Request) {
       const data = boardSnap.data() as { ownerId?: string; collaborators?: string[] };
       if (!canEditBoard(user.uid, data)) continue;
 
+      // Equality on boardId uses the automatic single-field index.
+      // A date range here needs a composite index that may not be deployed yet.
       const snapshot = await adminDb
         .collection("analytics")
         .where("boardId", "==", boardId)
-        .where("date", ">=", start)
-        .where("date", "<=", end)
         .get();
 
       for (const doc of snapshot.docs) {
-        analytics.push(doc.data() as BoardAnalytics);
+        const row = doc.data() as BoardAnalytics;
+        if (!row.date || !isAnalyticsDateWithinDays(row.date, days)) continue;
+        analytics.push(row);
       }
     }
 
