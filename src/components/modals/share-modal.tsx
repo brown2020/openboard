@@ -106,8 +106,10 @@ export function ShareModal() {
 
   const embedCode = `<iframe src="${boardUrl}" width="100%" height="600" frameborder="0" style="border-radius: 12px; border: 1px solid #e5e5e5;"></iframe>`;
 
+  const canManageSettings = user?.id === currentBoard.ownerId;
+
   const handlePrivacyChange = async (newPrivacy: BoardPrivacy) => {
-    if (!currentBoard) return;
+    if (!currentBoard || !canManageSettings) return;
 
     setIsSaving(true);
     setPrivacy(newPrivacy);
@@ -126,6 +128,7 @@ export function ShareModal() {
         if (!res.ok) {
           const payload = (await res.json().catch(() => null)) as { error?: string } | null;
           toast.error("Save failed", payload?.error || "Failed to update privacy");
+          setPrivacy(currentBoard.privacy);
           setIsSaving(false);
           return;
         }
@@ -133,15 +136,16 @@ export function ShareModal() {
         await updateBoard(currentBoard.id, { privacy: newPrivacy });
         toast.success("Privacy updated", `Board is now ${newPrivacy}`);
       }
-    } catch (error) {
+    } catch {
       toast.error("Save failed", "An error occurred while updating privacy");
+      setPrivacy(currentBoard.privacy);
     } finally {
       setIsSaving(false);
     }
   };
 
   const handlePasswordSave = async () => {
-    if (privacy !== "password") return;
+    if (!canManageSettings || privacy !== "password") return;
     setIsSaving(true);
     try {
       const res = await fetch("/api/boards/privacy", {
@@ -168,7 +172,7 @@ export function ShareModal() {
   };
 
   const handleAddCollaborator = async () => {
-    if (!currentBoard) return;
+    if (!currentBoard || !canManageSettings) return;
 
     const email = newCollaborator.trim();
     if (!email) return;
@@ -223,7 +227,7 @@ export function ShareModal() {
   };
 
   const handleRemoveCollaborator = async (userId: string) => {
-    if (!currentBoard) return;
+    if (!currentBoard || !canManageSettings) return;
 
     const next = collaborators.filter((id) => id !== userId);
     const success = await updateBoard(currentBoard.id, { collaborators: next });
@@ -295,6 +299,7 @@ export function ShareModal() {
             handleRemoveCollaborator={handleRemoveCollaborator}
             currentBoard={currentBoard}
             user={user}
+            canManageSettings={canManageSettings}
           />
         </div>
       </SheetContent>

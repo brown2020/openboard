@@ -1,7 +1,7 @@
 import OpenAI from "openai";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { requireAuth, rateLimit, errorResponse } from "@/lib/api-utils";
+import { requireAuth, consumeRateLimit, errorResponse } from "@/lib/api-utils";
 
 const openai = process.env.OPENAI_API_KEY
   ? new OpenAI({
@@ -25,7 +25,7 @@ export async function POST(req: Request) {
     const user = await requireAuth();
 
     // Rate limit: 10 requests per minute per user
-    if (!rateLimit(`ai:${user.uid}`, 10, 60000)) {
+    if (!(await consumeRateLimit(`ai:${user.uid}`, 10, 60000))) {
       return errorResponse("Too many requests. Please try again later.", 429);
     }
 

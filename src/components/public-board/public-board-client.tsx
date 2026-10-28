@@ -18,12 +18,12 @@ export function PublicBoardClient({ board }: { board: PublicBoard }) {
 
   useEffect(() => {
     if (!analyticsEnabled) return;
-    trackView(board.id, navigator.userAgent);
+    trackView(board.id);
   }, [analyticsEnabled, board.id, trackView]);
 
   const handleBlockClick = (blockId: string) => {
     if (!analyticsEnabled) return;
-    trackClick(board.id, blockId, document.referrer, navigator.userAgent);
+    trackClick(board.id, blockId);
   };
 
   return (

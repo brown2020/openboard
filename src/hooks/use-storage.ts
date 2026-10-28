@@ -33,8 +33,15 @@ export function useStorage(): UseStorageResult {
     }
 
     // Validate file type
-    if (!file.type.startsWith("image/")) {
-      setError("Only image files are allowed");
+    const allowedTypes = new Set([
+      "image/jpeg",
+      "image/png",
+      "image/gif",
+      "image/webp",
+      "image/avif",
+    ]);
+    if (!allowedTypes.has(file.type)) {
+      setError("Only JPEG, PNG, GIF, WebP, or AVIF images are allowed");
       return null;
     }
 

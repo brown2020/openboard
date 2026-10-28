@@ -1,7 +1,9 @@
 import "server-only";
 
-import crypto from "node:crypto";
-import { base64urlEncode, base64urlEncodeJson, base64urlDecodeJson } from "./base64url";
+import {
+  createBoardAccessToken as createToken,
+  verifyBoardAccessToken as verifyToken,
+} from "./board-access-token";
 
 const COOKIE_NAME = "openboard_board_access";
 
@@ -15,48 +17,30 @@ function getSecret(): string {
   return secret;
 }
 
-function sign(payloadB64: string) {
-  return base64urlEncode(
-    crypto.createHmac("sha256", getSecret()).update(payloadB64).digest()
-  );
-}
-
 export function getBoardAccessCookieName() {
   return COOKIE_NAME;
 }
 
-export function createBoardAccessToken(boardId: string, expiresInSeconds: number) {
-  const exp = Math.floor(Date.now() / 1000) + expiresInSeconds;
-  const payload = { boardId, exp };
-  const payloadB64 = base64urlEncodeJson(payload);
-  const sig = sign(payloadB64);
-  return `${payloadB64}.${sig}`;
+export function createBoardAccessToken(
+  boardId: string,
+  expiresInSeconds: number,
+  existingToken?: string
+) {
+  return createToken({
+    secret: getSecret(),
+    boardId,
+    expiresInSeconds,
+    existingToken,
+  });
 }
 
 export function verifyBoardAccessToken(
   token: string,
   boardId: string
 ): { ok: true } | { ok: false } {
-  const [payloadB64, sig] = token.split(".");
-  if (!payloadB64 || !sig) return { ok: false };
-
-  const expectedSig = sign(payloadB64);
-  try {
-    const a = Buffer.from(sig);
-    const b = Buffer.from(expectedSig);
-    if (a.length !== b.length) return { ok: false };
-    if (!crypto.timingSafeEqual(a, b)) return { ok: false };
-  } catch {
-    return { ok: false };
-  }
-
-  const payload = base64urlDecodeJson<{ boardId: string; exp: number }>(payloadB64);
-  if (!payload) return { ok: false };
-  if (payload.boardId !== boardId) return { ok: false };
-  if (typeof payload.exp !== "number") return { ok: false };
-  if (Math.floor(Date.now() / 1000) >= payload.exp) return { ok: false };
-
-  return { ok: true };
+  return verifyToken({
+    secret: getSecret(),
+    token,
+    boardId,
+  });
 }
-
-

@@ -7,6 +7,10 @@ import { Calendar as CalendarIcon } from "lucide-react";
 import { BlockControls } from "./block-controls";
 import { BlockEditWrapper } from "./block-edit-wrapper";
 import { InputField, SelectField } from "./form-fields";
+import {
+  EMBED_IFRAME_SANDBOX,
+  sanitizeProviderEmbed,
+} from "@/lib/safe-embed-url";
 
 type Provider = CalendarBlockType["settings"]["provider"];
 
@@ -56,10 +60,12 @@ export function CalendarBlock({
   const [editUrl, setEditUrl] = useState(url);
   const [editTitle, setEditTitle] = useState(title || "");
 
-  const embedUrl = useMemo(
-    () => normalizeCalendarUrl(url, provider),
-    [url, provider]
-  );
+  const embedUrl = useMemo(() => {
+    const normalized = normalizeCalendarUrl(url, provider);
+    if (!normalized) return "";
+    const pageHost = typeof window !== "undefined" ? window.location.hostname : undefined;
+    return sanitizeProviderEmbed(normalized, provider, pageHost);
+  }, [url, provider]);
 
   const handleSave = () => {
     updateBlock(block.id, {
@@ -127,7 +133,7 @@ export function CalendarBlock({
         </div>
         {embedUrl ? (
           <div className="min-h-[450px] bg-muted">
-            <iframe sandbox="allow-scripts allow-popups allow-forms allow-popups-to-escape-sandbox"
+            <iframe sandbox={EMBED_IFRAME_SANDBOX}
               src={embedUrl}
               title={title || "Calendar booking widget"}
               className="w-full h-full min-h-[450px]"

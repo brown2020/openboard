@@ -82,6 +82,30 @@ describe("evaluateProxyRequest", () => {
     }
   });
 
+  it("requires a session for user and analytics query APIs", () => {
+    for (const pathname of ["/api/users/lookup", "/api/analytics/query"]) {
+      const decision = evaluateProxyRequest({
+        pathname,
+        search: "",
+        origin,
+        isAuthenticated: false,
+        shouldClearAuthCookie: false,
+      });
+      expect(decision.action).toBe("json");
+    }
+  });
+
+  it("leaves analytics tracking public", () => {
+    const decision = evaluateProxyRequest({
+      pathname: "/api/analytics/track",
+      search: "",
+      origin,
+      isAuthenticated: false,
+      shouldClearAuthCookie: false,
+    });
+    expect(decision.action).toBe("next");
+  });
+
   it("allows public unlock API requests", () => {
     const decision = evaluateProxyRequest({
       pathname: "/api/boards/unlock",

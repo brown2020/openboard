@@ -102,12 +102,12 @@ Public visitor → /u/{user}/{slug} → [password gate?] → view + track analyt
 - **Auth gate:** `src/proxy.ts` (not `middleware.ts`) + per-route `requireAuth()` on APIs
 - **State:** Zustand for editor/UI; Firestore realtime for board list
 - **Public render:** Server fetches board via Admin SDK; strips secrets; client handles theme + analytics
-- **Security:** HttpOnly auth cookie; server-side password hashing (scrypt); rate limits on sensitive APIs (in-memory)
+- **Security:** HttpOnly auth cookie verified in the proxy; server-side password hashing (scrypt with fixed parameters); Firestore-backed rate limits with an in-memory fallback
 
 ### Existing technical constraints
 
-- Firestore rules allow **world read** on boards — private/password enforcement is application-layer on the public route only
-- Rate limiting is in-process — not shared across serverless instances
+- Firestore `get` allows public boards; unlisted, private, and password boards are not listable. Field-level secrets (`submitUrl`, `passwordHash`) cannot be redacted by rules, so the app stores webhook URLs in `boardFormWebhooks` and strips them from board documents.
+- Rate limits are stored in the `rateLimits` collection and fall back to in-process counters when the Admin SDK is unavailable
 - Board list merges owned boards and collaborator shares via dual Firestore subscriptions
 - No CI test pipeline observed; local quality gate is lint + TypeScript + Vitest + build
 - npm lockfile — use npm exclusively
@@ -119,8 +119,8 @@ Public visitor → /u/{user}/{slug} → [password gate?] → view + track analyt
 1. ~~**Collaboration is non-functional end-to-end**~~ — email invites resolve to UID; shared boards appear in `/boards` (legacy email entries must be re-invited)
 2. ~~**Unlisted boards are not hidden** from direct URL access~~ — unlisted boards are intentionally reachable via direct URL; they are excluded from search indexes (`noindex`)
 3. **Analytics `uniqueVisitors`** increments on every view — not deduplicated
-4. **`analytics.enabled` flag** is never checked before tracking
-5. **Referrer analytics** typed but not written
+4. ~~**`analytics.enabled` flag** is never checked before tracking~~ — the track API skips writes when analytics are disabled
+5. ~~**Referrer analytics** typed but not written~~ — click events store the request referrer
 6. ~~**Form webhooks** often fail due to browser CORS posting to arbitrary URLs~~ — public forms relay through `/api/forms/submit`
 7. **Marketing copy** on landing page overstates collaboration, layouts, and custom domains
 8. ~~**Manual save required**~~ — auto-save debounces edits; manual Save / ⌘S still available for immediate persist
@@ -229,7 +229,7 @@ Ordered by product impact and dependency. Each item is sized for one focused com
 - [x] Rate limited; basic spam protection (honeypot or rate limit per board)
 - [x] Success/error feedback on public form block
 
-**Implementation note:** Public `FormBlock` posts to `/api/forms/submit`; server validates board access, required fields, and webhook URL (SSRF-safe), then relays JSON to the configured webhook with rate limits and a honeypot field.
+**Implementation note:** Public `FormBlock` posts to `/api/forms/submit`. Webhook URLs live in `boardFormWebhooks` (owner and collaborators only). The server checks the URL and its DNS result, refuses private and metadata targets, and does not follow redirects to a new host without re-checking it.
 
 **Follow-up:** Optional Firestore submission log for board owners; select-field UI for form blocks.
 
@@ -246,7 +246,7 @@ Ordered by product impact and dependency. Each item is sized for one focused com
 - [x] Top 5 links by click count across all boards
 - [x] Loading and empty states
 
-**Implementation note:** `useDashboardAnalytics` loads 30-day Firestore analytics for all user boards; `lib/dashboard-analytics.ts` aggregates period metrics and top link/button clicks; dashboard renders stat cards, bar list, and retryable error state.
+**Implementation note:** `useDashboardAnalytics` loads 30-day analytics through `/api/analytics/query`; `lib/dashboard-analytics.ts` aggregates period metrics and top link/button clicks; dashboard renders stat cards, bar list, and retryable error state.
 
 ---
 
@@ -315,7 +315,7 @@ Ordered by product impact and dependency. Each item is sized for one focused com
 | button | ✅ | ✅ |
 | social-links | ✅ | ✅ |
 | calendar | ✅ | ✅ |
-| form | ✅ (partial: no select field) | ✅ (webhook fragile) |
+| form | ✅ (partial: no select field) | ✅ (server webhook relay) |
 | divider | ✅ | ✅ |
 | spacer | ✅ | ✅ |
 
@@ -330,3 +330,8 @@ Ordered by product impact and dependency. Each item is sized for one focused com
 | `POST /api/boards/privacy` | Required | Privacy + password hash |
 | `POST /api/boards/unlock` | Public | Password verify + access cookie |
 | `POST /api/forms/submit` | Public | Relay form submissions to configured webhook |
+| `POST /api/analytics/track` | Public | Record views and clicks |
+| `POST /api/analytics/query` | Required | Read analytics for boards the user can edit |
+| `POST /api/users/lookup` | Required | Resolve a collaborator by Auth email |
+| `POST /api/users/profiles` | Required | Public profile fields for collaborator ids |
+| `POST /api/users/username` | Required | Claim a unique username |

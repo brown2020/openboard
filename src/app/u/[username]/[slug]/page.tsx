@@ -11,6 +11,7 @@ import {
   isPrivateBoard,
   requiresPasswordUnlock,
 } from "@/lib/public-board-access";
+import { stripFormSubmitUrls } from "@/lib/form-webhooks";
 import { fetchPublicBoardBySlug } from "@/lib/public-board-server";
 import { PasswordGate } from "@/components/public-board/password-gate";
 import { PublicBoardClient } from "@/components/public-board/public-board-client";
@@ -50,6 +51,19 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     };
   }
 
+  if (requiresPasswordUnlock(board.privacy)) {
+    const cookieStore = await cookies();
+    const access = cookieStore.get(getBoardAccessCookieName())?.value;
+    const isAuthorized = !!access && verifyBoardAccessToken(access, board.id).ok;
+    if (!isAuthorized) {
+      return {
+        title: "Protected Board",
+        description: "This board is password protected.",
+        robots: getPublicBoardRobots("password"),
+      };
+    }
+  }
+
   return buildBoardMetadata(board);
 }
 
@@ -85,6 +99,7 @@ function serializeBoardForClient(board: Board) {
 
   return {
     ...boardPublic,
+    blocks: stripFormSubmitUrls(boardPublic.blocks ?? []),
     createdAt: createdAt?.toDate?.() ? createdAt.toDate().toISOString() : null,
     updatedAt: updatedAt?.toDate?.() ? updatedAt.toDate().toISOString() : null,
   };

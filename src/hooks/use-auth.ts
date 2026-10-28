@@ -7,6 +7,7 @@ import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { getClientDb } from "@/lib/firebase";
 import { UserProfile } from "@/types";
 import { getValidToken } from "@/lib/auth-utils";
+import { syncAuthSessionCookie } from "@/lib/auth-cookie";
 import { useErrorHandler, getFirebaseErrorMessage } from "./use-error-handler";
 
 async function loadOrCreateProfile(
@@ -101,7 +102,18 @@ export function useAuth() {
           firebaseUser.photoURL
         )
       )
-      .then((profile) => {
+      .then(async (profile) => {
+        if (ignore) return;
+        await syncAuthSessionCookie(firebaseUser);
+        const claim = await fetch("/api/users/username", { method: "POST" });
+        if (claim.ok) {
+          const body = (await claim.json()) as { username?: string };
+          if (body.username) {
+            profile = { ...profile, username: body.username };
+          }
+        } else if (claim.status !== 404) {
+          throw new Error("Failed to claim username");
+        }
         if (ignore) return;
         window.clearTimeout(timeout);
         setUser(profile);

@@ -1,58 +1,53 @@
 "use client";
 
-import {
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  limit,
-  query,
-  where,
-} from "firebase/firestore";
-import { getClientDb } from "@/lib/firebase";
 import { normalizeCollaboratorEmail } from "@/lib/collaborators";
 import type { UserProfile } from "@/types";
+
+type PublicProfile = Pick<UserProfile, "id" | "username" | "displayName" | "avatar">;
 
 export async function resolveUserIdByEmail(
   email: string
 ): Promise<string | null> {
   const normalized = normalizeCollaboratorEmail(email);
-  const usersRef = collection(getClientDb(), "users");
-  const q = query(usersRef, where("email", "==", normalized), limit(1));
-  const snapshot = await getDocs(q);
+  const response = await fetch("/api/users/lookup", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: normalized }),
+  });
 
-  if (snapshot.empty) {
-    return null;
+  if (response.status === 404) return null;
+  if (!response.ok) {
+    throw new Error("Failed to look up collaborator");
   }
 
-  const userDoc = snapshot.docs[0];
-  const data = userDoc.data() as UserProfile;
-  return data.id || userDoc.id;
-}
-
-export async function fetchUserProfileById(
-  userId: string
-): Promise<UserProfile | null> {
-  const userRef = doc(getClientDb(), "users", userId);
-  const snap = await getDoc(userRef);
-  if (!snap.exists()) return null;
-  return snap.data() as UserProfile;
+  const body = (await response.json()) as { id?: string };
+  return body.id ?? null;
 }
 
 export async function fetchCollaboratorProfiles(
   userIds: string[]
 ): Promise<Map<string, UserProfile>> {
-  const uniqueIds = [...new Set(userIds)];
+  const uniqueIds = [...new Set(userIds)].slice(0, 20);
   const profiles = new Map<string, UserProfile>();
+  if (uniqueIds.length === 0) return profiles;
 
-  await Promise.all(
-    uniqueIds.map(async (userId) => {
-      const profile = await fetchUserProfileById(userId);
-      if (profile) {
-        profiles.set(userId, profile);
-      }
-    })
-  );
+  const response = await fetch("/api/users/profiles", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ids: uniqueIds }),
+  });
+  if (!response.ok) return profiles;
+
+  const body = (await response.json()) as { profiles?: PublicProfile[] };
+  for (const profile of body.profiles ?? []) {
+    profiles.set(profile.id, {
+      id: profile.id,
+      username: profile.username,
+      email: "",
+      displayName: profile.displayName,
+      avatar: profile.avatar,
+    } as UserProfile);
+  }
 
   return profiles;
 }

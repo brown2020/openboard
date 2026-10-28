@@ -1,31 +1,10 @@
-const BLOCKED_HOSTNAMES = new Set([
-  "localhost",
-  "127.0.0.1",
-  "0.0.0.0",
-  "::1",
-  "[::1]",
-]);
+import { isBlockedEmbedHost, isBlockedIp, normalizeHostname } from "@/lib/public-host";
 
-function isPrivateIpv4(hostname: string): boolean {
-  const match = hostname.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
-  if (!match) return false;
-
-  const octets = match.slice(1).map(Number);
-  if (octets.some((octet) => octet > 255)) return false;
-
-  const [a, b] = octets;
-  if (a === 10) return true;
-  if (a === 127) return true;
-  if (a === 169 && b === 254) return true;
-  if (a === 172 && b >= 16 && b <= 31) return true;
-  if (a === 192 && b === 168) return true;
-
-  return false;
-}
+const ALLOWED_PORTS = new Set(["", "80", "443"]);
 
 /**
- * Allow only public HTTP(S) webhook targets to reduce SSRF risk when relaying
- * form submissions from the server.
+ * Syntactic allowlist for form webhook targets.
+ * DNS resolution is checked separately before the server fetches.
  */
 export function isAllowedWebhookUrl(rawUrl: string): boolean {
   let parsed: URL;
@@ -40,14 +19,15 @@ export function isAllowedWebhookUrl(rawUrl: string): boolean {
     return false;
   }
 
-  if (parsed.username || parsed.password) {
-    return false;
-  }
+  if (parsed.username || parsed.password) return false;
 
-  const hostname = parsed.hostname.toLowerCase();
-  if (BLOCKED_HOSTNAMES.has(hostname)) return false;
-  if (hostname.endsWith(".local")) return false;
-  if (isPrivateIpv4(hostname)) return false;
+  const expectedPort = parsed.protocol === "https:" ? "443" : "80";
+  if (parsed.port && parsed.port !== expectedPort) return false;
+  if (!ALLOWED_PORTS.has(parsed.port)) return false;
+
+  const hostname = normalizeHostname(parsed.hostname);
+  if (isBlockedEmbedHost(hostname)) return false;
+  if (hostname.includes(":") && isBlockedIp(hostname)) return false;
 
   return true;
 }

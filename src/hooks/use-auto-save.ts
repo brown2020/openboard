@@ -63,6 +63,7 @@ export function useAutoSave({
   const [lastSavedFingerprint, setLastSavedFingerprint] = useState("");
   const lastSavedFingerprintRef = useRef<string>("");
   const isMountedRef = useRef(true);
+  const dirtyRef = useRef(false);
   const getPayloadRef = useRef(getPayload);
   const onSaveSuccessRef = useRef(onSaveSuccess);
 
@@ -78,9 +79,13 @@ export function useAutoSave({
     isMountedRef.current = true;
     return () => {
       isMountedRef.current = false;
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
+    };
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (!dirtyRef.current) return;
+      void saveNowRef.current({ silent: true });
     };
   }, []);
 
@@ -112,6 +117,7 @@ export function useAutoSave({
       setIsSaving(true);
       setSaving(true);
       setSaveFailed(false);
+      dirtyRef.current = false;
 
       try {
         const success = await updateBoard(boardId, {
@@ -163,11 +169,13 @@ export function useAutoSave({
 
     if (stateFingerprint === lastSavedFingerprintRef.current) {
       setHasUnsavedChanges(false);
+      dirtyRef.current = false;
       return;
     }
 
     setHasUnsavedChanges(true);
     setSaveFailed(false);
+    dirtyRef.current = true;
 
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);

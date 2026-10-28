@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { requireAuth, canEditBoard, errorResponse } from "@/lib/api-utils";
+import { requireAuth, errorResponse } from "@/lib/api-utils";
+import { isBoardOwner } from "@/lib/board-access";
 import { getAdminDb } from "@/lib/firebase-admin";
 import { hashPassword } from "@/lib/password";
 
 const PrivacySchema = z.object({
   boardId: z.string().min(1),
   privacy: z.enum(["public", "unlisted", "private", "password"]),
-  password: z.string().optional(),
+  password: z.string().max(128).optional(),
 });
 
 export async function POST(req: Request) {
@@ -35,7 +36,7 @@ export async function POST(req: Request) {
     const data = snap.data() as { ownerId?: string; collaborators?: string[] };
     
     // Check if user can edit (owner or collaborator)
-    if (!canEditBoard(user.uid, data)) {
+    if (!isBoardOwner(user.uid, data)) {
       return errorResponse("Forbidden", 403);
     }
 

@@ -230,6 +230,7 @@ function BoardEditorSession({ boardId }: { boardId: string }) {
         shouldWarnBeforeUnload({
           isSaving: isAutoSaving || isSaving,
           saveFailed,
+          hasUnsavedChanges,
         })
       ) {
         e.preventDefault();
@@ -239,7 +240,7 @@ function BoardEditorSession({ boardId }: { boardId: string }) {
 
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
-  }, [isAutoSaving, isSaving, saveFailed]);
+  }, [isAutoSaving, isSaving, saveFailed, hasUnsavedChanges]);
 
   const handleSave = useCallback(async () => {
     const success = await saveNow();

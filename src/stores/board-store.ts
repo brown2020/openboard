@@ -131,7 +131,23 @@ export const useBoardStore = create<BoardStore>()(
         set({ boards, status: "success" }, false, "setBoards"),
 
       setCurrentBoard: (board) => {
-        set({ currentBoard: board, history: [], historyIndex: -1 }, false, "setCurrentBoard");
+        set(
+          {
+            currentBoard: board,
+            history: board
+              ? [
+                  {
+                    blocks: structuredClone(board.blocks ?? []),
+                    timestamp: Date.now(),
+                    description: "Loaded",
+                  },
+                ]
+              : [],
+            historyIndex: board ? 0 : -1,
+          },
+          false,
+          "setCurrentBoard"
+        );
       },
 
       addBoard: (board) =>
@@ -172,37 +188,38 @@ export const useBoardStore = create<BoardStore>()(
         const state = get();
         if (!state.currentBoard) return;
 
-        get().saveToHistory(`Added ${block.type} block`);
+        const nextBlocks = insertBlockByOrder(state.currentBoard.blocks, block);
         set(
           {
             currentBoard: {
               ...state.currentBoard,
-              blocks: insertBlockByOrder(state.currentBoard.blocks, block),
+              blocks: nextBlocks,
             },
           },
           false,
           "addBlock"
         );
+        get().saveToHistory(`Added ${block.type} block`);
       },
 
       updateBlock: (blockId, updates) => {
         const state = get();
         if (!state.currentBoard) return;
 
+        const nextBlocks = state.currentBoard.blocks.map((block) =>
+          block.id === blockId ? ({ ...block, ...updates } as Block) : block
+        );
         set(
           {
             currentBoard: {
               ...state.currentBoard,
-              blocks: state.currentBoard.blocks.map((block) =>
-                block.id === blockId
-                  ? ({ ...block, ...updates } as Block)
-                  : block
-              ),
+              blocks: nextBlocks,
             },
           },
           false,
           "updateBlock"
         );
+        get().saveToHistory("Edited block");
       },
 
       deleteBlock: (blockId) => {
@@ -210,19 +227,18 @@ export const useBoardStore = create<BoardStore>()(
         if (!state.currentBoard) return;
 
         const block = state.currentBoard.blocks.find((b) => b.id === blockId);
-        if (block) {
-          get().saveToHistory(`Deleted ${block.type} block`);
-        }
+        const nextBlocks = state.currentBoard.blocks.filter((b) => b.id !== blockId);
         set(
           {
             currentBoard: {
               ...state.currentBoard,
-              blocks: state.currentBoard.blocks.filter((b) => b.id !== blockId),
+              blocks: nextBlocks,
             },
           },
           false,
           "deleteBlock"
         );
+        if (block) get().saveToHistory(`Deleted ${block.type} block`);
       },
 
       reorderBlocks: (blocks) => {
@@ -234,7 +250,6 @@ export const useBoardStore = create<BoardStore>()(
           order: index,
         }));
 
-        get().saveToHistory("Reordered blocks");
         set(
           {
             currentBoard: {
@@ -245,6 +260,7 @@ export const useBoardStore = create<BoardStore>()(
           false,
           "reorderBlocks"
         );
+        get().saveToHistory("Reordered blocks");
       },
 
       toggleBlockVisibility: (blockId) => {
@@ -280,7 +296,6 @@ export const useBoardStore = create<BoardStore>()(
           order: state.currentBoard.blocks.length,
         };
 
-        get().saveToHistory(`Duplicated ${block.type} block`);
         set(
           {
             currentBoard: {
@@ -291,6 +306,7 @@ export const useBoardStore = create<BoardStore>()(
           false,
           "duplicateBlock"
         );
+        get().saveToHistory(`Duplicated ${block.type} block`);
       },
 
       // Batch operations
@@ -298,7 +314,6 @@ export const useBoardStore = create<BoardStore>()(
         const state = get();
         if (!state.currentBoard) return;
 
-        get().saveToHistory(`Deleted ${blockIds.length} blocks`);
         const deleteIds = new Set(blockIds);
         set(
           {
@@ -312,27 +327,28 @@ export const useBoardStore = create<BoardStore>()(
           false,
           "deleteMultipleBlocks"
         );
+        get().saveToHistory(`Deleted ${blockIds.length} blocks`);
       },
 
       updateMultipleBlocks: (updates) => {
         const state = get();
         if (!state.currentBoard) return;
 
+        const nextBlocks = state.currentBoard.blocks.map((block) => {
+          const update = updates.find((u) => u.id === block.id);
+          return update ? ({ ...block, ...update.updates } as Block) : block;
+        });
         set(
           {
             currentBoard: {
               ...state.currentBoard,
-              blocks: state.currentBoard.blocks.map((block) => {
-                const update = updates.find((u) => u.id === block.id);
-                return update
-                  ? ({ ...block, ...update.updates } as Block)
-                  : block;
-              }),
+              blocks: nextBlocks,
             },
           },
           false,
           "updateMultipleBlocks"
         );
+        get().saveToHistory("Edited block");
       },
 
       // Theme operations
@@ -423,11 +439,20 @@ export const useBoardStore = create<BoardStore>()(
           description,
         };
 
-        // Remove any future history if we're not at the end
         const newHistory = state.history.slice(0, state.historyIndex + 1);
-        newHistory.push(entry);
+        const previous = newHistory[newHistory.length - 1];
+        const canCoalesce =
+          description === "Edited block" &&
+          previous?.description === "Edited block" &&
+          entry.timestamp - previous.timestamp < 800 &&
+          newHistory.length > 1;
 
-        // Limit history size
+        if (canCoalesce) {
+          newHistory[newHistory.length - 1] = entry;
+        } else {
+          newHistory.push(entry);
+        }
+
         if (newHistory.length > state.maxHistorySize) {
           newHistory.shift();
         }

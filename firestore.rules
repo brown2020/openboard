@@ -16,62 +16,119 @@ service cloud.firestore {
 
     function isBoardCollaborator() {
       return isAuthenticated()
-        && resource.data.collaborators != null
+        && resource.data.collaborators is list
         && request.auth.uid in resource.data.collaborators;
     }
 
     function isPublicBoard() {
-      return resource.data.privacy in ['public', 'unlisted'];
+      return resource.data.privacy == 'public';
     }
 
-    // User profiles — authenticated reads (public pages use Admin SDK)
+    function ownsUsername(name) {
+      return exists(/databases/$(database)/documents/usernames/$(name))
+        && get(/databases/$(database)/documents/usernames/$(name)).data.uid == request.auth.uid;
+    }
+
+    function validBoardCore(data) {
+      return data.ownerId is string
+        && data.title is string
+        && data.title.size() > 0
+        && data.title.size() <= 500
+        && data.slug is string
+        && data.slug.size() > 0
+        && data.slug.size() <= 80
+        && data.blocks is list
+        && data.blocks.size() <= 200
+        && data.ownerUsername is string
+        && data.ownerUsername.size() > 0
+        && data.ownerUsername.size() <= 64
+        && data.privacy in ['public', 'unlisted', 'private', 'password']
+        && (!('description' in data) || data.description == null || (data.description is string && data.description.size() <= 5000));
+    }
+
+    function passwordStaysHidden() {
+      return !(request.resource.data.diff(resource.data).affectedKeys().hasAny(['privacy'])
+          && request.resource.data.privacy in ['public', 'unlisted'])
+        || request.resource.data.passwordHash == null;
+    }
+
     match /users/{userId} {
-      allow read: if isAuthenticated();
+      allow read: if isOwner(userId);
       allow create: if isOwner(userId)
         && request.resource.data.keys().hasAll(['id', 'username', 'email'])
         && request.resource.data.id == userId
         && request.resource.data.username is string
-        && request.resource.data.email is string;
+        && request.resource.data.email is string
+        && request.resource.data.email.size() <= 320;
       allow update: if isOwner(userId)
-        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['id']));
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['id', 'email', 'username']);
       allow delete: if isOwner(userId);
     }
 
-    // Boards — public/unlisted readable; private/password via owner/collaborator or Admin SDK
+    match /usernames/{username} {
+      allow read, write: if false;
+    }
+
     match /boards/{boardId} {
-      allow read: if isPublicBoard() || isBoardOwner() || isBoardCollaborator();
+      allow get: if isPublicBoard() || isBoardOwner() || isBoardCollaborator();
+      allow list: if isBoardOwner() || isBoardCollaborator();
       allow create: if isAuthenticated()
         && request.resource.data.ownerId == request.auth.uid
-        && request.resource.data.keys().hasAll(['ownerId', 'title', 'slug', 'blocks', 'theme', 'privacy'])
-        && request.resource.data.title is string
-        && request.resource.data.slug is string
-        && request.resource.data.blocks is list
-        && request.resource.data.privacy is string;
-      allow update: if (isBoardOwner() || isBoardCollaborator())
-        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['ownerId']));
+        && ownsUsername(request.resource.data.ownerUsername)
+        && validBoardCore(request.resource.data)
+        && request.resource.data.keys().hasAll(['ownerId', 'ownerUsername', 'title', 'slug', 'blocks', 'theme', 'privacy'])
+        && request.resource.data.collaborators is list
+        && request.resource.data.collaborators.size() == 0
+        && (!('passwordHash' in request.resource.data) || request.resource.data.passwordHash == null);
+      allow update: if (
+          isBoardOwner()
+          && validBoardCore(request.resource.data)
+          && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['ownerId', 'ownerUsername', 'passwordHash'])
+          && passwordStaysHidden()
+        ) || (
+          isBoardCollaborator()
+          && validBoardCore(request.resource.data)
+          && !request.resource.data.diff(resource.data).affectedKeys().hasAny([
+            'ownerId', 'ownerUsername', 'passwordHash', 'privacy', 'collaborators', 'slug'
+          ])
+        );
       allow delete: if isBoardOwner();
     }
 
-    // Analytics — owners read; anonymous create for public page tracking with schema checks
-    match /analytics/{eventId} {
-      allow create: if request.resource.data.keys().hasAll(['boardId', 'date'])
-        && request.resource.data.boardId is string
-        && request.resource.data.date is string
-        && request.resource.data.boardId.size() > 0
-        && request.resource.data.date.size() == 10;
-      allow update: if request.resource.data.boardId is string
-        && request.resource.data.boardId == resource.data.boardId;
-      allow read: if isAuthenticated();
+    match /boardFormWebhooks/{boardId} {
+      function board() {
+        return get(/databases/$(database)/documents/boards/$(boardId)).data;
+      }
+
+      function canEditBoardDoc() {
+        return isAuthenticated()
+          && exists(/databases/$(database)/documents/boards/$(boardId))
+          && (
+            board().ownerId == request.auth.uid
+            || (board().collaborators is list && request.auth.uid in board().collaborators)
+          );
+      }
+
+      allow read: if canEditBoardDoc();
+      allow create, update: if canEditBoardDoc()
+        && request.resource.data.keys().hasOnly(['ownerId', 'urls'])
+        && request.resource.data.ownerId == board().ownerId
+        && request.resource.data.urls is map;
+      allow delete: if isAuthenticated()
+        && exists(/databases/$(database)/documents/boards/$(boardId))
+        && board().ownerId == request.auth.uid;
     }
 
-    // Click events — schema-validated creates; owners read via auth
+    match /analytics/{eventId} {
+      allow read, write: if false;
+    }
+
     match /clicks/{clickId} {
-      allow create: if request.resource.data.keys().hasAll(['boardId', 'blockId'])
-        && request.resource.data.boardId is string
-        && request.resource.data.blockId is string
-        && request.resource.data.boardId.size() > 0
-        && request.resource.data.blockId.size() > 0;
-      allow read: if isAuthenticated();
+      allow read, write: if false;
+    }
+
+    match /rateLimits/{id} {
+      allow read, write: if false;
     }
   }
 }

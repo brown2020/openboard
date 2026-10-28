@@ -50,11 +50,11 @@ import { BoardQrCode } from "@/components/modals/board-qr-code";
 
 
 type ShareModalSectionsProps = {
-  privacy: any; handlePrivacyChange: any; password: any; setPassword: any; handlePasswordSave: any; isSaving: any; copied: any; handleCopy: any; boardUrl: any; embedCode: any; socialLinks: any; newCollaborator: any; setNewCollaborator: any; handleAddCollaborator: any; isInviting: any; collaboratorIds: any; getCollaboratorLabel: any; isLoadingProfiles: any; collaboratorProfiles: any; handleRemoveCollaborator: any; currentBoard: any; user: any;
+  privacy: any; handlePrivacyChange: any; password: any; setPassword: any; handlePasswordSave: any; isSaving: any; copied: any; handleCopy: any; boardUrl: any; embedCode: any; socialLinks: any; newCollaborator: any; setNewCollaborator: any; handleAddCollaborator: any; isInviting: any; collaboratorIds: any; getCollaboratorLabel: any; isLoadingProfiles: any; collaboratorProfiles: any; handleRemoveCollaborator: any; currentBoard: any; user: any; canManageSettings: boolean;
 };
 
 export function ShareModalSections({
-  privacy, handlePrivacyChange, password, setPassword, handlePasswordSave, isSaving, copied, handleCopy, boardUrl, embedCode, socialLinks, newCollaborator, setNewCollaborator, handleAddCollaborator, isInviting, collaboratorIds, getCollaboratorLabel, isLoadingProfiles, collaboratorProfiles, handleRemoveCollaborator, currentBoard, user
+  privacy, handlePrivacyChange, password, setPassword, handlePasswordSave, isSaving, copied, handleCopy, boardUrl, embedCode, socialLinks, newCollaborator, setNewCollaborator, handleAddCollaborator, isInviting, collaboratorIds, getCollaboratorLabel, isLoadingProfiles, collaboratorProfiles, handleRemoveCollaborator, currentBoard, user, canManageSettings
 }: ShareModalSectionsProps) {
   return (
     <>
@@ -67,7 +67,7 @@ export function ShareModalSections({
             <Select
               value={privacy}
               onValueChange={handlePrivacyChange}
-              disabled={isSaving}
+              disabled={isSaving || !canManageSettings}
             >
               <SelectTrigger className="w-full">
                 <SelectValue />
@@ -136,8 +136,9 @@ export function ShareModalSections({
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter a password"
                   className="flex-1"
+                  disabled={!canManageSettings}
                 />
-                <Button onClick={handlePasswordSave} disabled={isSaving}>
+                <Button onClick={handlePasswordSave} disabled={isSaving || !canManageSettings}>
                   Save
                 </Button>
               </div>
@@ -254,8 +255,9 @@ export function ShareModalSections({
                 value={newCollaborator}
                 onChange={(e) => setNewCollaborator(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleAddCollaborator()}
+                disabled={!canManageSettings}
               />
-              <Button onClick={handleAddCollaborator} disabled={isInviting}>
+              <Button onClick={handleAddCollaborator} disabled={isInviting || !canManageSettings}>
                 {isInviting ? "Inviting..." : "Invite"}
               </Button>
             </div>
@@ -289,6 +291,7 @@ export function ShareModalSections({
                       className="h-8 w-8 shrink-0"
                       onClick={() => handleRemoveCollaborator(userId)}
                       aria-label={`Remove ${label}`}
+                      disabled={!canManageSettings}
                     >
                       <X className="w-4 h-4" />
                     </Button>

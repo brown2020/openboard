@@ -3,7 +3,8 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getAdminDb } from "@/lib/firebase-admin";
 import { verifyPassword } from "@/lib/password";
-import { rateLimit, errorResponse } from "@/lib/api-utils";
+import { consumeRateLimit, errorResponse } from "@/lib/api-utils";
+import { getTrustedClientIp } from "@/lib/client-ip";
 import {
   createBoardAccessToken,
   getBoardAccessCookieName,
@@ -11,7 +12,7 @@ import {
 
 const UnlockSchema = z.object({
   boardId: z.string().min(1),
-  password: z.string().min(1).max(100),
+  password: z.string().min(1).max(128),
 });
 
 export async function POST(req: Request) {
@@ -23,9 +24,12 @@ export async function POST(req: Request) {
     }
 
     const { boardId, password } = body.data;
+    const ip = getTrustedClientIp(req.headers);
 
-    // Rate limit: 5 attempts per minute per board to prevent brute force
-    if (!rateLimit(`unlock:${boardId}`, 5, 60000)) {
+    if (!(await consumeRateLimit(`unlock:${ip}:${boardId}`, 5, 10 * 60_000))) {
+      return errorResponse("Too many attempts. Please try again later.", 429);
+    }
+    if (!(await consumeRateLimit(`unlock-board:${boardId}`, 30, 10 * 60_000))) {
       return errorResponse("Too many attempts. Please try again later.", 429);
     }
 
@@ -50,8 +54,13 @@ export async function POST(req: Request) {
     }
 
     // Set 24h access cookie for this board
-    const accessToken = createBoardAccessToken(boardId, 24 * 60 * 60);
     const cookieStore = await cookies();
+    const existingAccess = cookieStore.get(getBoardAccessCookieName())?.value;
+    const accessToken = createBoardAccessToken(
+      boardId,
+      24 * 60 * 60,
+      existingAccess
+    );
     cookieStore.set(getBoardAccessCookieName(), accessToken, {
       httpOnly: true,
       sameSite: "strict",

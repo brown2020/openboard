@@ -19,9 +19,10 @@ service firebase.storage {
     // Public pages use Firebase download URLs (tokenized); rules bind write/read to owner.
     match /uploads/{userId}/{fileName} {
       allow read: if isOwner(userId);
-      allow write: if isOwner(userId) &&
+      allow delete: if isOwner(userId);
+      allow create, update: if isOwner(userId) &&
                    request.resource.size < 5 * 1024 * 1024 &&
-                   request.resource.contentType.matches('image/.*');
+                   request.resource.contentType.matches('image/(jpeg|png|gif|webp|avif)');
     }
   }
 }

@@ -17,6 +17,11 @@ import {
   Timestamp,
 } from "firebase/firestore";
 import { getClientDb } from "@/lib/firebase";
+import {
+  extractFormSubmitUrls,
+  mergeFormSubmitUrls,
+  stripFormSubmitUrls,
+} from "@/lib/form-webhooks";
 import { useBoardStore } from "@/stores/board-store";
 import { Board } from "@/types";
 import { useAuthContext } from "@/lib/auth-context";
@@ -245,7 +250,19 @@ export function useBoards() {
         const boardSnap = await getDoc(boardRef);
 
         if (boardSnap.exists()) {
-          return { id: boardSnap.id, ...boardSnap.data() } as Board;
+          const board = { id: boardSnap.id, ...boardSnap.data() } as Board;
+          try {
+            const secretSnap = await getDoc(
+              doc(getClientDb(), "boardFormWebhooks", boardId)
+            );
+            if (secretSnap.exists()) {
+              const urls = secretSnap.data().urls as Record<string, string> | undefined;
+              board.blocks = mergeFormSubmitUrls(board.blocks ?? [], urls);
+            }
+          } catch {
+            // Editors can still load the board when webhook secrets are unavailable.
+          }
+          return board;
         }
         return null;
       } catch (error) {
@@ -287,8 +304,26 @@ export function useBoards() {
     async (boardId: string, updates: Partial<Board>): Promise<boolean> => {
       try {
         const boardRef = doc(getClientDb(), "boards", boardId);
+        let nextUpdates = updates;
+        if (updates.blocks) {
+          const boardSnap = await getDoc(boardRef);
+          const ownerId = boardSnap.data()?.ownerId;
+          if (typeof ownerId !== "string") {
+            setError("Failed to save form settings");
+            return false;
+          }
+          await setDoc(
+            doc(getClientDb(), "boardFormWebhooks", boardId),
+            { ownerId, urls: extractFormSubmitUrls(updates.blocks) },
+            { merge: true }
+          );
+          nextUpdates = {
+            ...updates,
+            blocks: stripFormSubmitUrls(updates.blocks),
+          };
+        }
         await updateDoc(boardRef, {
-          ...updates,
+          ...nextUpdates,
           updatedAt: serverTimestamp(),
         });
         return true;

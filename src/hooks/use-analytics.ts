@@ -1,129 +1,51 @@
 "use client";
 
 import { useCallback } from "react";
-import {
-  collection,
-  doc,
-  setDoc,
-  increment,
-  serverTimestamp,
-  query,
-  where,
-  getDocs,
-  Timestamp,
-} from "firebase/firestore";
-import { getClientDb } from "@/lib/firebase";
-import { BoardAnalytics, ClickEvent } from "@/types";
+import { BoardAnalytics } from "@/types";
+
+async function readError(response: Response, fallback: string) {
+  const body = (await response.json().catch(() => null)) as { error?: string } | null;
+  return body?.error ?? fallback;
+}
 
 export function useAnalytics() {
-  // Track a page view
-  const trackView = useCallback(async (boardId: string, userAgent?: string) => {
+  const trackView = useCallback(async (boardId: string) => {
     try {
-      const today = new Date().toISOString().split("T")[0];
-      const analyticsRef = doc(getClientDb(), "analytics", `${boardId}_${today}`);
-
-      await setDoc(
-        analyticsRef,
-        {
-          boardId,
-          date: today,
-          views: increment(1),
-          uniqueVisitors: increment(1),
-          devices: {
-            mobile: userAgent?.includes("Mobile") ? increment(1) : increment(0),
-            desktop:
-              !userAgent?.includes("Mobile") && !userAgent?.includes("Tablet")
-                ? increment(1)
-                : increment(0),
-            tablet: userAgent?.includes("Tablet") ? increment(1) : increment(0),
-          },
-        },
-        { merge: true }
-      );
+      await fetch("/api/analytics/track", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ boardId, event: "view" }),
+      });
     } catch {
-      // Analytics tracking is best-effort; failures are silently ignored
+      // Analytics tracking is best-effort.
     }
   }, []);
 
-  // Track a click on a block
-  const trackClick = useCallback(
-    async (
-      boardId: string,
-      blockId: string,
-      referrer?: string,
-      userAgent?: string
-    ) => {
-      try {
-        const today = new Date().toISOString().split("T")[0];
+  const trackClick = useCallback(async (boardId: string, blockId: string) => {
+    try {
+      await fetch("/api/analytics/track", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ boardId, blockId, event: "click" }),
+      });
+    } catch {
+      // Click tracking is best-effort.
+    }
+  }, []);
 
-        // Update analytics
-        const analyticsRef = doc(getClientDb(), "analytics", `${boardId}_${today}`);
-        await setDoc(
-          analyticsRef,
-          {
-            boardId,
-            date: today,
-            clicks: {
-              [blockId]: increment(1),
-            },
-          },
-          { merge: true }
-        );
-
-        // Store individual click event
-        const clickRef = doc(collection(getClientDb(), "clicks"));
-        const clickEvent: ClickEvent = {
-          id: clickRef.id,
-          boardId,
-          blockId,
-          timestamp: serverTimestamp() as Timestamp,
-          referrer,
-          userAgent,
-        };
-        await setDoc(clickRef, clickEvent);
-      } catch {
-        // Click tracking is best-effort; failures are silently ignored
-      }
-    },
-    []
-  );
-
-  // Get analytics for a board
   const getAnalytics = useCallback(
     async (boardId: string, days: number = 30): Promise<BoardAnalytics[]> => {
-      try {
-        const endDate = new Date();
-        const startDate = new Date();
-        startDate.setDate(startDate.getDate() - days);
-
-        const analyticsRef = collection(getClientDb(), "analytics");
-        const q = query(
-          analyticsRef,
-          where("boardId", "==", boardId),
-          where("date", ">=", startDate.toISOString().split("T")[0]),
-          where("date", "<=", endDate.toISOString().split("T")[0])
-        );
-
-        const snapshot = await getDocs(q);
-        return snapshot.docs.map((doc) => doc.data() as BoardAnalytics);
-      } catch {
-        return [];
-      }
+      const rows = await queryAnalytics([boardId], days);
+      return rows;
     },
     []
   );
 
   const getAnalyticsForBoards = useCallback(
     async (boardIds: string[], days: number = 30): Promise<BoardAnalytics[]> => {
-      if (boardIds.length === 0) return [];
-
-      const results = await Promise.all(
-        boardIds.map((boardId) => getAnalytics(boardId, days))
-      );
-
-      return results.flat();
+      return queryAnalytics(boardIds, days);
     },
-    [getAnalytics]
+    []
   );
 
   return {
@@ -132,4 +54,26 @@ export function useAnalytics() {
     getAnalytics,
     getAnalyticsForBoards,
   };
+}
+
+async function queryAnalytics(
+  boardIds: string[],
+  days: number
+): Promise<BoardAnalytics[]> {
+  if (boardIds.length === 0) return [];
+
+  try {
+    const response = await fetch("/api/analytics/query", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ boardIds, days }),
+    });
+    if (!response.ok) {
+      throw new Error(await readError(response, "Failed to load analytics"));
+    }
+    const body = (await response.json()) as { analytics?: BoardAnalytics[] };
+    return body.analytics ?? [];
+  } catch {
+    return [];
+  }
 }

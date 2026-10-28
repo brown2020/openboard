@@ -1,5 +1,3 @@
-import "server-only";
-
 /**
  * Shared base64url encoding/decoding utilities (RFC 4648).
  * Used for password hashing, JWT parsing, and board access tokens.

@@ -72,4 +72,26 @@ describe("useBoardStore block insertion", () => {
     ]);
     expect(blocks.map((block) => block.order)).toEqual([0, 1, 2, 3]);
   });
+
+  it("undoes a block edit back to the loaded content", () => {
+    useBoardStore
+      .getState()
+      .setCurrentBoard(makeBoard([makeTextBlock("first", 0)]));
+
+    useBoardStore.getState().updateBlock("first", {
+      settings: {
+        content: "edited",
+        alignment: "left",
+        fontSize: "md",
+      },
+    });
+
+    const edited = useBoardStore.getState().currentBoard?.blocks[0];
+    expect(edited?.type === "text" && edited.settings.content).toBe("edited");
+
+    useBoardStore.getState().undo();
+
+    const restored = useBoardStore.getState().currentBoard?.blocks[0];
+    expect(restored?.type === "text" && restored.settings.content).toBe("first");
+  });
 });

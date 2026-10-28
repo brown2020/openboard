@@ -1,7 +1,8 @@
+import crypto from "node:crypto";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { FIREBASE_AUTH_COOKIE } from "@/lib/auth-constants";
-import { verifyFirebaseAuthCookie } from "@/lib/firebase-admin";
+import { verifyFirebaseAuthCookie, getAdminDb } from "@/lib/firebase-admin";
 import type { DecodedIdToken } from "firebase-admin/auth";
 import { canEditBoard as checkBoardEditAccess } from "@/lib/board-access";
 
@@ -37,6 +38,39 @@ export function rateLimit(
 
   record.count++;
   return true;
+}
+
+/**
+ * Rate limit shared across server instances via Firestore.
+ * Falls back to the in-memory limiter when Admin SDK is unavailable.
+ */
+export async function consumeRateLimit(
+  key: string,
+  maxRequests: number = 10,
+  windowMs: number = 60000
+): Promise<boolean> {
+  try {
+    const db = getAdminDb();
+    const id = crypto.createHash("sha256").update(key).digest("hex");
+    const ref = db.collection("rateLimits").doc(id);
+    const now = Date.now();
+
+    return await db.runTransaction(async (transaction) => {
+      const snap = await transaction.get(ref);
+      const data = snap.data() as { count?: number; resetAt?: number } | undefined;
+
+      if (!data || typeof data.resetAt !== "number" || now > data.resetAt) {
+        transaction.set(ref, { count: 1, resetAt: now + windowMs });
+        return true;
+      }
+
+      if ((data.count ?? 0) >= maxRequests) return false;
+      transaction.update(ref, { count: (data.count ?? 0) + 1 });
+      return true;
+    });
+  } catch {
+    return rateLimit(key, maxRequests, windowMs);
+  }
 }
 
 /**

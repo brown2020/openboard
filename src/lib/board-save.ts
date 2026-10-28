@@ -33,6 +33,7 @@ export function getAutoSaveStatus(input: {
 export function shouldWarnBeforeUnload(input: {
   isSaving: boolean;
   saveFailed: boolean;
+  hasUnsavedChanges: boolean;
 }): boolean {
-  return input.isSaving || input.saveFailed;
+  return input.isSaving || input.saveFailed || input.hasUnsavedChanges;
 }

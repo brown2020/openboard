@@ -1,6 +1,13 @@
 /**
  * Shared board permission checks (client + server safe).
  */
+export function isBoardOwner(
+  userId: string,
+  boardData: { ownerId?: string }
+): boolean {
+  return boardData.ownerId === userId;
+}
+
 export function canEditBoard(
   userId: string,
   boardData: { ownerId?: string; collaborators?: string[] }

@@ -1,18 +1,20 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { FIREBASE_AUTH_COOKIE } from "@/lib/auth-constants";
-import { isJwtExpired } from "@/lib/jwt-utils";
+import { verifyFirebaseSessionJwt } from "@/lib/firebase-session-jwt";
 import { evaluateProxyRequest } from "@/lib/route-match";
 
 /**
  * Next.js 16 Proxy for Authentication & Route Protection
  */
-export function proxy(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const authCookie = request.cookies.get(FIREBASE_AUTH_COOKIE)?.value;
-  const isExpired = authCookie ? isJwtExpired(authCookie) : false;
-  const shouldClearAuthCookie = !!authCookie && isExpired;
-  const isAuthenticated = !!authCookie && !isExpired;
+  const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+  const isAuthenticated = authCookie
+    ? await verifyFirebaseSessionJwt(authCookie, { projectId: projectId ?? "" })
+    : false;
+  const shouldClearAuthCookie = !!authCookie && !isAuthenticated;
 
   const decision = evaluateProxyRequest({
     pathname,

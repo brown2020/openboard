@@ -8,6 +8,11 @@ import { BlockControls } from "./block-controls";
 import { BlockEditWrapper } from "./block-edit-wrapper";
 import { InputField, SelectField } from "./form-fields";
 import { normalizeEmbedUrl } from "@/lib/block-utils";
+import {
+  EMBED_IFRAME_SANDBOX,
+  sanitizeCustomEmbed,
+  sanitizeProviderEmbed,
+} from "@/lib/safe-embed-url";
 
 type EmbedPlatform = NonNullable<EmbedBlockType["settings"]["platform"]>;
 
@@ -63,8 +68,11 @@ export function EmbedBlock({
   const [editEmbed, setEditEmbed] = useState(embedCode || "");
 
   const resolvedEmbed = useMemo(() => {
-    if (editEmbed) return editEmbed;
-    return getDefaultEmbedCode(editUrl, editPlatform);
+    const raw = editEmbed || getDefaultEmbedCode(editUrl, editPlatform);
+    if (!raw) return "";
+    const pageHost = typeof window !== "undefined" ? window.location.hostname : undefined;
+    if (editPlatform === "custom") return sanitizeCustomEmbed(raw, pageHost);
+    return sanitizeProviderEmbed(raw, editPlatform, pageHost);
   }, [editEmbed, editUrl, editPlatform]);
 
   const handleSave = () => {
@@ -148,8 +156,9 @@ export function EmbedBlock({
               src={resolvedEmbed}
               title={`Embedded ${normalizedPlatform} content`}
               className="w-full h-full"
+              sandbox={EMBED_IFRAME_SANDBOX}
               loading="lazy"
-              allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+              allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
             />
           </div>
         ) : (

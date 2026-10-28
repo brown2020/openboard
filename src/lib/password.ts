@@ -8,12 +8,17 @@ const SCRYPT_R = 8;
 const SCRYPT_P = 1;
 const KEY_LEN = 32;
 const SALT_LEN = 16;
+const MAX_PASSWORD_LENGTH = 128;
 
 /**
  * Hash format:
  * scrypt$N$r$p$saltB64Url$hashB64Url
  */
 export async function hashPassword(password: string): Promise<string> {
+  if (password.length === 0 || password.length > MAX_PASSWORD_LENGTH) {
+    throw new Error("Password length is not allowed");
+  }
+
   const salt = crypto.randomBytes(SALT_LEN);
 
   const derivedKey = await new Promise<Buffer>((resolve, reject) => {
@@ -52,10 +57,11 @@ export async function verifyPassword(
   const N = Number(nStr);
   const r = Number(rStr);
   const p = Number(pStr);
-  if (!Number.isFinite(N) || !Number.isFinite(r) || !Number.isFinite(p)) return false;
+  if (N !== SCRYPT_N || r !== SCRYPT_R || p !== SCRYPT_P) return false;
 
   const salt = base64urlDecodeToBuffer(saltB64);
   const expected = base64urlDecodeToBuffer(hashB64);
+  if (expected.length !== KEY_LEN || salt.length !== SALT_LEN) return false;
 
   const actual = await new Promise<Buffer>((resolve, reject) => {
     crypto.scrypt(password, salt, expected.length, { N, r, p }, (err, key) => {

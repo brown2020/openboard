@@ -171,22 +171,10 @@ export function FormBlock({
       return;
     }
 
-    if (submitUrl) {
-      try {
-        const response = await fetch(submitUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-        if (!response.ok) {
-          toast.error("Unable to submit form", "Please try again later");
-          return;
-        }
-        toast.success("Form submitted successfully!");
-      } catch {
-        toast.error("Unable to submit form", "Please try again later");
-      }
-    }
+    setSubmitStatus({
+      state: "error",
+      message: "This form is not configured to receive submissions yet.",
+    });
   };
 
   const renderedFields = useMemo(() => fields, [fields]);

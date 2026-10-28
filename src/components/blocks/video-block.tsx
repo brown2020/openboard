@@ -8,6 +8,11 @@ import { BlockControls } from "./block-controls";
 import { BlockEditWrapper } from "./block-edit-wrapper";
 import { InputField, SelectField } from "./form-fields";
 import { normalizeVideoUrl } from "@/lib/block-utils";
+import {
+  EMBED_IFRAME_SANDBOX,
+  sanitizeCustomEmbed,
+  sanitizeProviderEmbed,
+} from "@/lib/safe-embed-url";
 
 type VideoPlatform = VideoBlockType["settings"]["platform"];
 
@@ -39,8 +44,12 @@ export function VideoBlock({
   // Use shared utility for URL normalization
   const embedUrl = useMemo(() => {
     if (!url) return "";
-    if (platform === "custom") return url;
-    return normalizeVideoUrl(url);
+    const pageHost = typeof window !== "undefined" ? window.location.hostname : undefined;
+    if (platform === "custom") return sanitizeCustomEmbed(url, pageHost);
+    const normalized = normalizeVideoUrl(url);
+    const provider =
+      platform === "youtube" ? "youtube" : platform === "vimeo" ? "vimeo" : "loom";
+    return sanitizeProviderEmbed(normalized, provider, pageHost);
   }, [url, platform]);
 
   const handleSave = () => {
@@ -115,7 +124,8 @@ export function VideoBlock({
               src={embedUrl}
               title={title || "Embedded video"}
               className="w-full h-full"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+              sandbox={EMBED_IFRAME_SANDBOX}
+              allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; fullscreen"
               allowFullScreen
               loading="lazy"
             />

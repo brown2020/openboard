@@ -83,15 +83,34 @@ describe("getAutoSaveStatus", () => {
 });
 
 describe("shouldWarnBeforeUnload", () => {
-  it("warns only while saving or after failure", () => {
+  it("warns while a save is pending, in flight, or failed", () => {
     expect(
-      shouldWarnBeforeUnload({ isSaving: false, saveFailed: false })
+      shouldWarnBeforeUnload({
+        isSaving: false,
+        saveFailed: false,
+        hasUnsavedChanges: false,
+      })
     ).toBe(false);
-    expect(shouldWarnBeforeUnload({ isSaving: true, saveFailed: false })).toBe(
-      true
-    );
-    expect(shouldWarnBeforeUnload({ isSaving: false, saveFailed: true })).toBe(
-      true
-    );
+    expect(
+      shouldWarnBeforeUnload({
+        isSaving: true,
+        saveFailed: false,
+        hasUnsavedChanges: false,
+      })
+    ).toBe(true);
+    expect(
+      shouldWarnBeforeUnload({
+        isSaving: false,
+        saveFailed: true,
+        hasUnsavedChanges: false,
+      })
+    ).toBe(true);
+    expect(
+      shouldWarnBeforeUnload({
+        isSaving: false,
+        saveFailed: false,
+        hasUnsavedChanges: true,
+      })
+    ).toBe(true);
   });
 });
