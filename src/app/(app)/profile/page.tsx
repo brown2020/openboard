@@ -6,9 +6,9 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
 export default function ProfilePage() {
-  const { user, isLoaded, syncError } = useAuth();
+  const { user, firebaseUser, isLoaded, syncError } = useAuth();
 
-  if (isLoaded && !user && !syncError) {
+  if (isLoaded && !firebaseUser) {
     redirect("/login");
   }
 

@@ -8,8 +8,8 @@ import { getClientDb } from "@/lib/firebase";
 import { UserProfile } from "@/types";
 import { getValidToken } from "@/lib/auth-utils";
 import { syncAuthSessionCookie } from "@/lib/auth-cookie";
-import { useErrorHandler } from "./use-error-handler";
-import { reportWriteError } from "@/lib/write-error";
+import { useErrorHandler, getFirebaseErrorMessage } from "./use-error-handler";
+import { notifyUser, reportWriteError } from "@/lib/write-error";
 
 async function loadOrCreateProfile(
   uid: string,
@@ -105,15 +105,42 @@ export function useAuth() {
       )
       .then(async (profile) => {
         if (ignore) return;
-        await syncAuthSessionCookie(firebaseUser);
-        const claim = await fetch("/api/users/username", { method: "POST" });
-        if (claim.ok) {
-          const body = (await claim.json()) as { username?: string };
-          if (body.username) {
-            profile = { ...profile, username: body.username };
+        try {
+          await syncAuthSessionCookie(firebaseUser);
+          if (!ignore) setSyncError(null);
+        } catch (error) {
+          if (!ignore) {
+            const message = getFirebaseErrorMessage(error);
+            setSyncError(message);
+            notifyUser("error", "Could not start your session", message);
           }
-        } else if (claim.status !== 404) {
-          throw new Error("Failed to claim username");
+        }
+        if (ignore) return;
+        try {
+          const claim = await fetch("/api/users/username", { method: "POST" });
+          if (claim.ok) {
+            const body = (await claim.json()) as { username?: string };
+            if (body.username) {
+              profile = { ...profile, username: body.username };
+            }
+          } else if (claim.status !== 404) {
+            const payload = (await claim.json().catch(() => null)) as {
+              error?: string;
+            } | null;
+            notifyUser(
+              "error",
+              "Could not claim username",
+              payload?.error || "Failed to claim username"
+            );
+          }
+        } catch (error) {
+          if (!ignore) {
+            notifyUser(
+              "error",
+              "Could not claim username",
+              getFirebaseErrorMessage(error)
+            );
+          }
         }
         if (ignore) return;
         window.clearTimeout(timeout);

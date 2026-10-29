@@ -22,7 +22,7 @@ import { generateSlug } from "@/lib/utils";
 import { useBoardStore } from "@/stores/board-store";
 
 export default function BoardsPage() {
-  const { user, isLoaded, syncError } = useAuth();
+  const { user, firebaseUser, isLoaded, syncError } = useAuth();
   const { boards, createBoard } = useBoards();
   const boardError = useBoardStore((state) => state.error);
   const clearBoardError = useBoardStore((state) => state.clearError);
@@ -54,7 +54,7 @@ export default function BoardsPage() {
     }
   };
 
-  if (isLoaded && !user && !syncError) {
+  if (isLoaded && !firebaseUser) {
     redirect("/login");
   }
 

@@ -159,6 +159,13 @@ export function useBoards() {
           },
           (error) => {
             if (controller.signal.aborted) return;
+            // Owned boards already loaded. Live rules can deny this
+            // collaborators array-contains query; that is not a failed write.
+            if (isFirestorePermissionDenied(error)) {
+              sharedBoardsRef.current = [];
+              publishMergedBoards();
+              return;
+            }
             handleError(error, "Failed to load shared boards");
             if (error.message.includes("index")) {
               setError("Database index required. Please check Firebase console.");

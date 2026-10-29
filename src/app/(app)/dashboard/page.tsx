@@ -29,11 +29,11 @@ function DashboardSkeleton() {
 }
 
 export default function DashboardPage() {
-  const { user, isLoaded, syncError } = useAuth();
+  const { user, firebaseUser, isLoaded, syncError } = useAuth();
   const { boards } = useBoards();
   const { summary, isLoading, error, reload } = useDashboardAnalytics(boards);
 
-  if (isLoaded && !user && !syncError) {
+  if (isLoaded && !firebaseUser) {
     redirect("/login");
   }
 

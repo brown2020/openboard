@@ -58,8 +58,8 @@ function LoginForm() {
         auth,
         rememberMe ? browserLocalPersistence : browserSessionPersistence
       );
-      await signInWithEmailAndPassword(auth, email, password);
-      await setAuthCookie(auth.currentUser);
+      const credential = await signInWithEmailAndPassword(auth, email, password);
+      await setAuthCookie(credential.user, { forceRefresh: true });
       const message = "Signed in. Opening your boards…";
       setStatus(message);
       notifyUser("success", "Signed in", message);
@@ -79,8 +79,8 @@ function LoginForm() {
     setStatus("");
 
     try {
-      await signInWithPopup(auth, googleProvider);
-      await setAuthCookie(auth.currentUser);
+      const credential = await signInWithPopup(auth, googleProvider);
+      await setAuthCookie(credential.user, { forceRefresh: true });
       const message = "Signed in. Opening your boards…";
       setStatus(message);
       notifyUser("success", "Signed in", message);

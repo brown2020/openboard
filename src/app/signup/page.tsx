@@ -71,7 +71,7 @@ function SignupForm() {
       setVerificationSent(true);
       setTimeout(() => {
         // Ensure server session cookie is set before hitting protected routes.
-        setAuthCookie(auth.currentUser)
+        setAuthCookie(userCredential.user, { forceRefresh: true })
           .then(() => router.push(redirectTo))
           .catch((err: unknown) => {
             setError(getFirebaseErrorMessage(err));
@@ -89,8 +89,8 @@ function SignupForm() {
     setError("");
 
     try {
-      await signInWithPopup(auth, googleProvider);
-      await setAuthCookie(auth.currentUser);
+      const credential = await signInWithPopup(auth, googleProvider);
+      await setAuthCookie(credential.user, { forceRefresh: true });
       router.push(redirectTo);
     } catch (err: unknown) {
       setError(getFirebaseErrorMessage(err));

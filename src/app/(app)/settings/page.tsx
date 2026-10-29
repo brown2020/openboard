@@ -11,12 +11,12 @@ import { notifyUser } from "@/lib/write-error";
 import { Button } from "@/components/ui/button";
 
 export default function SettingsPage() {
-  const { user, isLoaded, syncError } = useAuth();
+  const { user, firebaseUser, isLoaded, syncError } = useAuth();
   const clearUser = useUserStore((state) => state.clearUser);
   const router = useRouter();
   const [signingOut, setSigningOut] = useState(false);
 
-  if (isLoaded && !user && !syncError) {
+  if (isLoaded && !firebaseUser) {
     redirect("/login");
   }
 

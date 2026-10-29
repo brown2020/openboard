@@ -46,7 +46,7 @@ export default function BoardEditorPage({ params }: PageProps) {
 }
 
 function BoardEditorSession({ boardId }: { boardId: string }) {
-  const { user, isLoaded, syncError } = useAuth();
+  const { user, firebaseUser, isLoaded, syncError } = useAuth();
   const { getBoard } = useBoards();
   const { currentBoard, setCurrentBoard, reorderBlocks, addBlock } =
     useBoardStore();
@@ -289,7 +289,7 @@ function BoardEditorSession({ boardId }: { boardId: string }) {
     }
   };
 
-  if (isLoaded && !user && !syncError) {
+  if (isLoaded && !firebaseUser) {
     redirect("/login");
   }
 

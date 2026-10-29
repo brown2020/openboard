@@ -69,6 +69,20 @@ export async function POST(req: Request) {
       return error;
     }
     console.error("Session creation error:", error);
+    const code = (error as { code?: string } | null)?.code ?? "";
+    if (code === "auth/insufficient-permission") {
+      return errorResponse(
+        "Firebase Admin cannot mint session cookies. Grant the service account the Firebase Authentication Admin role.",
+        500
+      );
+    }
+    if (
+      code === "auth/invalid-id-token" ||
+      code === "auth/id-token-expired" ||
+      code === "auth/argument-error"
+    ) {
+      return errorResponse("The sign-in token was rejected. Sign in again.", 401);
+    }
     return errorResponse("Failed to create session", 500);
   }
 }

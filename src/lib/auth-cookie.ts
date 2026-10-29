@@ -2,59 +2,74 @@
 
 import { User } from "firebase/auth";
 
-type InFlightSync = { uid: string | null; promise: Promise<void> } | null;
+type InFlightSync = { key: string; promise: Promise<void> } | null;
 let inFlightSync: InFlightSync = null;
 
-async function syncAuthSessionCookieOnce(user: User | null): Promise<void> {
+/**
+ * Single-flight key for session cookie sync.
+ * A persisted user can start a sync with a stale ID token before password
+ * sign-in finishes. That request must not be reused for the new token.
+ */
+export function sessionSyncKey(uid: string | null, token: string | null): string {
+  if (!uid || !token) return "signed-out";
+  return `${uid}:${token}`;
+}
+
+async function errorMessage(res: Response, fallback: string): Promise<string> {
+  const payload = (await res.json().catch(() => null)) as { error?: string } | null;
+  return payload?.error || fallback;
+}
+
+async function syncAuthSessionCookieOnce(
+  user: User | null,
+  token: string | null
+): Promise<void> {
   if (user) {
-    const token = await user.getIdToken();
-    // Exchange for an HttpOnly session cookie (server-set).
+    const idToken = token ?? (await user.getIdToken());
     const res = await fetch("/api/auth/session", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ idToken: token }),
+      body: JSON.stringify({ idToken }),
     });
     if (!res.ok) {
-      throw new Error("Failed to create session");
+      throw new Error(await errorMessage(res, "Failed to create session"));
     }
     return;
   }
 
-  // Remove the cookie if user is null (logged out)
   const res = await fetch("/api/auth/session", { method: "DELETE" });
   if (!res.ok) {
-    throw new Error("Failed to delete session");
+    throw new Error(await errorMessage(res, "Failed to delete session"));
   }
 }
 
 /**
  * Sync the server session cookie with the current Firebase user.
- *
- * - Single-flight per user to avoid redundant parallel requests from:
- *   login/signup flows + `onIdTokenChanged` events.
+ * In-flight calls are shared only when they post the same ID token.
  */
-export async function syncAuthSessionCookie(user: User | null): Promise<void> {
-  const uid = user?.uid ?? null;
+export async function syncAuthSessionCookie(
+  user: User | null,
+  options?: { forceRefresh?: boolean }
+): Promise<void> {
+  const token = user ? await user.getIdToken(options?.forceRefresh ?? false) : null;
+  const key = sessionSyncKey(user?.uid ?? null, token);
 
-  if (inFlightSync && inFlightSync.uid === uid) {
+  if (inFlightSync?.key === key) {
     return inFlightSync.promise;
   }
 
-  const promise = syncAuthSessionCookieOnce(user).finally(() => {
+  const promise = syncAuthSessionCookieOnce(user, token).finally(() => {
     if (inFlightSync?.promise === promise) {
       inFlightSync = null;
     }
   });
 
-  inFlightSync = { uid, promise };
+  inFlightSync = { key, promise };
   return promise;
 }
 
-// Backward-compatible name (preferred: `syncAuthSessionCookie`)
 export const setAuthCookie = syncAuthSessionCookie;
 
-// Remove the auth cookie (for logout)
 export const removeAuthCookie = () => {
-  // Best-effort.
   fetch("/api/auth/session", { method: "DELETE" }).catch(() => {});
 };
