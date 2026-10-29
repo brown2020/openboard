@@ -62,6 +62,7 @@ OpenBoard is a working Next.js + Firebase SaaS-style app (deployed demo at openb
 | Share / embed | ✅ Shipped | Includes QR code PNG download in share modal |
 | Analytics (per board) | ✅ Shipped | Modal with views/clicks/devices |
 | Dashboard | ✅ Shipped | 7/30-day views & clicks plus top links |
+| Profile / settings | ✅ Shipped | `/profile` and `/settings` from the account menu |
 | AI suggestions | ✅ Optional | Requires `OPENAI_API_KEY` |
 | Collaboration | ✅ Shipped | Email invite resolves to UID; shared boards in list |
 | Auto-save | ✅ Shipped | 2s debounce via `useAutoSave` in board editor |
@@ -109,6 +110,7 @@ Public visitor → /u/{user}/{slug} → [password gate?] → view + track analyt
 - Firestore `get` allows public boards; unlisted, private, and password boards are not listable. Field-level secrets (`submitUrl`, `passwordHash`) cannot be redacted by rules, so the app stores webhook URLs in `boardFormWebhooks` and strips them from board documents.
 - Rate limits are stored in the `rateLimits` collection and fall back to in-process counters when the Admin SDK is unavailable
 - Board list merges owned boards and collaborator shares via dual Firestore subscriptions
+- Creating a board does not `get` a missing document as a hard failure. Rules that read `resource.data` deny that read, so the client treats permission-denied as "not created yet" and surfaces every subsequent write error in a toast. Deploying `firestore.rules` does not by itself make that existence check succeed.
 - No CI test pipeline observed; local quality gate is lint + TypeScript + Vitest + build
 - npm lockfile — use npm exclusively
 

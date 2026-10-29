@@ -10,7 +10,11 @@ export function AuthError({ message }: AuthErrorProps) {
   if (!message) return null;
 
   return (
-    <div className="bg-destructive/10 border border-destructive text-destructive px-4 py-3 rounded-md text-sm">
+    <div
+      className="bg-destructive/10 border border-destructive text-destructive px-4 py-3 rounded-md text-sm"
+      role="alert"
+      aria-live="assertive"
+    >
       {message}
     </div>
   );

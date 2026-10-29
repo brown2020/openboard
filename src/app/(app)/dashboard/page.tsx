@@ -29,12 +29,22 @@ function DashboardSkeleton() {
 }
 
 export default function DashboardPage() {
-  const { user, isLoaded } = useAuth();
+  const { user, isLoaded, syncError } = useAuth();
   const { boards } = useBoards();
   const { summary, isLoading, error, reload } = useDashboardAnalytics(boards);
 
-  if (isLoaded && !user) {
+  if (isLoaded && !user && !syncError) {
     redirect("/login");
+  }
+
+  if (syncError && !user) {
+    return (
+      <div className="p-4">
+        <p className="text-sm text-destructive" role="alert">
+          {syncError}
+        </p>
+      </div>
+    );
   }
 
   if (!isLoaded || !user || isLoading) {

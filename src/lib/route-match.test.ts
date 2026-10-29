@@ -23,6 +23,8 @@ describe("isProtectedRoute", () => {
     expect(isProtectedRoute("/board/123")).toBe(true);
     expect(isProtectedRoute("/dashboard")).toBe(true);
     expect(isProtectedRoute("/templates")).toBe(true);
+    expect(isProtectedRoute("/settings")).toBe(true);
+    expect(isProtectedRoute("/profile")).toBe(true);
   });
 
   it("leaves public routes open", () => {

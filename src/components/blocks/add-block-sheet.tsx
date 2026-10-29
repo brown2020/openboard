@@ -153,7 +153,8 @@ export function AddBlockSheet({ open, onOpenChange }: AddBlockSheetProps) {
         let finalImageUrl = state.imageUrl;
         if (state.selectedImageFile) {
           const uploadedUrl = await uploadFile(state.selectedImageFile);
-          if (uploadedUrl) finalImageUrl = uploadedUrl;
+          if (!uploadedUrl) return;
+          finalImageUrl = uploadedUrl;
         }
         if (!finalImageUrl || !state.imageAlt) return;
         newBlock = {

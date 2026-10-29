@@ -7,6 +7,7 @@ import Image from "next/image";
 import {
   ChevronLeftIcon,
   MenuIcon,
+  LayoutDashboard,
   LogOut,
   User,
   Settings,
@@ -143,16 +144,27 @@ export default function Header() {
                   <button
                     onClick={() => {
                       setIsProfileOpen(false);
-                      router.push("/dashboard");
+                      router.push("/profile");
                     }}
                     className="flex items-center w-full px-4 py-2 text-sm hover:bg-muted transition-colors"
                   >
                     <User className="w-4 h-4 mr-3 text-muted-foreground" />
+                    Profile
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsProfileOpen(false);
+                      router.push("/dashboard");
+                    }}
+                    className="flex items-center w-full px-4 py-2 text-sm hover:bg-muted transition-colors"
+                  >
+                    <LayoutDashboard className="w-4 h-4 mr-3 text-muted-foreground" />
                     Dashboard
                   </button>
                   <button
                     onClick={() => {
                       setIsProfileOpen(false);
+                      router.push("/settings");
                     }}
                     className="flex items-center w-full px-4 py-2 text-sm hover:bg-muted transition-colors"
                   >

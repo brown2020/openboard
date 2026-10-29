@@ -19,6 +19,7 @@ import { BoardTemplate, Block } from "@/types";
 import { LayoutTemplate, Search, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import { generateUniqueSlug } from "@/lib/utils";
+import { useBoardStore } from "@/stores/board-store";
 
 export default function TemplatesPage() {
   const { user } = useAuth();
@@ -57,7 +58,10 @@ export default function TemplatesPage() {
       const board = await createBoard(template.name, slug);
 
       if (!board) {
-        setCreateError("Could not create a board from this template. Please try again.");
+        setCreateError(
+          useBoardStore.getState().error ??
+            "Could not create a board from this template. Please try again."
+        );
         return;
       }
 
@@ -66,10 +70,16 @@ export default function TemplatesPage() {
         id: `tmpl_${Date.now()}_${index}`,
       })) as Block[];
 
-      await updateBoard(board.id, {
+      const saved = await updateBoard(board.id, {
         blocks: blocksWithIds,
         theme: template.theme,
       });
+      if (!saved) {
+        setCreateError(
+          useBoardStore.getState().error ??
+            "The board was created, but its template content could not be saved."
+        );
+      }
 
       router.push(`/board/${board.id}`);
     } catch {

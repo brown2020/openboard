@@ -8,6 +8,7 @@ import {
   StorageError,
 } from "firebase/storage";
 import { getClientStorage } from "@/lib/firebase";
+import { reportWriteError } from "@/lib/write-error";
 import { useAuth } from "./use-auth";
 
 interface UseStorageResult {
@@ -28,7 +29,8 @@ export function useStorage(): UseStorageResult {
     path?: string
   ): Promise<string | null> => {
     if (!user) {
-      setError("User must be logged in to upload files");
+      const message = "User must be logged in to upload files";
+      setError(reportWriteError("Upload failed", message));
       return null;
     }
 
@@ -41,13 +43,15 @@ export function useStorage(): UseStorageResult {
       "image/avif",
     ]);
     if (!allowedTypes.has(file.type)) {
-      setError("Only JPEG, PNG, GIF, WebP, or AVIF images are allowed");
+      const message = "Only JPEG, PNG, GIF, WebP, or AVIF images are allowed";
+      setError(reportWriteError("Upload failed", message));
       return null;
     }
 
     // Validate file size (5MB limit)
     if (file.size > 5 * 1024 * 1024) {
-      setError("File size must be less than 5MB");
+      const message = "File size must be less than 5MB";
+      setError(reportWriteError("Upload failed", message));
       return null;
     }
 
@@ -71,7 +75,7 @@ export function useStorage(): UseStorageResult {
             setProgress(progress);
           },
           (error: StorageError) => {
-            setError(error.message);
+            setError(reportWriteError("Upload failed", error));
             setUploading(false);
             resolve(null);
           },
@@ -80,8 +84,8 @@ export function useStorage(): UseStorageResult {
               const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
               setUploading(false);
               resolve(downloadURL);
-            } catch {
-              setError("Failed to get download URL");
+            } catch (error) {
+              setError(reportWriteError("Upload failed", error));
               setUploading(false);
               resolve(null);
             }
@@ -89,7 +93,7 @@ export function useStorage(): UseStorageResult {
         );
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unknown error occurred");
+      setError(reportWriteError("Upload failed", err));
       setUploading(false);
       return null;
     }

@@ -8,7 +8,8 @@ import { getClientDb } from "@/lib/firebase";
 import { UserProfile } from "@/types";
 import { getValidToken } from "@/lib/auth-utils";
 import { syncAuthSessionCookie } from "@/lib/auth-cookie";
-import { useErrorHandler, getFirebaseErrorMessage } from "./use-error-handler";
+import { useErrorHandler } from "./use-error-handler";
+import { reportWriteError } from "@/lib/write-error";
 
 async function loadOrCreateProfile(
   uid: string,
@@ -124,7 +125,7 @@ export function useAuth() {
         if (ignore) return;
         window.clearTimeout(timeout);
         handleError(error, "Failed to sync user profile");
-        setSyncError(getFirebaseErrorMessage(error));
+        setSyncError(reportWriteError("Could not save your profile", error));
         clearUser();
         setHydrated(true);
         setLoading(false);

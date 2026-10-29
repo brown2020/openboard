@@ -44,9 +44,8 @@ export function ImageBlock({
 
     if (selectedFile) {
       const uploadedUrl = await uploadFile(selectedFile);
-      if (uploadedUrl) {
-        finalUrl = uploadedUrl;
-      }
+      if (!uploadedUrl) return;
+      finalUrl = uploadedUrl;
     }
 
     updateBlock(block.id, {

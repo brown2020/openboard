@@ -11,6 +11,8 @@ export const PROTECTED_ROUTES = [
   "/boards",
   "/board",
   "/templates",
+  "/settings",
+  "/profile",
 ] as const;
 
 /** Routes only accessible when NOT authenticated */

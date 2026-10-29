@@ -97,6 +97,7 @@ export function getFirebaseErrorMessage(error: unknown): string {
     "auth/user-not-found": "No account found with this email",
     "auth/wrong-password": "Incorrect password",
     "auth/invalid-credential": "Invalid email or password",
+    "auth/invalid-login-credentials": "Invalid email or password",
     "auth/weak-password": "Password is too weak",
     "auth/too-many-requests": "Too many attempts. Please try again later",
     "auth/popup-closed-by-user": "Sign-in popup was closed. Please try again",
@@ -111,6 +112,10 @@ export function getFirebaseErrorMessage(error: unknown): string {
   };
 
   if (code && messages[code]) return messages[code];
+  const suffix = code
+    ? Object.keys(messages).find((key) => code === key || code.endsWith(`/${key}`))
+    : undefined;
+  if (suffix) return messages[suffix];
   const msg = (error as { message?: string })?.message;
   return msg || "An error occurred";
 }

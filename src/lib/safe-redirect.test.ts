@@ -15,6 +15,8 @@ describe("sanitizeRedirectPath", () => {
     expect(sanitizeRedirectPath("/board/abc123")).toBe("/board/abc123");
     expect(sanitizeRedirectPath("/dashboard")).toBe("/dashboard");
     expect(sanitizeRedirectPath("/templates")).toBe("/templates");
+    expect(sanitizeRedirectPath("/settings")).toBe("/settings");
+    expect(sanitizeRedirectPath("/profile")).toBe("/profile");
   });
 
   it("preserves query strings on allowed paths", () => {

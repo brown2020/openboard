@@ -24,8 +24,10 @@ import {
 } from "@/lib/form-webhooks";
 import {
   isFirestorePermissionDenied,
+  isUnreadableMissingDocument,
   omitUndefinedDeep,
 } from "@/lib/firestore-data";
+import { reportWriteError } from "@/lib/write-error";
 import { useBoardStore } from "@/stores/board-store";
 import { Board } from "@/types";
 import { useAuthContext } from "@/lib/auth-context";
@@ -34,6 +36,19 @@ import { DEFAULT_THEME } from "@/lib/constants";
 import { getValidToken } from "@/lib/auth-utils";
 import { mergeBoardLists } from "@/lib/collaborators";
 import { useErrorHandler, getFirebaseErrorMessage } from "./use-error-handler";
+
+async function boardIdTaken(boardId: string): Promise<boolean> {
+  const boardRef = doc(getClientDb(), "boards", boardId);
+  try {
+    const existingSnap = await getDoc(boardRef);
+    return existingSnap.exists();
+  } catch (error) {
+    // Live and repo rules both read resource.data, so a missing board
+    // comes back as permission-denied instead of exists() === false.
+    if (isUnreadableMissingDocument(error)) return false;
+    throw error;
+  }
+}
 
 function mapBoardDocs(
   docs: { id: string; data: () => Record<string, unknown> }[]
@@ -50,7 +65,7 @@ export function useBoards() {
   // Get user profile from store
   const { user: userProfile, isHydrated } = useUserStore();
 
-  const { boards, setBoards, setStatus, setError } = useBoardStore();
+  const { boards, setBoards, setStatus, setError, clearError } = useBoardStore();
   const { handleError } = useErrorHandler();
   const unsubscribeRef = useRef<(() => void) | null>(null);
   const ownedBoardsRef = useRef<Board[]>([]);
@@ -188,7 +203,13 @@ export function useBoards() {
   // Create a new board
   const createBoard = useCallback(
     async (title: string, slug: string): Promise<Board | null> => {
-      if (!userProfile || !firebaseUser) return null;
+      if (!userProfile || !firebaseUser) {
+        const message = !firebaseUser
+          ? "Sign in to create a board."
+          : "Your profile is still loading. Wait a moment and try again.";
+        setError(reportWriteError("Could not create board", message));
+        return null;
+      }
 
       try {
         await getValidToken(firebaseUser);
@@ -197,9 +218,7 @@ export function useBoards() {
         let boardId = `${firebaseUser.uid}_${candidateSlug}`;
 
         for (let attempt = 0; attempt < 5; attempt++) {
-          const boardRef = doc(getClientDb(), "boards", boardId);
-          const existingSnap = await getDoc(boardRef);
-          if (!existingSnap.exists()) break;
+          if (!(await boardIdTaken(boardId))) break;
 
           const suffix = Math.random().toString(36).slice(2, 6);
           candidateSlug = `${slug}-${suffix}`;
@@ -207,9 +226,13 @@ export function useBoards() {
         }
 
         const boardRef = doc(getClientDb(), "boards", boardId);
-        const existingSnap = await getDoc(boardRef);
-        if (existingSnap.exists()) {
-          setError("Could not generate a unique board URL. Please try again.");
+        if (await boardIdTaken(boardId)) {
+          setError(
+            reportWriteError(
+              "Could not create board",
+              "Could not generate a unique board URL. Please try again."
+            )
+          );
           return null;
         }
 
@@ -236,14 +259,15 @@ export function useBoards() {
         };
 
         await setDoc(boardRef, newBoard);
+        clearError();
         return newBoard;
       } catch (error) {
         handleError(error, "Failed to create board");
-        setError(getFirebaseErrorMessage(error));
+        setError(reportWriteError("Could not create board", error));
         return null;
       }
     },
-    [userProfile, firebaseUser, setError, handleError]
+    [userProfile, firebaseUser, setError, clearError, handleError]
   );
 
   // Get a specific board by ID
@@ -331,14 +355,15 @@ export function useBoards() {
           ...nextUpdates,
           updatedAt: serverTimestamp(),
         });
+        clearError();
         return true;
       } catch (error) {
         handleError(error, "Failed to update board");
-        setError(getFirebaseErrorMessage(error));
+        setError(reportWriteError("Could not save board", error));
         return false;
       }
     },
-    [setError, handleError]
+    [setError, clearError, handleError]
   );
 
   // Delete a board
@@ -347,14 +372,15 @@ export function useBoards() {
       try {
         const boardRef = doc(getClientDb(), "boards", boardId);
         await deleteDoc(boardRef);
+        clearError();
         return true;
       } catch (error) {
         handleError(error, "Failed to delete board");
-        setError(getFirebaseErrorMessage(error));
+        setError(reportWriteError("Could not delete board", error));
         return false;
       }
     },
-    [setError, handleError]
+    [setError, clearError, handleError]
   );
 
   return {

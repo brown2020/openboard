@@ -25,6 +25,7 @@ import {
 import { setAuthCookie } from "@/lib/auth-cookie";
 import { getFirebaseErrorMessage } from "@/hooks/use-error-handler";
 import { sanitizeRedirectPath } from "@/lib/safe-redirect";
+import { notifyUser } from "@/lib/write-error";
 
 export default function LoginPage() {
   return (
@@ -38,6 +39,7 @@ function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [status, setStatus] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
@@ -49,6 +51,7 @@ function LoginForm() {
     e.preventDefault();
     setIsLoading(true);
     setError("");
+    setStatus("");
 
     try {
       await setPersistence(
@@ -57,9 +60,14 @@ function LoginForm() {
       );
       await signInWithEmailAndPassword(auth, email, password);
       await setAuthCookie(auth.currentUser);
+      const message = "Signed in. Opening your boards…";
+      setStatus(message);
+      notifyUser("success", "Signed in", message);
       router.push(redirectTo);
     } catch (err: unknown) {
-      setError(getFirebaseErrorMessage(err));
+      const message = getFirebaseErrorMessage(err);
+      setError(message);
+      notifyUser("error", "Sign in failed", message);
     } finally {
       setIsLoading(false);
     }
@@ -68,13 +76,19 @@ function LoginForm() {
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
     setError("");
+    setStatus("");
 
     try {
       await signInWithPopup(auth, googleProvider);
       await setAuthCookie(auth.currentUser);
+      const message = "Signed in. Opening your boards…";
+      setStatus(message);
+      notifyUser("success", "Signed in", message);
       router.push(redirectTo);
     } catch (err: unknown) {
-      setError(getFirebaseErrorMessage(err));
+      const message = getFirebaseErrorMessage(err);
+      setError(message);
+      notifyUser("error", "Sign in failed", message);
     } finally {
       setIsLoading(false);
     }
@@ -83,6 +97,11 @@ function LoginForm() {
   return (
     <AuthLayout title="Sign in to OpenBoard" subtitle="Welcome back!">
       <AuthError message={error} />
+      {status ? (
+        <p className="text-sm text-emerald-700 dark:text-emerald-400" role="status">
+          {status}
+        </p>
+      ) : null}
 
       <form className="space-y-6" onSubmit={handleSubmit}>
         <div className="space-y-2">

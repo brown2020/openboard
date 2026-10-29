@@ -4,17 +4,20 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { notifyUser } from "@/lib/write-error";
 
 export function PasswordGate({ boardId }: { boardId: string }) {
   const router = useRouter();
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [status, setStatus] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
+    setStatus(null);
 
     try {
       const res = await fetch("/api/boards/unlock", {
@@ -28,9 +31,14 @@ export function PasswordGate({ boardId }: { boardId: string }) {
         throw new Error(payload?.error || "Incorrect password");
       }
 
+      const message = "Password accepted. Opening the board…";
+      setStatus(message);
+      notifyUser("success", "Board unlocked", message);
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to unlock");
+      const message = err instanceof Error ? err.message : "Failed to unlock";
+      setError(message);
+      notifyUser("error", "Could not unlock board", message);
     } finally {
       setIsLoading(false);
     }
@@ -50,7 +58,16 @@ export function PasswordGate({ boardId }: { boardId: string }) {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
-          {error && <p className="text-sm text-red-500">{error}</p>}
+          {error ? (
+            <p className="text-sm text-red-600" role="alert">
+              {error}
+            </p>
+          ) : null}
+          {status ? (
+            <p className="text-sm text-emerald-700" role="status">
+              {status}
+            </p>
+          ) : null}
           <Button type="submit" className="w-full" disabled={isLoading || !password}>
             {isLoading ? "Unlocking..." : "Unlock"}
           </Button>

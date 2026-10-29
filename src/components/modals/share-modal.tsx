@@ -138,7 +138,11 @@ export function ShareModal() {
           return;
         }
 
-        await updateBoard(currentBoard.id, { privacy: newPrivacy });
+        const saved = await updateBoard(currentBoard.id, { privacy: newPrivacy });
+        if (!saved) {
+          setPrivacy(currentBoard.privacy);
+          return;
+        }
         toast.success("Privacy updated", `Board is now ${newPrivacy}`);
       }
     } catch {
@@ -167,7 +171,8 @@ export function ShareModal() {
         toast.error("Save failed", payload?.error || "Failed to save password");
         return;
       }
-      await updateBoard(currentBoard.id, { privacy: "password" });
+      const saved = await updateBoard(currentBoard.id, { privacy: "password" });
+      if (!saved) return;
       toast.success("Password saved");
     } catch {
       toast.error("Save failed", "An error occurred while saving the password");
@@ -216,10 +221,7 @@ export function ShareModal() {
 
       const next = [...collaborators, userId];
       const success = await updateBoard(currentBoard.id, { collaborators: next });
-      if (!success) {
-        toast.error("Invite failed", "Could not add collaborator. Please try again.");
-        return;
-      }
+      if (!success) return;
 
       setCollaborators(next);
       setNewCollaborator("");
@@ -236,10 +238,7 @@ export function ShareModal() {
 
     const next = collaborators.filter((id) => id !== userId);
     const success = await updateBoard(currentBoard.id, { collaborators: next });
-    if (!success) {
-      toast.error("Remove failed", "Could not remove collaborator. Please try again.");
-      return;
-    }
+    if (!success) return;
 
     setCollaborators(next);
     toast.info("Collaborator removed");

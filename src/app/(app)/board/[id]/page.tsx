@@ -46,7 +46,7 @@ export default function BoardEditorPage({ params }: PageProps) {
 }
 
 function BoardEditorSession({ boardId }: { boardId: string }) {
-  const { user, isLoaded } = useAuth();
+  const { user, isLoaded, syncError } = useAuth();
   const { getBoard } = useBoards();
   const { currentBoard, setCurrentBoard, reorderBlocks, addBlock } =
     useBoardStore();
@@ -251,8 +251,6 @@ function BoardEditorSession({ boardId }: { boardId: string }) {
     const success = await saveNow();
     if (success) {
       toast.success("Changes saved", "Your board has been updated");
-    } else {
-      toast.error("Save failed", "Failed to save changes. Please try again.");
     }
   }, [saveNow, toast]);
 
@@ -291,8 +289,18 @@ function BoardEditorSession({ boardId }: { boardId: string }) {
     }
   };
 
-  if (isLoaded && !user) {
+  if (isLoaded && !user && !syncError) {
     redirect("/login");
+  }
+
+  if (syncError && !user) {
+    return (
+      <div className="p-4">
+        <p className="text-sm text-destructive" role="alert">
+          {syncError}
+        </p>
+      </div>
+    );
   }
 
   if (isLoading || !currentBoard) {

@@ -19,10 +19,13 @@ import { Plus, ExternalLink, Settings, Copy } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
 import { generateSlug } from "@/lib/utils";
+import { useBoardStore } from "@/stores/board-store";
 
 export default function BoardsPage() {
   const { user, isLoaded, syncError } = useAuth();
   const { boards, createBoard } = useBoards();
+  const boardError = useBoardStore((state) => state.error);
+  const clearBoardError = useBoardStore((state) => state.clearError);
   const router = useRouter();
   const [isCreating, setIsCreating] = useState(false);
   const [newBoardTitle, setNewBoardTitle] = useState("");
@@ -51,7 +54,7 @@ export default function BoardsPage() {
     }
   };
 
-  if (isLoaded && !user) {
+  if (isLoaded && !user && !syncError) {
     redirect("/login");
   }
 
@@ -86,7 +89,13 @@ export default function BoardsPage() {
           </p>
         </div>
 
-        <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+        <Sheet
+          open={sheetOpen}
+          onOpenChange={(open) => {
+            setSheetOpen(open);
+            if (open) clearBoardError();
+          }}
+        >
           <SheetTrigger asChild>
             <Button size="lg" className="gap-2">
               <Plus className="w-5 h-5" />
@@ -128,6 +137,11 @@ export default function BoardsPage() {
                   {user.username}/{newBoardSlug || "my-board"}
                 </p>
               </div>
+              {boardError ? (
+                <p className="text-sm text-destructive" role="alert">
+                  {boardError}
+                </p>
+              ) : null}
               <Button
                 className="w-full"
                 onClick={handleCreateBoard}
@@ -139,6 +153,12 @@ export default function BoardsPage() {
           </SheetContent>
         </Sheet>
       </div>
+
+      {boardError && !sheetOpen ? (
+        <p className="mb-6 text-sm text-destructive" role="alert">
+          {boardError}
+        </p>
+      ) : null}
 
       {boards.length === 0 ? (
         <div className="text-center py-16 border-2 border-dashed rounded-lg">

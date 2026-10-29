@@ -21,3 +21,11 @@ export function isFirestorePermissionDenied(error: unknown): boolean {
   const code = (error as { code?: string } | null)?.code ?? "";
   return code === "permission-denied" || code.endsWith("/permission-denied");
 }
+
+/**
+ * Rules that read `resource.data` deny `get` when the document does not exist.
+ * For an id this user would own, that denial means the board has not been created.
+ */
+export function isUnreadableMissingDocument(error: unknown): boolean {
+  return isFirestorePermissionDenied(error);
+}
