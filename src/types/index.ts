@@ -3,8 +3,6 @@ import { Timestamp } from "firebase/firestore";
 // User Types
 export interface UserProfile {
   id: string;
-  /** @deprecated Leftover from Clerk migration. Use `id` instead. */
-  clerkId?: string;
   username: string;
   email: string;
   displayName: string;
