@@ -5,7 +5,13 @@ import { FIREBASE_AUTH_COOKIE } from "@/lib/auth-constants";
 import { getAdminAuth } from "@/lib/firebase-admin";
 import { consumeRateLimit, errorResponse } from "@/lib/api-utils";
 import { getTrustedClientIp } from "@/lib/client-ip";
-import { canMintSessionCookie } from "@/lib/session-mint";
+import {
+  canMintSessionCookie,
+  sessionRequestPlan,
+  SESSION_CREATE_PER_MINUTE,
+  SESSION_POST_PER_MINUTE,
+  SESSION_REFRESH_PER_MINUTE,
+} from "@/lib/session-mint";
 
 const SessionCreateSchema = z.object({
   idToken: z.string().min(1),
@@ -19,34 +25,77 @@ export async function POST(req: Request) {
       return errorResponse("Invalid request body", 400);
     }
 
-    // Rate limit per IP: 10 requests per minute
     const ip = getTrustedClientIp(req.headers);
-    if (!(await consumeRateLimit(`session:create:${ip}`, 10, 60000))) {
+    const cookieStore = await cookies();
+    const existingCookie = cookieStore.get(FIREBASE_AUTH_COOKIE)?.value;
+    // Callers who already have a session cookie are not held to the mint cap.
+    if (
+      !existingCookie &&
+      !(await consumeRateLimit(`session:post:${ip}`, SESSION_POST_PER_MINUTE, 60000))
+    ) {
       return errorResponse("Too many requests. Please try again later.", 429);
     }
 
     const adminAuth = getAdminAuth();
     const decoded = await adminAuth.verifyIdToken(body.data.idToken, true);
-    const cookieStore = await cookies();
-    const existingCookie = cookieStore.get(FIREBASE_AUTH_COOKIE)?.value;
     let hasMatchingSession = false;
+    let sessionExpiresAtSeconds: number | null = null;
     if (existingCookie) {
       try {
         const current = await adminAuth.verifySessionCookie(existingCookie, true);
         hasMatchingSession = current.uid === decoded.uid;
+        sessionExpiresAtSeconds = typeof current.exp === "number" ? current.exp : null;
       } catch {
         hasMatchingSession = false;
       }
     }
 
+    const nowSeconds = Math.floor(Date.now() / 1000);
+    if (
+      sessionRequestPlan({
+        hasMatchingSession,
+        sessionExpiresAtSeconds,
+        nowSeconds,
+      }) === "reuse"
+    ) {
+      if (
+        !(await consumeRateLimit(
+          `session:refresh:${decoded.uid}`,
+          SESSION_REFRESH_PER_MINUTE,
+          60000
+        ))
+      ) {
+        return errorResponse("Too many requests. Please try again later.", 429);
+      }
+      return NextResponse.json({ ok: true });
+    }
+
     if (
       !canMintSessionCookie({
         authTime: decoded.auth_time,
-        nowSeconds: Math.floor(Date.now() / 1000),
+        nowSeconds,
         hasMatchingSession,
       })
     ) {
       return errorResponse("Sign in again to refresh your session", 401);
+    }
+
+    if (
+      existingCookie &&
+      !hasMatchingSession &&
+      !(await consumeRateLimit(`session:post:${ip}`, SESSION_POST_PER_MINUTE, 60000))
+    ) {
+      return errorResponse("Too many requests. Please try again later.", 429);
+    }
+
+    if (
+      !(await consumeRateLimit(
+        `session:create:${decoded.uid}`,
+        SESSION_CREATE_PER_MINUTE,
+        60000
+      ))
+    ) {
+      return errorResponse("Too many requests. Please try again later.", 429);
     }
 
     const expiresInMs = 7 * 24 * 60 * 60 * 1000; // 7 days

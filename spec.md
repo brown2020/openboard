@@ -111,7 +111,7 @@ Public visitor → /u/{user}/{slug} → [password gate?] → view + track analyt
 - Rate limits are stored in the `rateLimits` collection and fall back to in-process counters when the Admin SDK is unavailable
 - Board list merges owned boards and collaborator shares via dual Firestore subscriptions
 - Creating a board does not `get` a missing document as a hard failure. Rules that read `resource.data` deny that read, so the client treats permission-denied as "not created yet" and surfaces every subsequent write error in a toast. Deploying `firestore.rules` does not by itself make that existence check succeed.
-- Session cookie sync is per ID token. A password sign-in does not reuse a cookie request that already posted a stale token. A denied `collaborators` list query does not surface an error when the owned-board list succeeds.
+- Session cookie sync is per ID token. A password sign-in does not reuse a cookie request that already posted a stale token. After one successful sync, later navigations reuse that cookie for 12 hours instead of calling `/api/auth/session` again. A matching cookie with more than a day left returns success without minting another one. A signed-in refresh is allowed 120 times per minute and is not counted against the 30-per-minute cap used for new mints. A denied `collaborators` list query does not surface an error when the owned-board list succeeds.
 - No CI test pipeline observed; local quality gate is lint + TypeScript + Vitest + build
 - npm lockfile — use npm exclusively
 

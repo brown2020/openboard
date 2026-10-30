@@ -2,8 +2,15 @@
 
 import { User } from "firebase/auth";
 
-type InFlightSync = { key: string; promise: Promise<void> } | null;
-let inFlightSync: InFlightSync = null;
+/** Skip another POST while this user's cookie was just created. */
+export const SESSION_SYNC_REUSE_MS = 12 * 60 * 60 * 1000;
+
+type InFlightSync = { uid: string; promise: Promise<void> } | null;
+
+let backgroundSync: InFlightSync = null;
+let forcedSync: InFlightSync = null;
+let established: { uid: string; at: number } | null = null;
+let sessionEpoch = 0;
 
 /**
  * Single-flight key for session cookie sync.
@@ -13,6 +20,20 @@ let inFlightSync: InFlightSync = null;
 export function sessionSyncKey(uid: string | null, token: string | null): string {
   if (!uid || !token) return "signed-out";
   return `${uid}:${token}`;
+}
+
+export function shouldSkipEstablishedSession(input: {
+  uid: string;
+  forceRefresh: boolean;
+  establishedUid: string | null;
+  establishedAt: number | null;
+  now: number;
+  reuseMs: number;
+}): boolean {
+  if (input.forceRefresh) return false;
+  if (!input.establishedUid || input.establishedUid !== input.uid) return false;
+  if (input.establishedAt == null) return false;
+  return input.now - input.establishedAt < input.reuseMs;
 }
 
 async function errorMessage(res: Response, fallback: string): Promise<string> {
@@ -45,31 +66,68 @@ async function syncAuthSessionCookieOnce(
 
 /**
  * Sync the server session cookie with the current Firebase user.
- * In-flight calls are shared only when they post the same ID token.
+ * A successful sync is reused across navigations. A password sign-in still
+ * mints with a fresh token and does not wait on an older in-flight request.
  */
 export async function syncAuthSessionCookie(
   user: User | null,
   options?: { forceRefresh?: boolean }
 ): Promise<void> {
-  const token = user ? await user.getIdToken(options?.forceRefresh ?? false) : null;
-  const key = sessionSyncKey(user?.uid ?? null, token);
+  const forceRefresh = options?.forceRefresh ?? false;
 
-  if (inFlightSync?.key === key) {
-    return inFlightSync.promise;
+  if (!user) {
+    sessionEpoch += 1;
+    established = null;
+    return syncAuthSessionCookieOnce(null, null);
   }
 
-  const promise = syncAuthSessionCookieOnce(user, token).finally(() => {
-    if (inFlightSync?.promise === promise) {
-      inFlightSync = null;
+  if (
+    shouldSkipEstablishedSession({
+      uid: user.uid,
+      forceRefresh,
+      establishedUid: established?.uid ?? null,
+      establishedAt: established?.at ?? null,
+      now: Date.now(),
+      reuseMs: SESSION_SYNC_REUSE_MS,
+    })
+  ) {
+    return;
+  }
+
+  if (forcedSync?.uid === user.uid) {
+    return forcedSync.promise;
+  }
+  if (!forceRefresh && backgroundSync?.uid === user.uid) {
+    return backgroundSync.promise;
+  }
+
+  const epoch = sessionEpoch;
+  const promise = (async () => {
+    const token = await user.getIdToken(forceRefresh);
+    await syncAuthSessionCookieOnce(user, token);
+    if (epoch === sessionEpoch) {
+      established = { uid: user.uid, at: Date.now() };
+    }
+  })().finally(() => {
+    if (forceRefresh) {
+      if (forcedSync?.promise === promise) forcedSync = null;
+    } else if (backgroundSync?.promise === promise) {
+      backgroundSync = null;
     }
   });
 
-  inFlightSync = { key, promise };
+  if (forceRefresh) {
+    forcedSync = { uid: user.uid, promise };
+  } else {
+    backgroundSync = { uid: user.uid, promise };
+  }
   return promise;
 }
 
 export const setAuthCookie = syncAuthSessionCookie;
 
 export const removeAuthCookie = () => {
+  sessionEpoch += 1;
+  established = null;
   fetch("/api/auth/session", { method: "DELETE" }).catch(() => {});
 };
