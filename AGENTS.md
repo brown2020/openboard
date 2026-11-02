@@ -14,7 +14,7 @@ OpenBoard is a free, open-source Linktree-style product: users create customizab
 |-------|------------|
 | Framework | Next.js 16 (App Router, Turbopack in dev) |
 | UI | React 19, Tailwind CSS 4, Radix UI primitives |
-| Language | TypeScript 5 (strict) |
+| Language | TypeScript 7 (`tsc` via `@typescript/native`); TypeScript 6 API for ESLint |
 | State | Zustand 5 (`board-store`, `ui-store`, `user-store`; `collab-store` exists but unused) |
 | Backend | Firebase Auth, Firestore, Storage |
 | Server auth | Firebase Admin SDK + HttpOnly session cookies |

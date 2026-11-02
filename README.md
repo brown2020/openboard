@@ -23,16 +23,16 @@ Collaboration UI exists but collaborator listing / full multi-user edit is incom
 
 | Layer | Tech |
 | --- | --- |
-| Framework | Next.js 16.2.6 (App Router; production build uses `--webpack`) |
-| UI | React ^19.2.6, Tailwind CSS 4, Radix primitives, Lucide / react-icons |
-| Language | TypeScript ^5.9.3 |
-| State | Zustand ^5.0.13 |
-| Backend | Firebase ^12.13.0 + Firebase Admin ^13.10.0 |
-| Editor | TipTap 3 |
+| Framework | Next.js 16.4.3 (App Router; production build uses `--webpack`) |
+| UI | React ^19.3.1, Tailwind CSS ^4.3.3, Radix primitives, Lucide / react-icons |
+| Language | TypeScript 7.0 (`tsc` from `@typescript/native`); ESLint uses the TypeScript 6 API (`typescript` → `@typescript/typescript6`) |
+| State | Zustand ^5.0.16 |
+| Backend | Firebase ^13.1.0 + Firebase Admin ^14.5.0 |
+| Editor | TipTap ^3.32.2 |
 | DnD | `@dnd-kit/*` |
-| AI | OpenAI SDK ^6 (`gpt-4o-mini` suggest route) |
-| Validation | Zod ^4.4.3 |
-| Tests | Vitest ^3.2.4, ESLint 9 |
+| AI | OpenAI SDK ^7 (`gpt-4o-mini` suggest route) |
+| Validation | Zod ^4.6.7 |
+| Tests | Vitest ^5.0.5, ESLint ^10.14.0 |
 
 ## Project structure
 
@@ -57,7 +57,7 @@ firestore.rules  storage.rules  firebase.json  env.example
 
 ### Prerequisites
 
-- Node.js 22+
+- Node.js 24 (CI and local validation; Firebase Admin requires Node 22+)
 - npm
 - Firebase project (Auth, Firestore, Storage)
 - Optional: OpenAI API key for AI suggestions
@@ -107,7 +107,8 @@ From `env.example` (no `.env.example` file):
 
 ## Testing and CI
 
-- `.github/workflows/ci.yml` on `dev` / `main`: lint → typecheck → test → production build (client env from Actions secrets; tolerates missing secrets via deferred Firebase init).
+- `.github/workflows/ci.yml` on `dev` / `main`, Node.js 24: lint → typecheck → test → production build (client env from Actions secrets; tolerates missing secrets via deferred Firebase init).
+- `npm run typecheck` runs TypeScript 7. `typescript-eslint` cannot load TypeScript 7.0’s compiler (it has no programmatic API until 7.1), so the `typescript` package stays on the TypeScript 6 API shim.
 
 ## Deployment
 

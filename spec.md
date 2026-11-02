@@ -1,7 +1,7 @@
 # OpenBoard — Product Specification
 
 Authoritative product and roadmap document for OpenBoard.  
-Last updated from codebase review: May 2026.
+Last updated from codebase review: November 2026.
 
 ---
 
@@ -99,7 +99,8 @@ Public visitor → /u/{user}/{slug} → [password gate?] → view + track analyt
 
 ### Current architecture summary
 
-- **Frontend:** Next.js 16 App Router, mostly client components in authenticated areas
+- **Frontend:** Next.js 16.4.3 App Router, mostly client components in authenticated areas
+- **Toolchain:** CI and local validation use Node.js 24. `tsc` is TypeScript 7.0 (`@typescript/native`). ESLint keeps the TypeScript 6 API (`typescript` aliased to `@typescript/typescript6`) because typescript-eslint does not support TypeScript 7.0. Firebase client 13.1 and Admin 14.5. Suggest route model remains `gpt-4o-mini`.
 - **Auth gate:** `src/proxy.ts` (not `middleware.ts`) + per-route `requireAuth()` on APIs
 - **State:** Zustand for editor/UI; Firestore realtime for board list
 - **Public render:** Server fetches board via Admin SDK; strips secrets; client handles theme + analytics
