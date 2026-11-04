@@ -99,8 +99,8 @@ Public visitor → /u/{user}/{slug} → [password gate?] → view + track analyt
 
 ### Current architecture summary
 
-- **Frontend:** Next.js 16.4.3 App Router, mostly client components in authenticated areas
-- **Toolchain:** CI and local validation use Node.js 24. `tsc` is TypeScript 7.0 (`@typescript/native`). ESLint keeps the TypeScript 6 API (`typescript` aliased to `@typescript/typescript6`) because typescript-eslint does not support TypeScript 7.0. Firebase client 13.1 and Admin 14.5. Suggest route model remains `gpt-4o-mini`.
+- **Frontend:** Next.js 16.4.5 App Router, mostly client components in authenticated areas
+- **Toolchain:** CI and local validation use Node.js 24. TypeScript stays on 6.0.3 because TypeScript 7 has no compiler API. `@types/node` stays on 24.x. Firebase client 13.2 and Admin 14.5. Suggest route model remains `gpt-4o-mini`. Form submit URLs are stored by `/api/boards/form-destinations`, which copies `ownerId` from the board document.
 - **Auth gate:** `src/proxy.ts` (not `middleware.ts`) + per-route `requireAuth()` on APIs
 - **State:** Zustand for editor/UI; Firestore realtime for board list
 - **Public render:** Server fetches board via Admin SDK; strips secrets; client handles theme + analytics
@@ -166,7 +166,7 @@ Ordered by product impact and dependency. Each item is sized for one focused com
 - [x] Unlisted boards are not listed on any public index (none exists today — documented below)
 - [x] Search engines discouraged via `noindex, nofollow` metadata (referrer-gated 404 deferred — breaks share flows)
 
-**Implementation note:** `lib/public-board-access.ts` defines robots policy; `generateMetadata` on `u/[username]/[slug]/page.tsx` sets `noindex` for unlisted boards; shared fetch in `lib/public-board-server.ts`.
+**Implementation note:** `lib/public-board-access.ts` defines robots policy; `generateMetadata` on `u/[username]/[slug]/page.tsx` sets `noindex` for unlisted boards; shared fetch in `lib/public-board.server.ts`.
 
 **Unlisted behavior:** Accessible at `/u/{username}/{slug}` for anyone with the link. Not indexed by search engines. No public board directory exists in the app.
 

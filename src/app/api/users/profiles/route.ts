@@ -20,23 +20,26 @@ export async function POST(req: Request) {
     }
 
     const adminDb = getAdminDb();
-    const profiles = [];
-
-    for (const id of [...new Set(parsed.data.ids)]) {
-      const snap = await adminDb.collection("users").doc(id).get();
-      if (!snap.exists) continue;
-      const data = snap.data() as {
-        username?: string;
-        displayName?: string;
-        avatar?: string;
-      };
-      profiles.push({
-        id,
-        username: data.username ?? "",
-        displayName: data.displayName ?? data.username ?? "",
-        avatar: data.avatar,
-      });
-    }
+    const ids = [...new Set(parsed.data.ids)];
+    const profiles = (
+      await Promise.all(
+        ids.map(async (id) => {
+          const snap = await adminDb.collection("users").doc(id).get();
+          if (!snap.exists) return null;
+          const data = snap.data() as {
+            username?: string;
+            displayName?: string;
+            avatar?: string;
+          };
+          return {
+            id,
+            username: data.username ?? "",
+            displayName: data.displayName ?? data.username ?? "",
+            avatar: data.avatar,
+          };
+        })
+      )
+    ).filter((profile) => profile !== null);
 
     return NextResponse.json({ profiles });
   } catch (error) {

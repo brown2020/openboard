@@ -4,6 +4,7 @@ import { AUTH_ROUTES, PROTECTED_ROUTES } from "@/lib/routes";
 export const AUTHENTICATED_API_PREFIXES = [
   "/api/ai/",
   "/api/boards/privacy",
+  "/api/boards/form-destinations",
   "/api/users/",
   "/api/analytics/query",
 ] as const;

@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { Globe, Music2, MessageSquare } from "lucide-react";
 import { EmbedBlock as EmbedBlockType } from "@/types";
 import { useBoardStore } from "@/stores/board-store";
+import { usePageHostname } from "@/hooks/use-page-hostname";
 import { BlockControls } from "./block-controls";
 import { BlockEditWrapper } from "./block-edit-wrapper";
 import { InputField, SelectField } from "./form-fields";
@@ -67,13 +68,13 @@ export function EmbedBlock({
   const [editUrl, setEditUrl] = useState(url);
   const [editEmbed, setEditEmbed] = useState(embedCode || "");
 
+  const pageHost = usePageHostname();
   const resolvedEmbed = useMemo(() => {
     const raw = editEmbed || getDefaultEmbedCode(editUrl, editPlatform);
     if (!raw) return "";
-    const pageHost = typeof window !== "undefined" ? window.location.hostname : undefined;
     if (editPlatform === "custom") return sanitizeCustomEmbed(raw, pageHost);
     return sanitizeProviderEmbed(raw, editPlatform, pageHost);
-  }, [editEmbed, editUrl, editPlatform]);
+  }, [editEmbed, editUrl, editPlatform, pageHost]);
 
   const handleSave = () => {
     updateBlock(block.id, {

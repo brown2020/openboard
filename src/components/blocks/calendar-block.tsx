@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { CalendarBlock as CalendarBlockType } from "@/types";
 import { useBoardStore } from "@/stores/board-store";
 import { Calendar as CalendarIcon } from "lucide-react";
+import { usePageHostname } from "@/hooks/use-page-hostname";
 import { BlockControls } from "./block-controls";
 import { BlockEditWrapper } from "./block-edit-wrapper";
 import { InputField, SelectField } from "./form-fields";
@@ -30,7 +31,11 @@ const PROVIDER_LABEL: Record<Provider, string> = {
   calendly: "Calendly",
 };
 
-function normalizeCalendarUrl(url: string, provider: Provider): string {
+function normalizeCalendarUrl(
+  url: string,
+  provider: Provider,
+  pageHostname?: string
+): string {
   if (!url) return "";
   if (provider === "cal") {
     if (url.includes("/embed")) return url;
@@ -38,8 +43,7 @@ function normalizeCalendarUrl(url: string, provider: Provider): string {
   }
   if (provider === "calendly") {
     if (url.includes("embed")) return url;
-    const hostname =
-      typeof window !== "undefined" ? window.location.hostname : "example.com";
+    const hostname = pageHostname ?? "example.com";
     return `https://calendly.com/${url
       .replace("https://calendly.com/", "")
       .replace(/^\/+/, "")}?embed_domain=${hostname}&embed_type=Inline`;
@@ -60,12 +64,12 @@ export function CalendarBlock({
   const [editUrl, setEditUrl] = useState(url);
   const [editTitle, setEditTitle] = useState(title || "");
 
+  const pageHost = usePageHostname();
   const embedUrl = useMemo(() => {
-    const normalized = normalizeCalendarUrl(url, provider);
+    const normalized = normalizeCalendarUrl(url, provider, pageHost);
     if (!normalized) return "";
-    const pageHost = typeof window !== "undefined" ? window.location.hostname : undefined;
     return sanitizeProviderEmbed(normalized, provider, pageHost);
-  }, [url, provider]);
+  }, [url, provider, pageHost]);
 
   const handleSave = () => {
     updateBlock(block.id, {

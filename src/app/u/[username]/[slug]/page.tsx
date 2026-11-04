@@ -12,7 +12,7 @@ import {
   requiresPasswordUnlock,
 } from "@/lib/public-board-access";
 import { stripFormSubmitUrls } from "@/lib/form-webhooks";
-import { fetchPublicBoardBySlug } from "@/lib/public-board-server";
+import { fetchPublicBoardBySlug } from "@/lib/public-board.server";
 import { PasswordGate } from "@/components/public-board/password-gate";
 import { PublicBoardClient } from "@/components/public-board/public-board-client";
 

@@ -60,11 +60,11 @@ export async function POST() {
       .collection("boards")
       .where("ownerId", "==", user.uid)
       .get();
-    for (const board of boards.docs) {
-      if (board.data().ownerUsername !== claimed) {
-        await board.ref.update({ ownerUsername: claimed });
-      }
-    }
+    await Promise.all(
+      boards.docs
+        .filter((board) => board.data().ownerUsername !== claimed)
+        .map((board) => board.ref.update({ ownerUsername: claimed }))
+    );
 
     return NextResponse.json({ username: claimed });
   } catch (error) {

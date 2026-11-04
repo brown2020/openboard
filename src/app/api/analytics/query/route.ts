@@ -25,27 +25,30 @@ export async function POST(req: Request) {
 
     const { boardIds, days } = parsed.data;
     const adminDb = getAdminDb();
-    const analytics: BoardAnalytics[] = [];
+    const grouped = await Promise.all(
+      boardIds.map(async (boardId) => {
+        const boardSnap = await adminDb.collection("boards").doc(boardId).get();
+        if (!boardSnap.exists) return [];
+        const data = boardSnap.data() as { ownerId?: string; collaborators?: string[] };
+        if (!canEditBoard(user.uid, data)) return [];
 
-    for (const boardId of boardIds) {
-      const boardSnap = await adminDb.collection("boards").doc(boardId).get();
-      if (!boardSnap.exists) continue;
-      const data = boardSnap.data() as { ownerId?: string; collaborators?: string[] };
-      if (!canEditBoard(user.uid, data)) continue;
+        // Equality on boardId uses the automatic single-field index.
+        // A date range here needs a composite index that may not be deployed yet.
+        const snapshot = await adminDb
+          .collection("analytics")
+          .where("boardId", "==", boardId)
+          .get();
 
-      // Equality on boardId uses the automatic single-field index.
-      // A date range here needs a composite index that may not be deployed yet.
-      const snapshot = await adminDb
-        .collection("analytics")
-        .where("boardId", "==", boardId)
-        .get();
-
-      for (const doc of snapshot.docs) {
-        const row = doc.data() as BoardAnalytics;
-        if (!row.date || !isAnalyticsDateWithinDays(row.date, days)) continue;
-        analytics.push(row);
-      }
-    }
+        const rows: BoardAnalytics[] = [];
+        for (const doc of snapshot.docs) {
+          const row = doc.data() as BoardAnalytics;
+          if (!row.date || !isAnalyticsDateWithinDays(row.date, days)) continue;
+          rows.push(row);
+        }
+        return rows;
+      })
+    );
+    const analytics = grouped.flat();
 
     return NextResponse.json({ analytics });
   } catch (error) {

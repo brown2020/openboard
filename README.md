@@ -23,16 +23,16 @@ Collaboration UI exists but collaborator listing / full multi-user edit is incom
 
 | Layer | Tech |
 | --- | --- |
-| Framework | Next.js 16.4.3 (App Router; production build uses `--webpack`) |
-| UI | React ^19.3.1, Tailwind CSS ^4.3.3, Radix primitives, Lucide / react-icons |
-| Language | TypeScript 7.0 (`tsc` from `@typescript/native`); ESLint uses the TypeScript 6 API (`typescript` → `@typescript/typescript6`) |
+| Framework | Next.js 16.4.5 (App Router; production build uses `--webpack`) |
+| UI | React ^19.3.1, Tailwind CSS ^4.3.4, Radix primitives, Lucide / react-icons |
+| Language | TypeScript 6.0.3 (held; TypeScript 7 has no compiler API for ESLint) |
 | State | Zustand ^5.0.16 |
-| Backend | Firebase ^13.1.0 + Firebase Admin ^14.5.0 |
+| Backend | Firebase ^13.2.0 + Firebase Admin ^14.5.0 |
 | Editor | TipTap ^3.32.2 |
 | DnD | `@dnd-kit/*` |
 | AI | OpenAI SDK ^7 (`gpt-4o-mini` suggest route) |
 | Validation | Zod ^4.6.7 |
-| Tests | Vitest ^5.0.5, ESLint ^10.14.0 |
+| Tests | Vitest ^5.1.0, ESLint ^10.14.0 |
 
 ## Project structure
 
@@ -107,8 +107,8 @@ From `env.example` (no `.env.example` file):
 
 ## Testing and CI
 
-- `.github/workflows/ci.yml` on `dev` / `main`, Node.js 24: lint → typecheck → test → production build (client env from Actions secrets; tolerates missing secrets via deferred Firebase init).
-- `npm run typecheck` runs TypeScript 7. `typescript-eslint` cannot load TypeScript 7.0’s compiler (it has no programmatic API until 7.1), so the `typescript` package stays on the TypeScript 6 API shim.
+- `.github/workflows/ci.yml` on `dev` / `main`, Node.js 24: lint → typecheck → test → production build (client env from Actions secrets; tolerates missing secrets via deferred Firebase init). `npm ci --ignore-scripts` keeps secrets out of the install step.
+- TypeScript stays on 6.0.3. TypeScript 7 does not ship a compiler API, so ESLint cannot load it. `@types/node` stays on 24.x to match the Node 24 runtime.
 
 ## Deployment
 

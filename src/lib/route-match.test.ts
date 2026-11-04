@@ -69,18 +69,20 @@ describe("evaluateProxyRequest", () => {
     });
   });
 
-  it("blocks unauthenticated privacy API requests", () => {
-    const decision = evaluateProxyRequest({
-      pathname: "/api/boards/privacy",
-      search: "",
-      origin,
-      isAuthenticated: false,
-      shouldClearAuthCookie: false,
-    });
+  it("blocks unauthenticated board settings API requests", () => {
+    for (const pathname of ["/api/boards/privacy", "/api/boards/form-destinations"]) {
+      const decision = evaluateProxyRequest({
+        pathname,
+        search: "",
+        origin,
+        isAuthenticated: false,
+        shouldClearAuthCookie: false,
+      });
 
-    expect(decision.action).toBe("json");
-    if (decision.action === "json") {
-      expect(decision.status).toBe(401);
+      expect(decision.action).toBe("json");
+      if (decision.action === "json") {
+        expect(decision.status).toBe(401);
+      }
     }
   });
 

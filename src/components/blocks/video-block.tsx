@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { Video as VideoIcon } from "lucide-react";
 import { useBoardStore } from "@/stores/board-store";
 import { VideoBlock as VideoBlockType } from "@/types";
+import { usePageHostname } from "@/hooks/use-page-hostname";
 import { BlockControls } from "./block-controls";
 import { BlockEditWrapper } from "./block-edit-wrapper";
 import { InputField, SelectField } from "./form-fields";
@@ -41,16 +42,15 @@ export function VideoBlock({
   const [editPlatform, setEditPlatform] = useState<VideoPlatform>(platform);
   const [editTitle, setEditTitle] = useState(title || "");
 
-  // Use shared utility for URL normalization
+  const pageHost = usePageHostname();
   const embedUrl = useMemo(() => {
     if (!url) return "";
-    const pageHost = typeof window !== "undefined" ? window.location.hostname : undefined;
     if (platform === "custom") return sanitizeCustomEmbed(url, pageHost);
     const normalized = normalizeVideoUrl(url);
     const provider =
       platform === "youtube" ? "youtube" : platform === "vimeo" ? "vimeo" : "loom";
     return sanitizeProviderEmbed(normalized, provider, pageHost);
-  }, [url, platform]);
+  }, [url, platform, pageHost]);
 
   const handleSave = () => {
     updateBlock(block.id, {

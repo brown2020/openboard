@@ -343,15 +343,18 @@ export function useBoards() {
         if (nextUpdates.blocks) {
           let blocks = nextUpdates.blocks;
           try {
-            const boardSnap = await getDoc(boardRef);
-            const ownerId = boardSnap.data()?.ownerId;
-            if (typeof ownerId === "string") {
-              await setDoc(
-                doc(getClientDb(), "boardFormWebhooks", boardId),
-                { ownerId, urls: extractFormSubmitUrls(blocks) },
-                { merge: true }
-              );
-              blocks = stripFormSubmitUrls(blocks);
+            const response = await fetch("/api/boards/form-destinations", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                boardId,
+                urls: extractFormSubmitUrls(blocks),
+              }),
+            });
+            if (response.status !== 403) {
+              if (!response.ok) throw new Error("Failed to store form webhooks");
+              const payload = (await response.json()) as { stored?: boolean };
+              if (payload.stored) blocks = stripFormSubmitUrls(blocks);
             }
           } catch (error) {
             if (!isFirestorePermissionDenied(error)) throw error;
