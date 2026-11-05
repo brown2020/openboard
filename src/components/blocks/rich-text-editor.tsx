@@ -97,6 +97,12 @@ export function RichTextEditor({
     }
   }, [content, editor]);
 
+  useEffect(() => {
+    if (editor && editable) {
+      editor.commands.focus();
+    }
+  }, [editor, editable]);
+
   if (!editor) {
     return null;
   }
